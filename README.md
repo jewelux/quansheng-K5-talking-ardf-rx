@@ -33,6 +33,88 @@ This repository is focused on a talking peiler concept:
 - direct acoustic status queries
 - ongoing simplification for blind-friendly use
 
+## Quick Start for Blind Operators
+
+The most important controls are:
+
+- `UP/DOWN`: change channel or frequency
+- `0-9`: enter a channel or frequency directly
+- `MENU short`: open or confirm menu items
+- `MENU long`: hear the short key-help prompt
+- `EXIT short`: hear a compact spoken status
+- `EXIT long`: hear the current channel or frequency
+
+In ARDF simple mode:
+
+- `PTT short`: field-strength snapshot
+- `UP/DOWN`: change gain
+- `EXIT short`: hear active fox and remaining time
+- `EXIT long`: hear fox frequency and modulation
+
+If you are unsure where you are, press `EXIT long`.
+If you are unsure what the main keys do, press `MENU long`.
+
+## Basic Operation
+
+This section describes the current operating concept of the talking ARDF build.
+
+### Main Screen
+
+- `0-9`: direct channel or frequency entry
+- `UP/DOWN`: next channel or frequency
+- `MENU short`: open the menu
+- `MENU long`: play a short key-help prompt
+- `EXIT short`: speak a compact status report
+- `EXIT long`: speak the current channel or frequency
+- `F`: enable the function layer
+- `F + 2`: switch A/B
+- `F + 3`: switch VFO/MR
+- `F + 4`: switch modulation between FM and AM
+
+### Spoken Feedback
+
+- Number keys speak the entered digits
+- Completed frequency entry speaks the resulting frequency
+- Completed channel entry speaks the selected memory channel
+- `UP/DOWN` speaks the new channel or frequency
+- `EXIT short` gives a compact spoken status
+- `EXIT long` answers the question "where am I now?"
+- `MENU long` gives a short acoustic help overview
+
+### ARDF Simple Mode
+
+In ARDF simple mode, the radio is reduced to the functions needed for practical direction finding.
+
+- `PTT short`: snapshot / field-strength beeper
+- `UP/DOWN`: manual gain change
+- `EXIT short`: active fox and remaining time
+- `EXIT long`: fox frequency and modulation
+- `MENU long`: ARDF-specific acoustic help
+
+### Menu Use
+
+- `MENU short`: open the menu or confirm a menu item
+- `UP/DOWN`: move through menu items or change values
+- `EXIT`: leave the current menu level
+- Menu items with spoken names use voice clips where available
+- Menu items without spoken names currently use Morse output
+
+### Morse Speed
+
+The menu contains a `Morse speed` setting.
+
+- Range: `15` to `70 wpm`
+- Step size: `5 wpm`
+- Default: `20 wpm`
+
+### Safety and Simplification
+
+This project is intentionally reduced for receive-only ARDF use.
+
+- Transmit should remain disabled
+- Non-essential functions have been removed or reduced
+- The goal is faster, safer, and more accessible field operation
+
 ## Building
 
 On Windows:

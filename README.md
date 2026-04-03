@@ -1,6 +1,6 @@
 ﻿# quansheng-talking-ardf-rx
 
-Accessible receive-only ARDF firmware for Quansheng white sticker radios.
+Accessible receive-only Fox Hunting firmware for Quansheng white sticker radios.
 
 This project is being developed as a simple talking direction-finding receiver for blind and visually impaired radio amateurs. It aims to turn inexpensive Quansheng handhelds into a practical 2 m / 70 cm ARDF receiver with strong acoustic guidance, reduced complexity, and easier operation in the field.
 

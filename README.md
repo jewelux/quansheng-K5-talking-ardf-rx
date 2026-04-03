@@ -1,6 +1,6 @@
 # quansheng-talking-ardf-rx
 
-Accessible receive-only ARDF firmware for Quansheng white sticker radios.
+Accessible receive-only Fox Hunting firmware for Quansheng white sticker radios.
 
 ## Overview
 

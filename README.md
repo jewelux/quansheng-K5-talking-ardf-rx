@@ -120,7 +120,7 @@ This project is intentionally reduced for receive-only ARDF use.
 On Windows:
 
 ```bat
-cd /d C:\Users\User\Documents\__CodexFiles\GitHub\quansheng-talking-ardf-rx
+cd /d C:\Users\User\Documents\...........\quansheng-talking-ardf-rx
 win_make.bat
 ```
 

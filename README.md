@@ -1,6 +1,6 @@
 # Quansheng-K5-Talking-ARDF-RX
 
-Accessible receive-only Fox Hunting firmware for Quansheng white sticker radios.
+Accessible receive-only Fox Hunting firmware for Quansheng K5.
 
 ## Overview
 
@@ -12,7 +12,7 @@ See `THIRD_PARTY_NOTICES.md` for upstream references and license details.
 
 ## Target Hardware
 
-- Quansheng white sticker radios
+- Quansheng radios
 - Hardware version 1 devices supported by this firmware branch
 
 ## Project Goals

@@ -4,6 +4,8 @@ This project is based on and informed by open-source alternative firmware work f
 
 Referenced upstream projects:
 
+- Dennis DL9CAT
+  https://github.com/reald/uv-k5-firmware-custom
 - DualTachyon/uv-k5-firmware - Apache-2.0
   https://github.com/DualTachyon/uv-k5-firmware
 - OneOfEleven/uv-k5-firmware-custom - Apache-2.0

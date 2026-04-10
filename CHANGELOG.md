@@ -30,6 +30,12 @@ Current documented development step for the talking ARDF branch with spectrum wo
 - `V2_0` is meant as an experimental extension, not as a replacement for the simpler blind-first `V1`
 - the audio spectrum helper is still an early step toward a stronger blind-accessible spectrum analyser
 
+### Repository Layout
+
+- GitHub root cleaned up for readability
+- firmware tree moved into `firmware-source`
+- third-party notices integrated into the main README
+
 ## V1
 
 Baseline talking ARDF direction for the simplified blind-first receiver.

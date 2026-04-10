@@ -1,62 +1,51 @@
-# Quansheng-K5-Talking-ARDF-RX
+# Quansheng K5 Talking ARDF RX
 
-Accessible receive-only Fox Hunting firmware for Quansheng K5.
+Accessible receive-only fox hunting firmware for Quansheng white sticker radios.
 
 ## Overview
 
-This project is being developed as a simple talking direction-finding receiver for blind and visually impaired radio amateurs. The aim is to turn inexpensive Quansheng handhelds into a practical 2 m / 70 cm ARDF receiver with strong acoustic guidance, reduced complexity, and easier operation in the field.
+This repository is for a blind-friendly "talking peiler" direction:
 
-The firmware is based on existing open-source alternative firmware work for Quansheng handheld radios and has been adapted and simplified for a receive-only, accessible ARDF use case.
+- receive-only ARDF operation
+- simpler controls for field use
+- spoken feedback
+- Morse fallback where speech clips are missing
+- ongoing work toward blind-accessible spectrum support
 
-See `THIRD_PARTY_NOTICES.md` for upstream references and license details.
+The GitHub root is intentionally kept clean for humans. The actual firmware code now lives in [firmware-source](./firmware-source).
 
-## Target Hardware
+## Repository Layout
 
-- Quansheng radios
-- Hardware version 1 devices supported by this firmware branch
+- [README.md](./README.md): project overview and operator-facing documentation
+- [CHANGELOG.md](./CHANGELOG.md): variant and release history
+- [LICENSE](./LICENSE): project license
+- [firmware-source](./firmware-source): full firmware tree, build scripts, and source code
 
-## Project Goals
+## Firmware Variants
 
-- RX-only firmware for safer ARDF use
-- simplified controls for field use
-- spoken and acoustic feedback for blind operation
-- reduced menus and reduced non-essential features
-- a practical base for further accessibility work
+Two closely related variants are documented in parallel.
 
-## Current Direction
+| Variant | Focus | Best for | Main difference |
+| --- | --- | --- | --- |
+| `V1` | Talking ARDF receiver | blind-first fox hunting and simple field use | reduced controls, speech and Morse, no spectrum helper |
+| `V2_0` | Talking ARDF receiver plus spectrum tools | users who want the same talking core plus classic spectrum support | adds display spectrum and first audio-spectrum guidance |
 
-This repository is focused on a talking peiler concept:
+## Firmware Availability
 
-- ARDF-oriented operating flow
-- compact menu set
-- voice and Morse feedback
-- direct acoustic status queries
-- ongoing simplification for blind-friendly use
+Current GitHub status:
 
-## Quick Start for Blind Operators
+| Variant | Documentation | Firmware asset |
+| --- | --- | --- |
+| `V1` | documented | baseline talking ARDF line |
+| `V2_0` | documented | may still be pending as a GitHub release asset |
 
-The most important controls are:
+Why `V2_0` may not yet appear as a downloadable firmware on GitHub:
 
-- `UP/DOWN`: change channel or frequency
-- `0-9`: enter a channel or frequency directly
-- `MENU short`: open or confirm menu items
-- `MENU long`: hear the short key-help prompt
-- `EXIT short`: hear a compact spoken status
-- `EXIT long`: hear the current channel or frequency
+- documentation can be updated before a release asset is uploaded
+- local builds and field testing can exist before public release packaging
+- GitHub only lists binaries when they are uploaded as release assets or workflow artifacts
 
-In ARDF simple mode:
-
-- `PTT short`: field-strength snapshot
-- `UP/DOWN`: change gain
-- `EXIT short`: hear active fox and remaining time
-- `EXIT long`: hear fox frequency and modulation
-
-If you are unsure where you are, press `EXIT long`.
-If you are unsure what the main keys do, press `MENU long`.
-
-## Basic Operation
-
-This section describes the current operating concept of the talking ARDF build.
+## Shared Core Controls
 
 ### Main Screen
 
@@ -65,25 +54,12 @@ This section describes the current operating concept of the talking ARDF build.
 - `MENU short`: open the menu
 - `MENU long`: play a short key-help prompt
 - `EXIT short`: speak a compact status report
-- `EXIT long`: speak the current channel or frequency
+- `EXIT long`: speak the current operating context
 - `F`: enable the function layer
 - `F + 2`: switch A/B
 - `F + 3`: switch VFO/MR
-- `F + 4`: switch modulation between FM and AM
-
-### Spoken Feedback
-
-- Number keys speak the entered digits
-- Completed frequency entry speaks the resulting frequency
-- Completed channel entry speaks the selected memory channel
-- `UP/DOWN` speaks the new channel or frequency
-- `EXIT short` gives a compact spoken status
-- `EXIT long` answers the question "where am I now?"
-- `MENU long` gives a short acoustic help overview
 
 ### ARDF Simple Mode
-
-In ARDF simple mode, the radio is reduced to the functions needed for practical direction finding.
 
 - `PTT short`: snapshot / field-strength beeper
 - `UP/DOWN`: manual gain change
@@ -93,59 +69,77 @@ In ARDF simple mode, the radio is reduced to the functions needed for practical 
 
 ### Menu Use
 
-- `MENU short`: open the menu or confirm a menu item
-- `UP/DOWN`: move through menu items or change values
-- `EXIT`: leave the current menu level
-- Menu items with spoken names use voice clips where available
-- Menu items without spoken names currently use Morse output
+- menu items with spoken names use voice clips where available
+- menu items without spoken names use Morse output
+- Morse speed can be adjusted from `15` to `70 wpm` in `5 wpm` steps
 
-### Morse Speed
+## What Is Different In V2_0
 
-The menu contains a `Morse speed` setting.
+- classic display spectrum finder
+- first blind-friendly audio spectrum finder concept
+- same talking ARDF base as `V1`
+- intended as an extension, not a replacement for the simpler `V1` workflow
 
-- Range: `15` to `70 wpm`
-- Step size: `5 wpm`
-- Default: `20 wpm`
+Spectrum controls currently documented for `V2_0`:
 
-### Safety and Simplification
-
-This project is intentionally reduced for receive-only ARDF use.
-
-- Transmit should remain disabled
-- Non-essential functions have been removed or reduced
-- The goal is faster, safer, and more accessible field operation
+- `F + 5`: classic display spectrum finder
+- `hold 5` or `hold F + 5`: audio spectrum finder
 
 ## Building
 
 On Windows:
 
 ```bat
-cd /d C:\Users\User\Documents\...........\quansheng-talking-ardf-rx
+cd /d C:\Users\User\Documents\__CodexFiles\GitHub\quansheng-talking-ardf-rx\firmware-source
 win_make.bat
 ```
 
-If Python dependencies for packed firmware are missing, install them and run the build again:
+If Python dependencies for packed firmware are missing:
 
 ```bat
 py -m pip install crcmod
+cd /d C:\Users\User\Documents\__CodexFiles\GitHub\quansheng-talking-ardf-rx\firmware-source
 win_make.bat
 ```
 
 ## Flashing
 
-This repository does not duplicate external flashing guides. Please use the original tools and read their documentation directly.
+This repository does not duplicate external flashing guides. Please use the original tools directly.
 
 Recommended starting points:
 
-- Hardware version 1 web flasher: [egzumer uvtools](https://egzumer.github.io/uvtools/)
+- hardware version 1 web flasher: [egzumer uvtools](https://egzumer.github.io/uvtools/)
 - Linux flashing tool: [nica-f/k5prog](https://github.com/nica-f/k5prog)
 - Windows flashing tool: [OneOfEleven/k5prog-win](https://github.com/OneOfEleven/k5prog-win)
-- Hardware version 3 / K1 web flasher reference: [armel uvtools2](https://armel.github.io/uvtools2/)
+- hardware version 3 / K1 reference flasher: [armel uvtools2](https://armel.github.io/uvtools2/)
 
 Always verify your hardware version before flashing.
+
+## Third-Party Notices
+
+This project is based on and informed by open-source alternative firmware work for Quansheng handheld radios.
+
+Referenced upstream projects:
+
+- Dennis DL9CAT
+  [reald/uv-k5-firmware-custom](https://github.com/reald/uv-k5-firmware-custom)
+- DualTachyon
+  [DualTachyon/uv-k5-firmware](https://github.com/DualTachyon/uv-k5-firmware) - Apache-2.0
+- OneOfEleven
+  [OneOfEleven/uv-k5-firmware-custom](https://github.com/OneOfEleven/uv-k5-firmware-custom) - Apache-2.0
+- egzumer
+  [egzumer/uv-k5-firmware-custom](https://github.com/egzumer/uv-k5-firmware-custom) - Apache-2.0
+- fagci
+  [fagci/uv-k5-firmware-fagci-mod](https://github.com/fagci/uv-k5-firmware-fagci-mod) - Apache-2.0
+- rebezhir
+  [rebezhir/openquack](https://github.com/rebezhir/openquack) - Apache-2.0
+- armel
+  [armel/uv-k1-k5v3-firmware-custom](https://github.com/armel/uv-k1-k5v3-firmware-custom) - Apache-2.0
+- Tunas1337
+  [Tunas1337/UV-K5-Modded-Firmwares](https://github.com/Tunas1337/UV-K5-Modded-Firmwares) - BSD-2-Clause
+
+Please retain original copyright and license notices in files derived from upstream sources.
 
 ## Licensing
 
 This repository is published under the Apache License 2.0.
-
-Please keep original copyright and license notices in files derived from upstream sources.

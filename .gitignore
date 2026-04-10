@@ -1,9 +1,10 @@
 *.d
 *.o
 firmware
-/firmware.packed.bin
-/firmware.bin
-/compiled-firmware
+firmware-source/firmware*.bin
+firmware-source/firmware*.packed.bin
+firmware-source/firmware_uvk5_v1*
+firmware-source/compiled-firmware
 .cache
 compile_commands.json
 .vscode
@@ -11,3 +12,4 @@ compile_commands.json
 k5_eeprom.raw
 *~
 __pycache__/
+firmware-source/nul

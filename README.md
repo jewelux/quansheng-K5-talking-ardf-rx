@@ -1,80 +1,62 @@
-# quansheng-talking-ardf-rx
+# Quansheng-K5-Talking-ARDF-RX
 
-Accessible receive-only Fox Hunting firmware for Quansheng white sticker radios.
+Accessible receive-only Fox Hunting firmware for Quansheng K5.
 
 ## Overview
 
-This project turns inexpensive Quansheng handhelds into a practical 2 m / 70 cm ARDF receiver with strong acoustic guidance, reduced complexity, and easier operation for blind and visually impaired radio amateurs.
+This project is being developed as a simple talking direction-finding receiver for blind and visually impaired radio amateurs. The aim is to turn inexpensive Quansheng handhelds into a practical 2 m / 70 cm ARDF receiver with strong acoustic guidance, reduced complexity, and easier operation in the field.
 
-The firmware is based on existing open-source Quansheng alternative firmware work and is adapted here into a receive-only, accessibility-focused ARDF build.
+The firmware is based on existing open-source alternative firmware work for Quansheng handheld radios and has been adapted and simplified for a receive-only, accessible ARDF use case.
 
-See [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md) for upstream references and license details.
-See [CHANGELOG.md](./CHANGELOG.md) for variant-focused change history.
+See `THIRD_PARTY_NOTICES.md` for upstream references and license details.
 
 ## Target Hardware
 
-- Quansheng white sticker radios
-- hardware version 1 devices supported by this branch
+- Quansheng radios
+- Hardware version 1 devices supported by this firmware branch
 
-## Project Direction
-
-This repository focuses on a "talking peiler" concept:
+## Project Goals
 
 - RX-only firmware for safer ARDF use
-- simplified operating flow for field use
-- spoken and Morse feedback
-- compact menu layout
+- simplified controls for field use
+- spoken and acoustic feedback for blind operation
+- reduced menus and reduced non-essential features
+- a practical base for further accessibility work
+
+## Current Direction
+
+This repository is focused on a talking peiler concept:
+
+- ARDF-oriented operating flow
+- compact menu set
+- voice and Morse feedback
 - direct acoustic status queries
-- ongoing work toward blind-friendly spectrum finding
+- ongoing simplification for blind-friendly use
 
-## Firmware Variants
+## Quick Start for Blind Operators
 
-Two closely related variants are currently being documented in parallel.
+The most important controls are:
 
-| Variant | Focus | Best for | Main difference |
-| --- | --- | --- | --- |
-| `V1` | Talking ARDF receiver | blind-first fox hunting and simple field operation | reduced controls, speech and Morse, no spectrum helper |
-| `V2_0` | Talking ARDF receiver plus spectrum tools | users who want the same talking core plus classic display spectrum and first audio spectrum cues | adds `F + 5` display spectrum and a first audio spectrum finder |
+- `UP/DOWN`: change channel or frequency
+- `0-9`: enter a channel or frequency directly
+- `MENU short`: open or confirm menu items
+- `MENU long`: hear the short key-help prompt
+- `EXIT short`: hear a compact spoken status
+- `EXIT long`: hear the current channel or frequency
 
-## Firmware Availability
+In ARDF simple mode:
 
-Current GitHub status:
+- `PTT short`: field-strength snapshot
+- `UP/DOWN`: change gain
+- `EXIT short`: hear active fox and remaining time
+- `EXIT long`: hear fox frequency and modulation
 
-| Variant | Documentation status | Firmware asset status |
-| --- | --- | --- |
-| `V1` | documented | baseline talking ARDF line |
-| `V2_0` | documented | not yet published here as a GitHub release asset |
+If you are unsure where you are, press `EXIT long`.
+If you are unsure what the main keys do, press `MENU long`.
 
-Why `V2_0` may not yet appear as a downloadable firmware on GitHub:
+## Basic Operation
 
-- the variant can be documented before a release asset is uploaded
-- local builds and field testing may exist before a public GitHub release is prepared
-- GitHub only lists firmware binaries when they are added as release assets or workflow artifacts
-
-## At A Glance
-
-### `V1`
-
-This is the simpler blind-first talking ARDF build.
-
-- spoken status and orientation prompts
-- Morse fallback for menu items without voice clips
-- simplified main screen controls
-- simplified ARDF workflow
-- receive-only safety focus
-
-### `V2_0`
-
-This keeps the same talking ARDF base and adds spectrum support.
-
-- classic display spectrum finder
-- first blind-friendly audio spectrum finder
-- same voice and Morse foundation as `V1`
-- intended as the next experimental step, not a replacement for the simpler `V1` workflow
-
-## Shared Core Controls
-
-These controls are common to both variants unless stated otherwise.
+This section describes the current operating concept of the talking ARDF build.
 
 ### Main Screen
 
@@ -83,16 +65,17 @@ These controls are common to both variants unless stated otherwise.
 - `MENU short`: open the menu
 - `MENU long`: play a short key-help prompt
 - `EXIT short`: speak a compact status report
-- `EXIT long`: speak the current operating context
+- `EXIT long`: speak the current channel or frequency
 - `F`: enable the function layer
 - `F + 2`: switch A/B
 - `F + 3`: switch VFO/MR
+- `F + 4`: switch modulation between FM and AM
 
 ### Spoken Feedback
 
-- number keys speak the entered digits
-- completed frequency entry speaks the resulting frequency
-- completed channel entry speaks the selected memory channel
+- Number keys speak the entered digits
+- Completed frequency entry speaks the resulting frequency
+- Completed channel entry speaks the selected memory channel
 - `UP/DOWN` speaks the new channel or frequency
 - `EXIT short` gives a compact spoken status
 - `EXIT long` answers the question "where am I now?"
@@ -113,73 +96,31 @@ In ARDF simple mode, the radio is reduced to the functions needed for practical 
 - `MENU short`: open the menu or confirm a menu item
 - `UP/DOWN`: move through menu items or change values
 - `EXIT`: leave the current menu level
-- menu items with spoken names use voice clips where available
-- menu items without spoken names currently use Morse output
+- Menu items with spoken names use voice clips where available
+- Menu items without spoken names currently use Morse output
 
 ### Morse Speed
 
 The menu contains a `Morse speed` setting.
 
-- range: `15` to `70 wpm`
-- step size: `5 wpm`
-- default: `20 wpm`
+- Range: `15` to `70 wpm`
+- Step size: `5 wpm`
+- Default: `20 wpm`
 
-## What Is Different In `V2_0`
-
-`V2_0` adds two spectrum-oriented entry points while keeping the talking ARDF core.
-
-### Spectrum Controls
-
-- `F + 5`: classic display spectrum finder
-- `hold 5` or `hold F + 5`: audio spectrum finder
-
-### Audio Spectrum Finder
-
-The first `V2_0` audio spectrum finder is intentionally simple and field-oriented.
-
-- it uses periodic tones instead of a spoken running commentary
-- tones indicate whether the strongest peak is left, centered, or right of the current center frequency
-- stronger peaks repeat faster than weaker peaks
-- it is meant as a first blind-friendly search aid, not yet as a finished final interface
-
-### Why Keep Both Variants
-
-`V1` remains the cleaner choice when the goal is the simplest possible blind-first ARDF receiver.
-
-`V2_0` is the experimental extension for users who also want:
-
-- visual spectrum support on the display
-- an early acoustic spectrum search mode
-- a base for further blind-accessible spectrum work
-
-## Recommended Usage
-
-Choose `V1` if you want:
-
-- the simpler and calmer field workflow
-- the least distraction
-- the strongest focus on direct ARDF operation
-
-Choose `V2_0` if you want:
-
-- the same talking ARDF concept
-- a classic display spectrum view
-- a first-generation blind-friendly spectrum search helper
-
-## Safety and Simplification
+### Safety and Simplification
 
 This project is intentionally reduced for receive-only ARDF use.
 
-- transmit should remain disabled
-- non-essential functions have been removed or reduced
-- the goal is faster, safer, and more accessible field operation
+- Transmit should remain disabled
+- Non-essential functions have been removed or reduced
+- The goal is faster, safer, and more accessible field operation
 
 ## Building
 
 On Windows:
 
 ```bat
-cd /d C:\Users\User\Documents\__CodexFiles\GitHub\quansheng-talking-ardf-rx
+cd /d C:\Users\User\Documents\...........\quansheng-talking-ardf-rx
 win_make.bat
 ```
 
@@ -196,21 +137,12 @@ This repository does not duplicate external flashing guides. Please use the orig
 
 Recommended starting points:
 
-- hardware version 1 web flasher: [egzumer uvtools](https://egzumer.github.io/uvtools/)
+- Hardware version 1 web flasher: [egzumer uvtools](https://egzumer.github.io/uvtools/)
 - Linux flashing tool: [nica-f/k5prog](https://github.com/nica-f/k5prog)
 - Windows flashing tool: [OneOfEleven/k5prog-win](https://github.com/OneOfEleven/k5prog-win)
-- hardware version 3 / K1 web flasher reference: [armel uvtools2](https://armel.github.io/uvtools2/)
+- Hardware version 3 / K1 web flasher reference: [armel uvtools2](https://armel.github.io/uvtools2/)
 
 Always verify your hardware version before flashing.
-
-## Roadmap
-
-Current and near-term accessibility work:
-
-- keep the blind-first talking ARDF workflow solid
-- improve documentation so `V1` and `V2_0` can be understood side by side
-- refine the `V2_0` audio spectrum finder
-- later evolve the audio spectrum helper into a stronger blind-accessible spectrum analyser concept
 
 ## Licensing
 

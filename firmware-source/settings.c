@@ -157,15 +157,13 @@ void SETTINGS_InitEEPROM(void)
 	gEeprom.BATTERY_TYPE                   = (Data[4] < BATTERY_TYPE_UNKNOWN) ? Data[4] : BATTERY_TYPE_1600_MAH;
 
 	// 0ED0..0ED7
+#ifdef ENABLE_DTMF_CALLING
 	EEPROM_ReadBuffer(0x0ED0, Data, 8);
 	gEeprom.DTMF_SIDE_TONE               = (Data[0] <   2) ? Data[0] : true;
-
-#ifdef ENABLE_DTMF_CALLING
 	gEeprom.DTMF_SEPARATE_CODE           = DTMF_ValidateCodes((char *)(Data + 1), 1) ? Data[1] : '*';
 	gEeprom.DTMF_GROUP_CALL_CODE         = DTMF_ValidateCodes((char *)(Data + 2), 1) ? Data[2] : '#';
 	gEeprom.DTMF_DECODE_RESPONSE         = (Data[3] < 4) ? Data[3] : 0;
 	gEeprom.DTMF_auto_reset_time         = (Data[4] < 61 && Data[4] >= 5) ? Data[4] : 10;
-#endif
 	gEeprom.DTMF_PRELOAD_TIME            = (Data[5] < 101) ? Data[5] * 10 : 300;
 	gEeprom.DTMF_FIRST_CODE_PERSIST_TIME = (Data[6] < 101) ? Data[6] * 10 : 100;
 	gEeprom.DTMF_HASH_CODE_PERSIST_TIME  = (Data[7] < 101) ? Data[7] * 10 : 100;
@@ -174,18 +172,15 @@ void SETTINGS_InitEEPROM(void)
 	EEPROM_ReadBuffer(0x0ED8, Data, 8);
 	gEeprom.DTMF_CODE_PERSIST_TIME  = (Data[0] < 101) ? Data[0] * 10 : 100;
 	gEeprom.DTMF_CODE_INTERVAL_TIME = (Data[1] < 101) ? Data[1] * 10 : 100;
-#ifdef ENABLE_DTMF_CALLING
 	gEeprom.PERMIT_REMOTE_KILL      = (Data[2] <   2) ? Data[2] : true;
 
 	// 0EE0..0EE7
-
 	EEPROM_ReadBuffer(0x0EE0, Data, sizeof(gEeprom.ANI_DTMF_ID));
 	if (DTMF_ValidateCodes((char *)Data, sizeof(gEeprom.ANI_DTMF_ID))) {
 		memcpy(gEeprom.ANI_DTMF_ID, Data, sizeof(gEeprom.ANI_DTMF_ID));
 	} else {
 		strcpy(gEeprom.ANI_DTMF_ID, "123");
 	}
-
 
 	// 0EE8..0EEF
 	EEPROM_ReadBuffer(0x0EE8, Data, sizeof(gEeprom.KILL_CODE));
@@ -202,7 +197,6 @@ void SETTINGS_InitEEPROM(void)
 	} else {
 		strcpy(gEeprom.REVIVE_CODE, "9DCBA");
 	}
-#endif
 
 	// 0EF8..0F07
 	EEPROM_ReadBuffer(0x0EF8, Data, sizeof(gEeprom.DTMF_UP_CODE));
@@ -219,6 +213,7 @@ void SETTINGS_InitEEPROM(void)
 	} else {
 		strcpy(gEeprom.DTMF_DOWN_CODE, "54321");
 	}
+#endif
 
 	// 0F18..0F1F
 	EEPROM_ReadBuffer(0x0F18, Data, 8);
@@ -333,7 +328,6 @@ gARDFMistuneFreqRaw = 0;
 #endif
 	gSetting_350EN             = (Data[5] < 2) ? Data[5] : true;
 	//gSetting_TX_EN             = (Data[7] & (1u << 0)) ? true : false;
-	gSetting_live_DTMF_decoder = !!(Data[7] & (1u << 1));
 	gSetting_battery_text      = (((Data[7] >> 2) & 3u) <= 2) ? (Data[7] >> 2) & 3 : 2;
 	#ifdef ENABLE_AUDIO_BAR
 		gSetting_mic_bar       = !!(Data[7] & (1u << 4));
@@ -691,13 +685,12 @@ void SETTINGS_SaveSettings(void)
 	State[4] = gEeprom.BATTERY_TYPE;
 	EEPROM_WriteBuffer(0x0EA8, State);
 
-	State[0] = gEeprom.DTMF_SIDE_TONE;
 #ifdef ENABLE_DTMF_CALLING
+	State[0] = gEeprom.DTMF_SIDE_TONE;
 	State[1] = gEeprom.DTMF_SEPARATE_CODE;
 	State[2] = gEeprom.DTMF_GROUP_CALL_CODE;
 	State[3] = gEeprom.DTMF_DECODE_RESPONSE;
 	State[4] = gEeprom.DTMF_auto_reset_time;
-#endif
 	State[5] = gEeprom.DTMF_PRELOAD_TIME / 10U;
 	State[6] = gEeprom.DTMF_FIRST_CODE_PERSIST_TIME / 10U;
 	State[7] = gEeprom.DTMF_HASH_CODE_PERSIST_TIME / 10U;
@@ -706,10 +699,9 @@ void SETTINGS_SaveSettings(void)
 	memset(State, 0xFF, sizeof(State));
 	State[0] = gEeprom.DTMF_CODE_PERSIST_TIME / 10U;
 	State[1] = gEeprom.DTMF_CODE_INTERVAL_TIME / 10U;
-#ifdef ENABLE_DTMF_CALLING
 	State[2] = gEeprom.PERMIT_REMOTE_KILL;
-#endif
 	EEPROM_WriteBuffer(0x0ED8, State);
+#endif
 
 	State[0] = gEeprom.SCAN_LIST_DEFAULT;
 	State[1] = gEeprom.SCAN_LIST_ENABLED[0];
@@ -732,7 +724,6 @@ void SETTINGS_SaveSettings(void)
 	State[5]  = gSetting_350EN;
 	State[6]  = 0;
 	//if (!gSetting_TX_EN)             State[7] &= ~(1u << 0);
-	if (!gSetting_live_DTMF_decoder) State[7] &= ~(1u << 1);
 	State[7] = (State[7] & ~(3u << 2)) | ((gSetting_battery_text & 3u) << 2);
 	#ifdef ENABLE_AUDIO_BAR
 		if (!gSetting_mic_bar)           State[7] &= ~(1u << 4);

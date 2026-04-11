@@ -220,8 +220,6 @@ void ACTION_Scan(bool bRestart)
 #ifdef ENABLE_DTMF_CALLING
 	DTMF_clear_RX();
 #endif
-	gDTMF_RX_live_timeout = 0;
-	memset(gDTMF_RX_live, 0, sizeof(gDTMF_RX_live));
 
 	RADIO_SelectVfos();
 
@@ -284,34 +282,6 @@ void ACTION_SwitchDemodul(void)
 
 void ACTION_Handle(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 {
-	if (gScreenToDisplay == DISPLAY_MAIN && gDTMF_InputMode){
-		 // entering DTMF code
-
-		gPttWasReleased = true;
-
-		if (Key != KEY_SIDE1 || bKeyHeld || !bKeyPressed){
-			return;
-		}
-
-		// side1 btn pressed
-
-		gBeepToPlay = BEEP_1KHZ_60MS_OPTIONAL;
-		gRequestDisplayScreen = DISPLAY_MAIN;
-
-		if (gDTMF_InputBox_Index <= 0) {
-			// turn off DTMF input box if no codes left
-			gDTMF_InputMode = false;
-			return;
-		}
-
-		// DTMF codes are in the input box
-		gDTMF_InputBox[--gDTMF_InputBox_Index] = '-'; // delete one code
-
-#ifdef ENABLE_VOICE
-		gAnotherVoiceID   = VOICE_ID_CANCEL;
-#endif
-		return;
-	}
 
 	enum ACTION_OPT_t funcShort = ACTION_OPT_NONE;
 	enum ACTION_OPT_t funcLong  = ACTION_OPT_NONE;

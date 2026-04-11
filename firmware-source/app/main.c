@@ -754,11 +754,8 @@ static void MAIN_Key_EXIT(bool bKeyPressed, bool bKeyHeld)
 	}
 
 	if (bKeyHeld && bKeyPressed) { // exit key held down
-		if (gInputBoxIndex > 0 || gDTMF_InputBox_Index > 0 || gDTMF_InputMode)
+		if (gInputBoxIndex > 0)
 		{	// cancel key input mode (channel/frequency entry)
-			gDTMF_InputMode       = false;
-			gDTMF_InputBox_Index  = 0;
-			memset(gDTMF_String, 0, sizeof(gDTMF_String));
 			gInputBoxIndex        = 0;
 			gRequestDisplayScreen = DISPLAY_MAIN;
 			gBeepToPlay           = BEEP_1KHZ_60MS_OPTIONAL;
@@ -832,7 +829,7 @@ static void MAIN_Key_MENU(const bool bKeyPressed, const bool bKeyHeld)
 		return;
 	}
 
-	if (!bKeyPressed && !gDTMF_InputMode) { // menu key released
+	if (!bKeyPressed) { // menu key released
 		const bool bFlag = !gInputBoxIndex;
 		gInputBoxIndex   = 0;
 
@@ -1059,19 +1056,6 @@ void MAIN_ProcessKeys(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 		return;
 	}
 #endif
-
-	if (gDTMF_InputMode && bKeyPressed && !bKeyHeld) {
-		const char Character = DTMF_GetCharacter(Key);
-		if (Character != 0xFF)
-		{	// add key to DTMF string
-			DTMF_Append(Character);
-			gKeyInputCountdown    = key_input_timeout_500ms;
-			gRequestDisplayScreen = DISPLAY_MAIN;
-			gPttWasReleased       = true;
-			gBeepToPlay           = BEEP_1KHZ_60MS_OPTIONAL;
-			return;
-		}
-	}
 
 	// TODO: ???
 //	if (Key > KEY_PTT)

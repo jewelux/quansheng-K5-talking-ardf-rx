@@ -965,9 +965,7 @@ void UI_DisplayMenu(void)
 #endif
 
 	if (UI_MENU_GetCurrentMenuId() == MENU_R_CTCS ||
-	    UI_MENU_GetCurrentMenuId() == MENU_T_CTCS ||
-	    UI_MENU_GetCurrentMenuId() == MENU_R_DCS  ||
-	    UI_MENU_GetCurrentMenuId() == MENU_T_DCS
+	    UI_MENU_GetCurrentMenuId() == MENU_R_DCS
 #ifdef ENABLE_DTMF_CALLING
 	    || UI_MENU_GetCurrentMenuId() == MENU_D_LIST
 #endif

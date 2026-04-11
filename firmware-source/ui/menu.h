@@ -33,13 +33,8 @@ enum
 {
 	MENU_SQL = 0,
 	MENU_STEP,
-	MENU_TXP,
 	MENU_R_DCS,
 	MENU_R_CTCS,
-	MENU_T_DCS,
-	MENU_T_CTCS,
-	MENU_SFT_D,
-	MENU_OFFSET,
 	MENU_TOT,
 	MENU_W_N,
 #ifdef ENABLE_ARDF
@@ -55,7 +50,6 @@ enum
 	MENU_ARDF_MIST_FREQ,
 	MENU_ARDF_MIST_GAIN_ADD_STEPS,
 #endif
-	MENU_BCL,
 	MENU_MEM_CH,
 	MENU_DEL_CH,
 	MENU_MEM_NAME,
@@ -97,7 +91,6 @@ enum
 #endif
 	MENU_UPCODE,
 	MENU_DWCODE,
-	MENU_PTT_ID,
 	MENU_D_ST,
 #ifdef ENABLE_DTMF_CALLING
 	MENU_D_RSP,
@@ -110,7 +103,6 @@ enum
 #endif
 	MENU_D_LIVE_DEC,
 	MENU_PONMSG,
-	MENU_ROGER,
 	MENU_VOL,
 	MENU_BAT_TXT,
 	MENU_AM,
@@ -146,8 +138,6 @@ extern const char gSubMenu_ARDF[3][10];
 extern const char gSubMenu_ARDF_Remember_Gain[4][6];
 #endif
 
-extern const char        gSubMenu_TXP[3][5];
-extern const char        gSubMenu_SFT_D[3][4];
 extern const char        gSubMenu_W_N[4][7];
 extern const char        gSubMenu_OFF_ON[2][4];
 extern const char        gSubMenu_SAVE[5][4];
@@ -165,9 +155,7 @@ extern const char* const gSubMenu_MDF[4];
 #ifdef ENABLE_DTMF_CALLING
 extern const char        gSubMenu_D_RSP[4][11];
 #endif
-extern const char* const gSubMenu_PTT_ID[5];
 extern const char        gSubMenu_PONMSG[4][8];
-extern const char        gSubMenu_ROGER[3][6];
 extern const char        gSubMenu_RESET[2][4];
 #define F_LOCK_LEN 8
 extern const char* const gSubMenu_F_LOCK[F_LOCK_LEN];

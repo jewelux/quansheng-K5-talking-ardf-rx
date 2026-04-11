@@ -305,7 +305,7 @@ void RADIO_ConfigureChannel(const unsigned int VFO, const unsigned int configure
 			pVfo->DTMF_DECODING_ENABLE = ((data[5] >> 0) & 1u) ? true : false;
 #endif
 			uint8_t pttId = ((data[5] >> 1) & 7u);
-			pVfo->DTMF_PTT_ID_TX_MODE  = pttId < ARRAY_SIZE(gSubMenu_PTT_ID) ? pttId : PTT_ID_OFF;
+			pVfo->DTMF_PTT_ID_TX_MODE  = pttId < 5 ? pttId : PTT_ID_OFF;
 		}
 
 		// ***************
@@ -552,7 +552,8 @@ void RADIO_SetupRegisters(bool switchToForeground)
 
 	BK4819_ToggleGpioOut(BK4819_GPIO5_PIN1_RED, false);
 
-	BK4819_SetupPowerAmplifier(0, 0);
+	// Disable PA: REG_36 = 0 (bias=0, PA disabled)
+	BK4819_WriteRegister(BK4819_REG_36, 0x0000);
 
 	BK4819_ToggleGpioOut(BK4819_GPIO1_PIN29_PA_ENABLE, false);
 

@@ -66,7 +66,7 @@ bool AIRCOPY_SendMessage(void)
 	RADIO_SetTxParameters();
 
 	BK4819_SendFSKData(g_FSK_Buffer);
-	BK4819_SetupPowerAmplifier(0, 0);
+	BK4819_WriteRegister(BK4819_REG_36, 0x0000);
 	BK4819_ToggleGpioOut(BK4819_GPIO1_PIN29_PA_ENABLE, false);
 
 	gAircopySendCountdown = 30;

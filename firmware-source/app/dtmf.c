@@ -65,8 +65,8 @@ bool              gDTMF_IsTx;
 
 uint8_t           gDTMF_TxStopCountdown_500ms;
 bool              gDTMF_IsGroupCall;
-#endif
 DTMF_ReplyState_t gDTMF_ReplyState;
+#endif
 
 #ifdef ENABLE_DTMF_CALLING
 void DTMF_clear_RX(void)
@@ -77,38 +77,6 @@ void DTMF_clear_RX(void)
 	memset(gDTMF_RX, 0, sizeof(gDTMF_RX));
 }
 #endif
-
-void DTMF_SendEndOfTransmission(void)
-{
-	if (gCurrentVfo->DTMF_PTT_ID_TX_MODE == PTT_ID_APOLLO)
-		BK4819_PlaySingleTone(2475, 250, 28, gEeprom.DTMF_SIDE_TONE);
-	else if ((gCurrentVfo->DTMF_PTT_ID_TX_MODE == PTT_ID_TX_DOWN || gCurrentVfo->DTMF_PTT_ID_TX_MODE == PTT_ID_BOTH)
-#ifdef ENABLE_DTMF_CALLING
-		&& gDTMF_CallState == DTMF_CALL_STATE_NONE
-#endif
-	) {	// end-of-tx
-		if (gEeprom.DTMF_SIDE_TONE) {
-			AUDIO_AudioPathOn();
-			gEnableSpeaker = true;
-			SYSTEM_DelayMs(60);
-		}
-
-		BK4819_EnterDTMF_TX(gEeprom.DTMF_SIDE_TONE);
-
-		BK4819_PlayDTMFString(
-				gEeprom.DTMF_DOWN_CODE,
-				0,
-				gEeprom.DTMF_FIRST_CODE_PERSIST_TIME,
-				gEeprom.DTMF_HASH_CODE_PERSIST_TIME,
-				gEeprom.DTMF_CODE_PERSIST_TIME,
-				gEeprom.DTMF_CODE_INTERVAL_TIME);
-
-		AUDIO_AudioPathOff();
-		gEnableSpeaker = false;
-	}
-
-	BK4819_ExitDTMF_TX(true);
-}
 
 bool DTMF_ValidateCodes(char *pCode, const unsigned int size)
 {
@@ -417,88 +385,3 @@ void DTMF_HandleRequest(void)
 	}
 }
 #endif
-
-void DTMF_Reply(void)
-{
-	uint16_t    Delay;
-#ifdef ENABLE_DTMF_CALLING
-	char        String[23];
-#endif
-	const char *pString = NULL;
-
-	switch (gDTMF_ReplyState)
-	{
-		case DTMF_REPLY_ANI:
-#ifdef ENABLE_DTMF_CALLING
-			if (gDTMF_CallMode != DTMF_CALL_MODE_DTMF)
-			{	// append our ID code onto the end of the DTMF code to send
-				sprintf(String, "%s%c%s", gDTMF_String, gEeprom.DTMF_SEPARATE_CODE, gEeprom.ANI_DTMF_ID);
-				pString = String;
-			}
-			else
-#endif
-			{
-				pString = gDTMF_String;
-			}
-
-			break;
-#ifdef ENABLE_DTMF_CALLING
-		case DTMF_REPLY_AB:
-			pString = "AB";
-			break;
-
-		case DTMF_REPLY_AAAAA:
-			sprintf(String, "%s%c%s", gEeprom.ANI_DTMF_ID, gEeprom.DTMF_SEPARATE_CODE, "AAAAA");
-			pString = String;
-			break;
-#endif
-		default:
-		case DTMF_REPLY_NONE:
-			if (
-#ifdef ENABLE_DTMF_CALLING
-				gDTMF_CallState != DTMF_CALL_STATE_NONE           ||
-#endif
-			    gCurrentVfo->DTMF_PTT_ID_TX_MODE == PTT_ID_APOLLO ||
-			    gCurrentVfo->DTMF_PTT_ID_TX_MODE == PTT_ID_OFF    ||
-			    gCurrentVfo->DTMF_PTT_ID_TX_MODE == PTT_ID_TX_DOWN)
-			{
-				gDTMF_ReplyState = DTMF_REPLY_NONE;
-				return;
-			}
-
-			// send TX-UP DTMF
-			pString = gEeprom.DTMF_UP_CODE;
-			break;
-	}
-
-	gDTMF_ReplyState = DTMF_REPLY_NONE;
-
-	if (pString == NULL)
-		return;
-
-	Delay = (gEeprom.DTMF_PRELOAD_TIME < 200) ? 200 : gEeprom.DTMF_PRELOAD_TIME;
-
-	if (gEeprom.DTMF_SIDE_TONE)
-	{	// the user will also hear the transmitted tones
-		AUDIO_AudioPathOn();
-		gEnableSpeaker = true;
-	}
-
-	SYSTEM_DelayMs(Delay);
-
-	BK4819_EnterDTMF_TX(gEeprom.DTMF_SIDE_TONE);
-
-	BK4819_PlayDTMFString(
-		pString,
-		1,
-		gEeprom.DTMF_FIRST_CODE_PERSIST_TIME,
-		gEeprom.DTMF_HASH_CODE_PERSIST_TIME,
-		gEeprom.DTMF_CODE_PERSIST_TIME,
-		gEeprom.DTMF_CODE_INTERVAL_TIME);
-
-	AUDIO_AudioPathOff();
-
-	gEnableSpeaker = false;
-
-	BK4819_ExitDTMF_TX(false);
-}

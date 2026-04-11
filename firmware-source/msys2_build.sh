@@ -328,10 +328,15 @@ do_build() {
     cd "$script_dir"
     info "Arbeitsverzeichnis: $(pwd)"
 
-    # Alte Build-Artefakte loeschen
+    # Ausgabeverzeichnis (neben firmware-source/)
+    local out_dir="$script_dir/../build-output"
+    mkdir -p "$out_dir"
+    out_dir="$(cd "$out_dir" && pwd)"
+    info "Ausgabeverzeichnis: $out_dir"
+
+    # Alte Build-Artefakte loeschen (im Quellverzeichnis)
     info "Loesche alte Build-Artefakte ..."
     rm -f firmware_uvk5_v1 firmware_uvk5_v1.bin firmware_uvk5_v1.packed.bin
-    rm -f firmware_uvk5_v1_*.bin firmware_uvk5_v1_*.packed.bin
     find . -name '*.o' -delete 2>/dev/null || true
     find . -name '*.d' -delete 2>/dev/null || true
     ok "Alte Artefakte geloescht."
@@ -354,27 +359,39 @@ do_build() {
         exit 1
     fi
 
-    # Zeitstempel-Kopien erstellen
+    # Firmware-Binaries ins Ausgabeverzeichnis verschieben
     if [[ -f firmware_uvk5_v1.bin ]]; then
         local stamp
         stamp=$(date +%Y%m%d_%H%M%S)
 
-        cp firmware_uvk5_v1.bin "firmware_uvk5_v1_MENU_TEST.bin"
-        cp firmware_uvk5_v1.bin "firmware_uvk5_v1_${stamp}.bin"
+        # Basis-Dateien verschieben
+        mv firmware_uvk5_v1.bin "$out_dir/"
+        ok "Verschoben: firmware_uvk5_v1.bin -> build-output/"
+
+        # Zeitstempel-Kopien im Ausgabeverzeichnis
+        cp "$out_dir/firmware_uvk5_v1.bin" "$out_dir/firmware_uvk5_v1_${stamp}.bin"
         ok "Kopie: firmware_uvk5_v1_${stamp}.bin"
 
         if [[ -f firmware_uvk5_v1.packed.bin ]]; then
-            cp firmware_uvk5_v1.packed.bin "firmware_uvk5_v1_MENU_TEST.packed.bin"
-            cp firmware_uvk5_v1.packed.bin "firmware_uvk5_v1_${stamp}.packed.bin"
+            mv firmware_uvk5_v1.packed.bin "$out_dir/"
+            ok "Verschoben: firmware_uvk5_v1.packed.bin -> build-output/"
+
+            cp "$out_dir/firmware_uvk5_v1.packed.bin" "$out_dir/firmware_uvk5_v1_${stamp}.packed.bin"
             ok "Kopie: firmware_uvk5_v1_${stamp}.packed.bin"
         fi
+
+        # ELF-Datei aufraeumen (wird nicht zum Flashen gebraucht)
+        rm -f firmware_uvk5_v1
 
         separator
         echo ""
         echo "  ${GREEN}${BOLD}Fertig!${RESET}"
         echo ""
+        echo "  Alle Firmware-Dateien liegen in:"
+        echo "    ${BOLD}$out_dir/${RESET}"
+        echo ""
         echo "  Zum Flashen diese Datei verwenden:"
-        echo "    ${BOLD}firmware_uvk5_v1_${stamp}.packed.bin${RESET}"
+        echo "    ${BOLD}build-output/firmware_uvk5_v1_${stamp}.packed.bin${RESET}"
         echo ""
         echo "  Browser-Flasher:  https://egzumer.github.io/uvtools/"
         echo ""

@@ -5,6 +5,7 @@ firmware-source/firmware*.bin
 firmware-source/firmware*.packed.bin
 firmware-source/firmware_uvk5_v1*
 firmware-source/compiled-firmware
+build-output/
 .cache
 compile_commands.json
 .vscode

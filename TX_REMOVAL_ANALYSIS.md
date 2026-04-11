@@ -1,9 +1,31 @@
 # TX-Funktionalitaet Entfernungs-Analyse
 
 **Erstellt:** 2026-04-11  
+**Aktualisiert:** 2026-04-11  
 **Agent:** GitHub Copilot Cloud Agent  
 **Auftraggeber:** Do9RE (Richard)  
-**Ziel:** Maximale Reduktion der Codebasis auf reinen Empfangs- und Peil-Betrieb (ARDF RX-only)
+**Ziel:** Maximale Reduktion der Codebasis auf reinen Empfangs- und Peil-Betrieb (ARDF RX-only)  
+**Entscheidung:** Maximale Aenderungen (aggressiv) — gewaehlt von Do9RE
+
+---
+
+## Umsetzungsstatus
+
+| Phase | Beschreibung | Status | Ersparnis |
+|-------|-------------|--------|-----------|
+| Baseline | Build vor Aenderungen | 52136 bytes | — |
+| Phase 1 | FUNCTION_TRANSMIT und TX-Funktionen entfernt | **ERLEDIGT** | -2456 bytes |
+| Phase 2 | TX-Variablen, Flags, Enums, EEPROM-Settings entfernt | **ERLEDIGT** | -824 bytes |
+| Phase 3 | TX-Menuepunkte und BK4819 TX-Treiber entfernen | OFFEN | — |
+| Phase 4 | TX-Datenstrukturen (VFO_Info_t), FrequencyReverse, DTMF TX | OFFEN | — |
+| Phase 5 | frequencies.c TX-Check, CROSS_BAND, VFO-Logik | OFFEN | — |
+| **Gesamt** | | **48856 bytes** | **-3280 bytes (-6.3%)** |
+
+### Naechste Schritte fuer die naechste Agenten-Sitzung
+
+Die naechste Sitzung soll Phase 3-5 umsetzen. Details stehen in den jeweiligen
+Abschnitten unten. Die Entscheidung ist "Maximale Aenderungen" — alle OPTION_B
+Varianten sollen umgesetzt werden.
 
 ---
 

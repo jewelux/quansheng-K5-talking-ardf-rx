@@ -39,7 +39,7 @@ echo   Alle Firmware-Dateien liegen in:
 echo     %OUTDIR%
 echo.
 echo   Zum Flashen diese Datei verwenden:
-echo     build-output\firmware_uvk5_v1_%BUILDSTAMP%.packed.bin
+echo     %OUTDIR%\firmware_uvk5_v1_%BUILDSTAMP%.packed.bin
 echo.
 
 pause

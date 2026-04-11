@@ -37,6 +37,7 @@ ggf. weiteren KI-Agenten. Jede Sitzung muss diese Datei lesen und aktualisieren.
 
 | Datum (UTC)  | Agent / Sitzung         | Aenderung                                              |
 | ------------ | ----------------------- | ------------------------------------------------------ |
+| 2026-04-11   | Copilot Cloud Agent     | TX-Entfernungs-Analyse erstellt (`TX_REMOVAL_ANALYSIS.md`) |
 | 2026-04-11   | Codex (Copilot Cloud)   | Build-Output nach `build-output/` verschoben, .gitignore angepasst |
 | 2026-04-11   | Codex (Copilot Cloud)   | `msys2_build.sh`: PEP 668 fix (pacman+venv statt pip), MINGW64-Pflicht |
 | 2026-04-11   | Codex (Copilot Cloud)   | `msys2_build.sh` erstellt, `HANDOVER.md` angelegt      |
@@ -49,7 +50,8 @@ ggf. weiteren KI-Agenten. Jede Sitzung muss diese Datei lesen und aktualisieren.
 
 | Prio | Aufgabe                                                       | Status     | Verantwortlich |
 | ---- | ------------------------------------------------------------- | ---------- | -------------- |
-| —    | (keine offenen Aufgaben)                                      | —          | —              |
+| 1    | TX-Code Entfernung gemaess `TX_REMOVAL_ANALYSIS.md`           | Warte auf Entscheidungen von Do9RE | Do9RE / Agent |
+| —    | (keine weiteren offenen Aufgaben)                             | —          | —              |
 
 ---
 
@@ -100,6 +102,31 @@ ggf. weiteren KI-Agenten. Jede Sitzung muss diese Datei lesen und aktualisieren.
 ## Sitzungs-Protokoll
 
 <!-- Kurzes Protokoll jeder Agenten-Sitzung — chronologisch, neueste oben -->
+
+### 2026-04-11 (4. Sitzung) — Copilot Cloud Agent
+
+**Auftrag:** Analyse aller verbliebenen TX-Funktionalitaet in der Firmware-Codebasis.
+Erstellung einer Dokumentation mit Entscheidungsbloecken fuer systematische TX-Code-Entfernung.
+
+**Durchgefuehrt:**
+- Systematische Analyse aller .c und .h Dateien auf TX-bezogene Artefakte
+- Identifikation von 12 Kategorien verbliebener TX-Funktionalitaet
+- Identifikation von RX-Features die TX-Code nutzen (Scrambler, Compander, FrequencyReverse)
+- `TX_REMOVAL_ANALYSIS.md` erstellt mit ein-/auskommentierbaren Entscheidungsbloecken
+- `HANDOVER.md` aktualisiert
+
+**Ergebnis:**
+- TX ist effektiv durch ENABLE_PREVENT_TX und TX_freq_check() blockiert
+- Erhebliche Mengen Dead TX-Code im Binary (Funktionen, Variablen, Menuepunkte)
+- Scrambler: RX-Descramble benoetigt gleiche BK4819-Funktionen wie TX-Scramble
+- Compander: RX-Expander und TX-Compressor teilen sich BK4819_SetCompander()
+- FrequencyReverse: Nutzt freq_config_TX und pTX fuer Repeater-Eingabe-Abhoeren
+- Dokumentation wartet auf Entscheidungen von Do9RE
+
+**Keine Aenderungen an:**
+- Bestehendem Quellcode (nur Analyse, keine Code-Modifikationen)
+- Makefile
+- Build-Skripten
 
 ### 2026-04-11 (3. Sitzung) — Codex (Copilot Cloud Agent)
 

@@ -1,0 +1,219 @@
+Quansheng UV-K5 ARDF Firmware bauen und flashen
+Einfache Schritt-fuer-Schritt-Anleitung fuer Windows
+
+
+1. Wozu ist diese Anleitung?
+
+Diese Anleitung beschreibt:
+- welche Programme auf dem PC installiert sein muessen
+- wie die Firmware neu gebaut wird
+- welche Datei am Ende auf das Funkgeraet geflasht wird
+- wie das Flashen am Funkgeraet funktioniert
+
+
+2. Der Firmware-Ordner
+
+Der Ordner mit dem Quellcode liegt hier:
+
+C:\Users\User\Documents\__CodexFiles\UV-K5_K6_5R_K1_firmware_ARDF_support\uv-k5-firmware-custom
+
+Die Notizdatei liegt hier:
+
+C:\Users\User\Documents\__CodexFiles\UV-K5_K6_5R_K1_firmware_ARDF_support\win_make_bat_starten.txt
+
+
+3. Welche Programme muessen installiert sein?
+
+Es muessen 3 Dinge installiert sein:
+
+1. Python
+2. GNU Make
+3. Arm GNU Toolchain fuer arm-none-eabi
+
+
+4. Python installieren
+
+Offizielle Seite:
+https://www.python.org/downloads/windows/
+
+So geht es:
+- Python fuer Windows herunterladen
+- Installer starten
+- ganz wichtig: Haken bei "Add Python to PATH" setzen
+- auf "Install Now" klicken
+
+Danach pruefen:
+
+py --version
+
+
+5. Python-Modul crcmod installieren
+
+In einer neuen Eingabeaufforderung oder PowerShell:
+
+py -m pip install --upgrade pip crcmod
+
+
+6. Arm GNU Toolchain installieren
+
+Offizielle Seite:
+https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads
+
+Richtige Datei:
+
+arm-gnu-toolchain-15.2.rel1-mingw-w64-i686-arm-none-eabi.msi
+
+Diese Datei installieren.
+
+Danach lag der Compiler auf diesem PC hier:
+
+C:\Program Files (x86)\Arm\GNU Toolchain mingw-w64-i686-arm-none-eabi\bin
+
+
+7. GNU Make installieren
+
+Seite:
+https://gnuwin32.sourceforge.net/packages/make.htm
+
+Dort:
+- "Complete package, except sources" herunterladen
+- installieren
+
+Danach lag make.exe auf diesem PC hier:
+
+C:\Program Files (x86)\GnuWin32\bin
+
+
+8. Was ist schon vorbereitet?
+
+Im Firmware-Ordner gibt es schon die Datei:
+
+win_make.bat
+
+Diese Datei setzt die benoetigten Pfade und baut die Firmware.
+
+Sie loescht alte Build-Dateien und erstellt am Ende neue Dateien.
+
+Wichtig:
+- es wird jetzt auch immer eine neue Datei mit Zeitstempel erzeugt
+- alte Zeitstempel-Dateien werden vorher geloescht
+
+
+9. Firmware bauen
+
+Eine Eingabeaufforderung oeffnen.
+
+Dann genau das eingeben:
+Projekt 1:
+cd /d C:\Users\User\Documents\__CodexFiles\UV-K5_K6_5R_K1_firmware_ARDF_support\uv-k5-firmware-custom
+win_make.bat
+Projekt 2:
+cd /d C:\Users\User\Documents\__CodexFiles\UV-K5_K6_5R_K1_firmware_ARDF_support\uv-k5-firmware mini ardf
+win_make.bat
+
+
+
+10. Was passiert beim Bauen?
+
+Wenn alles klappt, entstehen im Firmware-Ordner neue Dateien.
+
+Wichtig sind vor allem:
+
+- firmware_uvk5_v1.bin
+- firmware_uvk5_v1.packed.bin
+- firmware_uvk5_v1_MENU_TEST.packed.bin
+- eine neue Datei mit Zeitstempel, zum Beispiel:
+  firmware_uvk5_v1_20260401_193012.packed.bin
+
+Fuer das Flashen immer am besten die neue Datei mit Zeitstempel nehmen.
+
+
+11. Welche Datei soll geflasht werden?
+
+Am sichersten:
+- immer die neueste Datei mit Zeitstempel
+
+Beispiel:
+
+firmware_uvk5_v1_20260401_193012.packed.bin
+
+Warum?
+- damit der Browser-Flasher nicht versehentlich wieder eine alte Datei nimmt
+- damit man sofort sieht, welche Version wirklich neu gebaut wurde
+
+
+12. Browser-Flasher benutzen
+
+Der Browser-Flasher aus der Doku hat schon funktioniert und kann weiter benutzt werden.
+
+Wichtig ist nur:
+- im Flasher wirklich die neue Datei mit Zeitstempel auswaehlen
+- nicht aus Versehen eine alte gleichnamige Datei nehmen
+
+
+13. Funkgeraet in den Flash-Modus bringen
+
+So geht es:
+
+1. Funkgeraet ausschalten
+2. PTT gedrueckt halten
+3. Funkgeraet einschalten
+4. pruefen, dass die weisse LED oben leuchtet
+5. erst dann USB-Programmierkabel anschliessen
+6. Chrome-Browser-Flasher oeffnen: 
+   https://egzumer.github.io/uvtools/https://egzumer.github.io/uvtools/
+7. die neue .packed.bin Datei auswaehlen
+8. Flash starten
+
+
+14. Nach dem Flashen
+
+Funkgeraet normal einschalten.
+
+Dann fuer ARDF DF Simple:
+- ARDF = DF Simple
+- Sql = 0
+- Demodu = AM
+
+Dann kann mit PTT der Snapshot gehoert werden.
+
+Die Snapshot-Geschwindigkeit ist im ARDF-Menue ueber "SnpSpd" einstellbar.
+
+
+15. Aktueller Bedienstand der Firmware
+
+Zur Zeit gilt:
+- DF Simple zeigt den Balken
+- kurzer Druck auf PTT gibt die Feldstaerke akustisch als Piepreihe aus
+- 1 Balken = 1 Piep
+- maximal 3 Pieps am Stueck, dann kurze Pause, dann weitere Gruppe
+- hoehere Feldstaerke klingt hoeher
+- Snapshot-Geschwindigkeit ueber Menuepunkt SnpSpd
+
+
+16. Wenn der Build nicht klappt
+
+Pruefen:
+- ist Python installiert?
+- funktioniert: py --version
+- ist crcmod installiert?
+- ist Arm Toolchain installiert?
+- ist GNU Make installiert?
+
+Wenn win_make.bat durchlaeuft, sieht man am Ende typischerweise:
+- arm-none-eabi-objcopy
+- python fw-pack.py
+- arm-none-eabi-size
+
+
+17. Merksatz fuer spaeter
+
+Reihenfolge:
+
+1. Eingabeaufforderung oeffnen
+2. in den Firmware-Ordner wechseln
+3. win_make.bat starten
+4. neue Datei mit Zeitstempel suchen
+5. Funkgeraet in Flash-Modus bringen
+6. genau diese neue Datei mit dem Browser-Flasher flashen
+

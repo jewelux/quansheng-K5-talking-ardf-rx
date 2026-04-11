@@ -83,7 +83,6 @@ const uint8_t     gMicGain_dB2[5]                  = {3, 8, 16, 24, 31};
 bool              gSetting_KILLED;
 #endif
 bool              gSetting_350EN;
-bool              gSetting_ScrambleEnable;
 
 #ifdef ENABLE_ARDF
 bool              gSetting_ARDFEnable = false;

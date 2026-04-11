@@ -332,7 +332,6 @@ gARDFMistuneFreqRaw = 0;
 	gSetting_KILLED            = (Data[2] < 2) ? Data[2] : false;
 #endif
 	gSetting_350EN             = (Data[5] < 2) ? Data[5] : true;
-	gSetting_ScrambleEnable    = (Data[6] < 2) ? Data[6] : true;
 	//gSetting_TX_EN             = (Data[7] & (1u << 0)) ? true : false;
 	gSetting_live_DTMF_decoder = !!(Data[7] & (1u << 1));
 	gSetting_battery_text      = (((Data[7] >> 2) & 3u) <= 2) ? (Data[7] >> 2) & 3 : 2;
@@ -731,7 +730,7 @@ void SETTINGS_SaveSettings(void)
 	State[3]  = 0;
 	State[4]  = 0;
 	State[5]  = gSetting_350EN;
-	State[6]  = gSetting_ScrambleEnable;
+	State[6]  = 0;
 	//if (!gSetting_TX_EN)             State[7] &= ~(1u << 0);
 	if (!gSetting_live_DTMF_decoder) State[7] &= ~(1u << 1);
 	State[7] = (State[7] & ~(3u << 2)) | ((gSetting_battery_text & 3u) << 2);
@@ -785,7 +784,7 @@ void SETTINGS_SaveChannel(uint8_t Channel, uint8_t VFO, const VFO_Info_t *pVFO, 
 #endif
 		;
 		State._8[6] =  pVFO->STEP_SETTING;
-		State._8[7] =  pVFO->SCRAMBLING_TYPE;
+		State._8[7] =  0;
 		EEPROM_WriteBuffer(OffsetVFO + 8, State._8);
 
 		SETTINGS_UpdateChannel(Channel, pVFO, true);

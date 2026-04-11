@@ -93,7 +93,6 @@ const t_menu_item MenuList[] =
         {"EndSig", VOICE_ID_INVALID,                       MENU_ARDF_CYCLE_END_BEEP },
         {"SnpSpd", VOICE_ID_INVALID,                       MENU_ARDF_SNAPSHOT_SPEED },
 #endif
-	{"Scramb", VOICE_ID_SCRAMBLER_ON,                  MENU_SCR           }, // was "SCR"
 	{"BusyCL", VOICE_ID_BUSY_LOCKOUT,                  MENU_BCL           }, // was "BCL"
 	{"Compnd", VOICE_ID_INVALID,                       MENU_COMPAND       },
 	{"Demodu", VOICE_ID_INVALID,                       MENU_AM            }, // was "AM"
@@ -175,7 +174,6 @@ const t_menu_item MenuList[] =
 	{"Tx 350", VOICE_ID_INVALID,                       MENU_350TX         }, // was "350TX"
 	{"Tx 500", VOICE_ID_INVALID,                       MENU_500TX         }, // was "500TX"
 	{"350 En", VOICE_ID_INVALID,                       MENU_350EN         }, // was "350EN"
-	{"ScraEn", VOICE_ID_INVALID,                       MENU_SCREN         }, // was "SCREN"
 #ifdef ENABLE_F_CAL_MENU
 	{"FrCali", VOICE_ID_INVALID,                       MENU_F_CALI        }, // reference xtal calibration
 #endif
@@ -383,20 +381,7 @@ const char gSubMenu_BATTYP[][9] =
 	"2200mAh"
 };
 
-const char gSubMenu_SCRAMBLER[][7] =
-{
-	"OFF",
-	"2600Hz",
-	"2700Hz",
-	"2800Hz",
-	"2900Hz",
-	"3000Hz",
-	"3100Hz",
-	"3200Hz",
-	"3300Hz",
-	"3400Hz",
-	"3500Hz"
-};
+
 
 const t_sidefunction gSubMenu_SIDEFUNCTIONS[] =
 {
@@ -703,16 +688,6 @@ void UI_DisplayMenu(void)
 
 		#endif
 		
-		case MENU_SCR:
-			strcpy(String, gSubMenu_SCRAMBLER[gSubMenuSelection]);
-			#if 1
-				if (gSubMenuSelection > 0 && gSetting_ScrambleEnable)
-					BK4819_EnableScramble(gSubMenuSelection - 1);
-				else
-					BK4819_DisableScramble();
-			#endif
-			break;
-
 		#ifdef ENABLE_VOX
 			case MENU_VOX:
 				if (gSubMenuSelection == 0)
@@ -770,7 +745,6 @@ void UI_DisplayMenu(void)
 		case MENU_200TX:
 		case MENU_500TX:
 		case MENU_350EN:
-		case MENU_SCREN:
 			strcpy(String, gSubMenu_OFF_ON[gSubMenuSelection]);
 			break;
 

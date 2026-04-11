@@ -97,8 +97,6 @@ void     BK4819_SetupSquelch(
 void     BK4819_SetAF(BK4819_AF_Type_t AF);
 void     BK4819_RX_TurnOn(void);
 void     BK4819_PickRXFilterPathBasedOnFrequency(uint32_t Frequency);
-void     BK4819_DisableScramble(void);
-void     BK4819_EnableScramble(uint8_t Type);
 
 bool     BK4819_CompanderEnabled(void);
 void     BK4819_SetCompander(const unsigned int mode);
@@ -169,7 +167,6 @@ void     BK4819_PlayRoger(void);
 void     BK4819_Enable_AfDac_DiscMode_TxDsp(void);
 
 void     BK4819_GetVoxAmp(uint16_t *pResult);
-void     BK4819_SetScrambleFrequencyControlWord(uint32_t Frequency);
 void     BK4819_PlayDTMFEx(bool bLocalLoopback, char Code);
 
 #endif

@@ -665,9 +665,6 @@ void UI_DisplayMain(void)
 			UI_PrintStringSmallNormal("DTMF", LCD_WIDTH + 78, 0, line + 1);
 #endif
 
-		// show the audio scramble symbol
-		if (vfoInfo->SCRAMBLING_TYPE > 0 && gSetting_ScrambleEnable)
-			UI_PrintStringSmallNormal("SCR", LCD_WIDTH + 106, 0, line + 1);
 	}
 
 #ifdef ENABLE_AGC_SHOW_DATA

@@ -55,7 +55,6 @@ enum
 	MENU_ARDF_MIST_FREQ,
 	MENU_ARDF_MIST_GAIN_ADD_STEPS,
 #endif
-	MENU_SCR,
 	MENU_BCL,
 	MENU_MEM_CH,
 	MENU_DEL_CH,
@@ -127,7 +126,6 @@ enum
 	MENU_350TX,
 	MENU_500TX,
 	MENU_350EN,
-	MENU_SCREN,
 #ifdef ENABLE_F_CAL_MENU
 	MENU_F_CALI,  // reference xtal calibration
 #endif
@@ -177,7 +175,6 @@ extern const char        gSubMenu_BACKLIGHT[8][7];
 extern const char        gSubMenu_RX_TX[4][6];
 extern const char        gSubMenu_BAT_TXT[3][8];
 extern const char 		 gSubMenu_BATTYP[2][9];
-extern const char        gSubMenu_SCRAMBLER[11][7];
 
 typedef struct {char* name; uint8_t id;} t_sidefunction;
 extern const uint8_t 		 gSubMenu_SIDEFUNCTIONS_size;

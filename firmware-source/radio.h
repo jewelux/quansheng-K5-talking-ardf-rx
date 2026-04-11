@@ -113,7 +113,6 @@ typedef struct VFO_Info_t
 	uint8_t        TXP_CalculatedSetting;
 	bool           FrequencyReverse;
 
-	uint8_t        SCRAMBLING_TYPE;
 	uint8_t        CHANNEL_BANDWIDTH;
 
 	uint8_t        SCANLIST1_PARTICIPATION;

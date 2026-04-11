@@ -134,7 +134,6 @@ extern const uint8_t         gMicGain_dB2[5];
 extern bool                  gSetting_KILLED;
 #endif
 extern bool                  gSetting_350EN;
-extern bool                  gSetting_ScrambleEnable;
 
 #ifdef ENABLE_ARDF
 extern bool                  gSetting_ARDFEnable;

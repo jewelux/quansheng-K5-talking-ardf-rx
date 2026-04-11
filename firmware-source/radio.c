@@ -229,11 +229,6 @@ void RADIO_ConfigureChannel(const unsigned int VFO, const unsigned int configure
 		pVfo->STEP_SETTING  = tmp;
 		pVfo->StepFrequency = gStepFrequencyTable[tmp];
 
-		tmp = data[7];
-		if (tmp > (ARRAY_SIZE(gSubMenu_SCRAMBLER) - 1))
-			tmp = 0;
-		pVfo->SCRAMBLING_TYPE = tmp;
-
 		pVfo->freq_config_RX.CodeType = (data[2] >> 0) & 0x0F;
 		pVfo->freq_config_TX.CodeType = (data[2] >> 4) & 0x0F;
 
@@ -660,11 +655,6 @@ void RADIO_SetupRegisters(bool switchToForeground)
 						| BK4819_REG_3F_SQUELCH_LOST;
 					break;
 			}
-
-			if (gRxVfo->SCRAMBLING_TYPE > 0 && gSetting_ScrambleEnable)
-				BK4819_EnableScramble(gRxVfo->SCRAMBLING_TYPE - 1);
-			else
-				BK4819_DisableScramble();
 		}
 	}
 	#ifdef ENABLE_NOAA

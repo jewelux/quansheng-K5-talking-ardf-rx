@@ -15,7 +15,9 @@
 #         ./msys2_build.sh
 #
 # Hinweise:
-#   - Das Skript funktioniert in MSYS2 MinGW64, MinGW32, UCRT64 und MSYS Shells.
+#   - Das Skript erfordert die MSYS2 MinGW64-Shell.
+#   - Andere Shells (UCRT64, MINGW32, MSYS) werden mit erklaerenden
+#     Fehlermeldungen abgelehnt.
 #   - Farbige Ausgabe wird nur verwendet, wenn das Terminal es unterstuetzt.
 # =============================================================================
 
@@ -61,19 +63,49 @@ separator() {
 }
 
 # ---------------------------------------------------------------------------
-# Pruefen, ob wir in einer MSYS2-Umgebung laufen
+# Pruefen, ob wir in der richtigen MSYS2-Umgebung laufen (MINGW64)
 # ---------------------------------------------------------------------------
 check_msys2_env() {
     if [[ -z "${MSYSTEM:-}" ]]; then
-        warn "MSYSTEM nicht gesetzt — vermutlich keine MSYS2-Shell."
-        warn "Dieses Skript ist fuer MSYS2 optimiert."
-        if ! ask_yes_no "Trotzdem fortfahren?"; then
-            echo "Abbruch."
-            exit 1
-        fi
-    else
-        ok "MSYS2-Umgebung erkannt: ${BOLD}$MSYSTEM${RESET}"
+        fail "MSYSTEM nicht gesetzt — vermutlich keine MSYS2-Shell."
+        fail "Dieses Skript muss in einer MSYS2 ${BOLD}MINGW64${RESET}${RED}-Shell gestartet werden."
+        echo ""
+        echo "  So geht es:"
+        echo "    Start > MSYS2 MinGW x64"
+        echo "    oder im MSYS2-Installer: Environments > MINGW64"
+        echo ""
+        exit 1
     fi
+
+    if [[ "${MSYSTEM}" != "MINGW64" ]]; then
+        fail "Falsche MSYS2-Umgebung: ${BOLD}${MSYSTEM}${RESET}"
+        fail "Dieses Skript benoetigt ${BOLD}MINGW64${RESET}."
+        echo ""
+        echo "  Aktuell:  $MSYSTEM"
+        echo "  Erwartet: MINGW64"
+        echo ""
+        echo "  Bitte die richtige Shell oeffnen:"
+        echo "    Start > MSYS2 MinGW x64"
+        echo ""
+        case "$MSYSTEM" in
+            UCRT64)
+                echo "  Hinweis: UCRT64 verwendet eine andere C-Runtime (ucrt)."
+                echo "  Die ARM-Toolchain-Pakete sind fuer MINGW64 gebaut."
+                ;;
+            MINGW32)
+                echo "  Hinweis: MINGW32 ist die 32-Bit-Variante."
+                echo "  Fuer dieses Projekt wird 64-Bit (MINGW64) benoetigt."
+                ;;
+            MSYS)
+                echo "  Hinweis: Die MSYS-Shell nutzt eine POSIX-Schicht."
+                echo "  Fuer native Windows-Builds bitte MINGW64 verwenden."
+                ;;
+        esac
+        echo ""
+        exit 1
+    fi
+
+    ok "MSYS2-Umgebung erkannt: ${BOLD}$MSYSTEM${RESET}"
 }
 
 # ---------------------------------------------------------------------------
@@ -93,17 +125,62 @@ pacman_install() {
 }
 
 # ---------------------------------------------------------------------------
-# Pip-Wrapper: Python-Paket installieren (mit Bestaetigung)
+# Pip-Wrapper: Python-Paket installieren (PEP 668 sicher)
+# Versucht zuerst pacman, dann venv-basiertes pip als Fallback.
 # ---------------------------------------------------------------------------
-pip_install() {
-    local pkg="$1"
-    local desc="${2:-$pkg}"
-    if ask_yes_no "Soll Python-Paket '$desc' ($pkg) jetzt installiert werden?"; then
-        info "Installiere $pkg via pip ..."
-        "$PYTHON_CMD" -m pip install --upgrade "$pkg"
-        ok "$pkg installiert."
+pip_install_crcmod() {
+    # 1. Versuch: pacman (MSYS2-natives Paket)
+    local pacman_pkg="mingw-w64-x86_64-python-crcmod"
+    info "Versuche crcmod ueber pacman ($pacman_pkg) ..."
+    if pacman -Si "$pacman_pkg" &>/dev/null; then
+        if ask_yes_no "Soll crcmod via pacman installiert werden? ($pacman_pkg)"; then
+            pacman -S --noconfirm "$pacman_pkg"
+            if "$PYTHON_CMD" -c "import crcmod" &>/dev/null; then
+                ok "crcmod via pacman installiert."
+                return 0
+            else
+                warn "pacman-Installation war erfolgreich, aber import schlaegt fehl."
+            fi
+        fi
     else
-        warn "$desc fehlt — .packed.bin wird nicht erzeugt, aber der Build ist moeglich."
+        info "Paket $pacman_pkg nicht in pacman verfuegbar — nutze Fallback."
+    fi
+
+    # 2. Versuch: pip in einem temporaeren venv (PEP 668 sicher)
+    info "Erstelle temporaeres Python-venv fuer crcmod ..."
+    local venv_dir
+    venv_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/.venv_build"
+
+    if ask_yes_no "Soll crcmod in einem lokalen venv ($venv_dir) installiert werden?"; then
+        "$PYTHON_CMD" -m venv "$venv_dir" 2>/dev/null || {
+            fail "venv konnte nicht erstellt werden."
+            warn "crcmod fehlt — .packed.bin wird nicht erzeugt."
+            return 1
+        }
+        # pip im venv ausfuehren
+        "$venv_dir/bin/pip" install --upgrade crcmod 2>/dev/null \
+            || "$venv_dir/Scripts/pip" install --upgrade crcmod 2>/dev/null \
+            || {
+                fail "pip install crcmod im venv fehlgeschlagen."
+                warn ".packed.bin wird nicht erzeugt."
+                return 1
+            }
+        # PYTHON_CMD auf das venv-Python umstellen
+        if [[ -x "$venv_dir/bin/python" ]]; then
+            PYTHON_CMD="$venv_dir/bin/python"
+        elif [[ -x "$venv_dir/Scripts/python.exe" ]]; then
+            PYTHON_CMD="$venv_dir/Scripts/python.exe"
+        fi
+        if "$PYTHON_CMD" -c "import crcmod" &>/dev/null; then
+            ok "crcmod im venv installiert. Python: $PYTHON_CMD"
+            return 0
+        else
+            fail "crcmod import schlaegt auch im venv fehl."
+            return 1
+        fi
+    else
+        warn "crcmod fehlt — .packed.bin wird nicht erzeugt, aber der Build ist moeglich."
+        return 1
     fi
 }
 
@@ -118,32 +195,11 @@ check_make() {
         ok "make gefunden: $ver"
     else
         fail "make nicht gefunden."
-        # MSYS2-Paketname variiert je nach Umgebung
-        local pkg="make"
-        if [[ "${MSYSTEM:-}" == MINGW64 ]]; then
-            pkg="mingw-w64-x86_64-make"
-            # Fallback: plain make laeuft auch in MinGW-Shells
-            if ! pacman -Qi "$pkg" &>/dev/null; then
-                pkg="make"
-            fi
-        elif [[ "${MSYSTEM:-}" == MINGW32 ]]; then
-            pkg="mingw-w64-i686-make"
-            if ! pacman -Qi "$pkg" &>/dev/null; then
-                pkg="make"
-            fi
-        fi
-        pacman_install "$pkg" "GNU Make"
+        pacman_install "make" "GNU Make"
         # Erneut pruefen
         if ! command -v make &>/dev/null; then
-            # Unter MinGW kann der Befehl mingw32-make heissen
-            if command -v mingw32-make &>/dev/null; then
-                warn "make nicht im PATH, aber mingw32-make gefunden."
-                warn "Symlink wird erstellt ..."
-                ln -sf "$(command -v mingw32-make)" /usr/local/bin/make 2>/dev/null || true
-            else
-                fail "make immer noch nicht verfuegbar. Bitte manuell installieren."
-                exit 1
-            fi
+            fail "make immer noch nicht verfuegbar. Bitte manuell installieren."
+            exit 1
         fi
     fi
 }
@@ -160,23 +216,13 @@ check_arm_toolchain() {
     else
         fail "arm-none-eabi-gcc nicht gefunden."
         echo ""
-        echo "  Die ARM Embedded Toolchain kann in MSYS2 so installiert werden:"
+        echo "  Die ARM Embedded Toolchain wird ueber pacman installiert:"
+        echo "    pacman -S mingw-w64-x86_64-arm-none-eabi-gcc"
         echo ""
-
-        local pkg=""
-        case "${MSYSTEM:-MSYS}" in
-            MINGW64|UCRT64) pkg="mingw-w64-x86_64-arm-none-eabi-gcc" ;;
-            MINGW32)        pkg="mingw-w64-i686-arm-none-eabi-gcc"  ;;
-            *)              pkg="mingw-w64-x86_64-arm-none-eabi-gcc" ;;
-        esac
-
-        echo "    pacman -S $pkg"
-        echo ""
-        echo "  Alternativ kann die offizielle ARM-Toolchain manuell installiert"
-        echo "  und zum PATH hinzugefuegt werden:"
+        echo "  Alternativ: offizielle ARM-Toolchain manuell installieren:"
         echo "    https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads"
         echo ""
-        pacman_install "$pkg" "ARM GCC Toolchain"
+        pacman_install "mingw-w64-x86_64-arm-none-eabi-gcc" "ARM GCC Toolchain"
 
         if ! command -v arm-none-eabi-gcc &>/dev/null; then
             fail "arm-none-eabi-gcc immer noch nicht gefunden."
@@ -187,12 +233,7 @@ check_arm_toolchain() {
 
     # Zusaetzlich arm-none-eabi-newlib pruefen (wird fuer --specs=nano.specs gebraucht)
     info "Pruefe arm-none-eabi-newlib ..."
-    local newlib_pkg=""
-    case "${MSYSTEM:-MSYS}" in
-        MINGW64|UCRT64) newlib_pkg="mingw-w64-x86_64-arm-none-eabi-newlib" ;;
-        MINGW32)        newlib_pkg="mingw-w64-i686-arm-none-eabi-newlib"  ;;
-        *)              newlib_pkg="mingw-w64-x86_64-arm-none-eabi-newlib" ;;
-    esac
+    local newlib_pkg="mingw-w64-x86_64-arm-none-eabi-newlib"
     if pacman -Qi "$newlib_pkg" &>/dev/null; then
         ok "newlib vorhanden ($newlib_pkg)"
     else
@@ -221,13 +262,7 @@ check_python() {
     done
 
     fail "Python 3 nicht gefunden."
-    local pkg=""
-    case "${MSYSTEM:-MSYS}" in
-        MINGW64|UCRT64) pkg="mingw-w64-x86_64-python" ;;
-        MINGW32)        pkg="mingw-w64-i686-python"   ;;
-        *)              pkg="python"                   ;;
-    esac
-    pacman_install "$pkg" "Python 3"
+    pacman_install "mingw-w64-x86_64-python" "Python 3"
 
     # Erneut suchen
     for cmd in python3 python py; do
@@ -246,26 +281,12 @@ check_python() {
 }
 
 # ---------------------------------------------------------------------------
-# 4. Abhaengigkeit: pip + crcmod
+# 4. Abhaengigkeit: crcmod (fuer .packed.bin)
 # ---------------------------------------------------------------------------
 check_pip_crcmod() {
     if [[ -z "$PYTHON_CMD" ]]; then
-        warn "Python fehlt — ueberspringe pip/crcmod Pruefung."
+        warn "Python fehlt — ueberspringe crcmod Pruefung."
         return
-    fi
-
-    info "Pruefe pip ..."
-    if ! "$PYTHON_CMD" -m pip --version &>/dev/null; then
-        warn "pip ist nicht verfuegbar."
-        local pkg=""
-        case "${MSYSTEM:-MSYS}" in
-            MINGW64|UCRT64) pkg="mingw-w64-x86_64-python-pip" ;;
-            MINGW32)        pkg="mingw-w64-i686-python-pip"   ;;
-            *)              pkg="python-pip"                   ;;
-        esac
-        pacman_install "$pkg" "Python pip"
-    else
-        ok "pip verfuegbar."
     fi
 
     info "Pruefe Python-Modul crcmod ..."
@@ -273,7 +294,7 @@ check_pip_crcmod() {
         ok "crcmod ist installiert."
     else
         warn "crcmod fehlt."
-        pip_install "crcmod" "crcmod (fuer .packed.bin Erzeugung)"
+        pip_install_crcmod
     fi
 }
 

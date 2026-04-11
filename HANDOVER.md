@@ -36,6 +36,7 @@ ggf. weiteren KI-Agenten. Jede Sitzung muss diese Datei lesen und aktualisieren.
 
 | Datum (UTC)  | Agent / Sitzung         | Aenderung                                              |
 | ------------ | ----------------------- | ------------------------------------------------------ |
+| 2026-04-11   | Codex (Copilot Cloud)   | `msys2_build.sh`: PEP 668 fix (pacman+venv statt pip), MINGW64-Pflicht |
 | 2026-04-11   | Codex (Copilot Cloud)   | `msys2_build.sh` erstellt, `HANDOVER.md` angelegt      |
 
 ---
@@ -55,6 +56,8 @@ ggf. weiteren KI-Agenten. Jede Sitzung muss diese Datei lesen und aktualisieren.
 <!-- Probleme hier dokumentieren, damit die naechste Sitzung Bescheid weiss -->
 
 - Keine bekannten Probleme zum aktuellen Zeitpunkt.
+- (Behoben) PEP 668: `pip install` schlug in MSYS2 fehl wegen externally-managed-environment. Fix: pacman-first + venv-Fallback.
+- (Behoben) Falscher Shell-Typ: UCRT64 statt MINGW64 fuehrte zu fehlenden Paketen. Fix: Skript erzwingt MINGW64.
 
 ---
 
@@ -66,10 +69,11 @@ ggf. weiteren KI-Agenten. Jede Sitzung muss diese Datei lesen und aktualisieren.
 - Erwartet `py.exe` oder `python.exe` im Windows-AppData-Pfad
 - Erzeugt Zeitstempel-Kopien via PowerShell
 
-### MSYS2 (msys2_build.sh) — NEU
+### MSYS2 (msys2_build.sh)
 
-- Funktioniert in MinGW64, MinGW32, UCRT64 und MSYS Shells
-- Prueft automatisch: `make`, `arm-none-eabi-gcc`, `arm-none-eabi-newlib`, `python3`, `pip`, `crcmod`, `git`
+- **Erfordert MINGW64-Shell** — bricht mit klarer Fehlermeldung ab bei UCRT64, MINGW32 oder MSYS
+- Prueft automatisch: `make`, `arm-none-eabi-gcc`, `arm-none-eabi-newlib`, `python3`, `crcmod`, `git`
+- crcmod-Installation: versucht zuerst `pacman -S mingw-w64-x86_64-python-crcmod`, dann Fallback ueber temporaeres venv (PEP 668 sicher)
 - Bietet interaktive Nachinstallation ueber `pacman` an
 - Erzeugt Zeitstempel-Kopien wie `win_make.bat`
 
@@ -94,6 +98,21 @@ ggf. weiteren KI-Agenten. Jede Sitzung muss diese Datei lesen und aktualisieren.
 ## Sitzungs-Protokoll
 
 <!-- Kurzes Protokoll jeder Agenten-Sitzung — chronologisch, neueste oben -->
+
+### 2026-04-11 (2. Sitzung) — Codex (Copilot Cloud Agent)
+
+**Auftrag:** PEP 668 fix fuer crcmod, MINGW64-Shell erzwingen.
+
+**Durchgefuehrt:**
+- `check_msys2_env` umgebaut: bricht bei UCRT64/MINGW32/MSYS ab mit erklaerenden Fehlermeldungen
+- `pip_install` ersetzt durch `pip_install_crcmod`: versucht pacman (`mingw-w64-x86_64-python-crcmod`), Fallback auf lokales venv
+- `check_pip_crcmod` vereinfacht (kein separater pip-Check mehr)
+- Alle `case`-Bloecke fuer MSYSTEM entfernt (MINGW64 ist jetzt Pflicht)
+- `.gitignore`: `firmware-source/.venv_build` hinzugefuegt
+- `HANDOVER.md` aktualisiert
+
+**Keine Aenderungen an:**
+- Bestehendem Quellcode oder Makefile
 
 ### 2026-04-11 — Codex (Copilot Cloud Agent)
 

@@ -37,6 +37,8 @@ ggf. weiteren KI-Agenten. Jede Sitzung muss diese Datei lesen und aktualisieren.
 
 | Datum (UTC)  | Agent / Sitzung         | Aenderung                                              |
 | ------------ | ----------------------- | ------------------------------------------------------ |
+| 2026-04-11   | Copilot Cloud Agent     | Scrambler/Descrambler komplett entfernt (48856->48468 bytes) |
+| 2026-04-11   | Copilot Cloud Agent     | Codebase-Audit erstellt (`AUDIT_REMAINING_FEATURES.md`) |
 | 2026-04-11   | Copilot Cloud Agent     | TX-Code Phase 1+2: FUNCTION_TRANSMIT, TX-Variablen/Flags/Enums entfernt (52136->48856 bytes) |
 | 2026-04-11   | Copilot Cloud Agent     | TX-Entfernungs-Analyse erstellt (`TX_REMOVAL_ANALYSIS.md`) |
 | 2026-04-11   | Codex (Copilot Cloud)   | Build-Output nach `build-output/` verschoben, .gitignore angepasst |
@@ -51,7 +53,9 @@ ggf. weiteren KI-Agenten. Jede Sitzung muss diese Datei lesen und aktualisieren.
 
 | Prio | Aufgabe                                                       | Status     | Verantwortlich |
 | ---- | ------------------------------------------------------------- | ---------- | -------------- |
-| 1    | TX-Code Entfernung Phase 3-5 (Menuepunkte, BK4819 TX, VFO_Info_t, FrequencyReverse, DTMF TX, frequencies.c) | Phase 1+2 erledigt, Phase 3-5 offen | Agent |
+| 1    | Entscheidungen in `AUDIT_REMAINING_FEATURES.md` treffen       | Warte auf Do9RE | Do9RE |
+| 2    | Gewaehlte Optionen aus Audit umsetzen                         | Warte auf Entscheidungen | Agent |
+| 3    | TX-Code Phase 3-5 (BK4819 TX, DTMF TX, Menues, etc.)         | Offen, teilweise durch Audit abgedeckt | Agent |
 
 ---
 

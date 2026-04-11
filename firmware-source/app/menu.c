@@ -19,7 +19,6 @@
 #if !defined(ENABLE_OVERLAY)
 	#include "ARMCM0.h"
 #endif
-#include "app/dtmf.h"
 #include "app/generic.h"
 #include "app/common.h"
 #include "app/menu.h"
@@ -525,16 +524,6 @@ int MENU_GetLimits(uint8_t menu_id, int32_t *pMin, int32_t *pMax)
 			*pMax = ARRAY_SIZE(gSubMenu_MDF) - 1;
 			break;
 
-		case MENU_TXP:
-			*pMin = 0;
-			*pMax = ARRAY_SIZE(gSubMenu_TXP) - 1;
-			break;
-
-		case MENU_SFT_D:
-			*pMin = 0;
-			*pMax = ARRAY_SIZE(gSubMenu_SFT_D) - 1;
-			break;
-
 		case MENU_TDR:
 			*pMin = 0;
 			*pMax = ARRAY_SIZE(gSubMenu_RXMode) - 1;
@@ -557,25 +546,18 @@ int MENU_GetLimits(uint8_t menu_id, int32_t *pMin, int32_t *pMax)
 			*pMax = ARRAY_SIZE(gSubMenu_SC_REV) - 1;
 			break;
 
-		case MENU_ROGER:
-			*pMin = 0;
-			*pMax = ARRAY_SIZE(gSubMenu_ROGER) - 1;
-			break;
-
 		case MENU_PONMSG:
 			*pMin = 0;
 			*pMax = ARRAY_SIZE(gSubMenu_PONMSG) - 1;
 			break;
 
 		case MENU_R_DCS:
-		case MENU_T_DCS:
 			*pMin = 0;
 			*pMax = 208;
 			//*pMax = (ARRAY_SIZE(DCS_Options) * 2);
 			break;
 
 		case MENU_R_CTCS:
-		case MENU_T_CTCS:
 			*pMin = 0;
 			*pMax = ARRAY_SIZE(CTCSS_Options);
 			break;
@@ -654,17 +636,14 @@ int MENU_GetLimits(uint8_t menu_id, int32_t *pMin, int32_t *pMax)
 		#ifdef ENABLE_AUDIO_BAR
 			case MENU_MIC_BAR:
 		#endif
-		case MENU_BCL:
 		case MENU_BEEP:
 		case MENU_AUTOLK:
 		case MENU_S_ADD1:
 		case MENU_S_ADD2:
 		case MENU_STE:
-		case MENU_D_ST:
 #ifdef ENABLE_DTMF_CALLING
 		case MENU_D_DCD:
 #endif
-		case MENU_D_LIVE_DEC:
 		#ifdef ENABLE_NOAA
 			case MENU_NOAA_S:
 		#endif
@@ -695,7 +674,6 @@ int MENU_GetLimits(uint8_t menu_id, int32_t *pMin, int32_t *pMax)
 			break;
 
 		case MENU_MEM_CH:
-		case MENU_1_CALL:
 		case MENU_DEL_CH:
 		case MENU_MEM_NAME:
 			*pMin = 0;
@@ -729,10 +707,6 @@ int MENU_GetLimits(uint8_t menu_id, int32_t *pMin, int32_t *pMax)
 			*pMax = ARRAY_SIZE(gSubMenu_D_RSP) - 1;
 			break;
 #endif
-		case MENU_PTT_ID:
-			*pMin = 0;
-			*pMax = ARRAY_SIZE(gSubMenu_PTT_ID) - 1;
-			break;
 
 		case MENU_BAT_TXT:
 			*pMin = 0;
@@ -745,10 +719,6 @@ int MENU_GetLimits(uint8_t menu_id, int32_t *pMin, int32_t *pMax)
 			*pMax = 60;
 			break;
 #endif
-		case MENU_D_PRE:
-			*pMin = 3;
-			*pMax = 99;
-			break;
 
 #ifdef ENABLE_DTMF_CALLING
 		case MENU_D_LIST:
@@ -820,16 +790,6 @@ void MENU_AcceptSetting(void)
 			}
 			return;
 
-		case MENU_TXP:
-			gTxVfo->OUTPUT_POWER = gSubMenuSelection;
-			gRequestSaveChannel = 1;
-			return;
-
-		case MENU_T_DCS:
-			pConfig = &gTxVfo->freq_config_TX;
-
-			// Fallthrough
-
 		case MENU_R_DCS: {
 			if (gSubMenuSelection == 0) {
 				if (pConfig->CodeType == CODE_TYPE_CONTINUOUS_TONE) {
@@ -850,9 +810,6 @@ void MENU_AcceptSetting(void)
 			gRequestSaveChannel = 1;
 			return;
 		}
-		case MENU_T_CTCS:
-			pConfig = &gTxVfo->freq_config_TX;
-			[[fallthrough]];
 		case MENU_R_CTCS: {
 			if (gSubMenuSelection == 0) {
 				if (pConfig->CodeType != CODE_TYPE_CONTINUOUS_TONE) {
@@ -869,16 +826,6 @@ void MENU_AcceptSetting(void)
 			gRequestSaveChannel = 1;
 			return;
 		}
-		case MENU_SFT_D:
-			gTxVfo->TX_OFFSET_FREQUENCY_DIRECTION = gSubMenuSelection;
-			gRequestSaveChannel                   = 1;
-			return;
-
-		case MENU_OFFSET:
-			gTxVfo->TX_OFFSET_FREQUENCY = gSubMenuSelection;
-			gRequestSaveChannel         = 1;
-			return;
-
 		case MENU_W_N:
 			gTxVfo->CHANNEL_BANDWIDTH = gSubMenuSelection;
 			gRequestSaveChannel       = 1;
@@ -1129,11 +1076,6 @@ void MENU_AcceptSetting(void)
 
 #endif
 
-		case MENU_BCL:
-			gTxVfo->BUSY_CHANNEL_LOCK = gSubMenuSelection;
-			gRequestSaveChannel       = 1;
-			return;
-
 		case MENU_MEM_CH:
 			gTxVfo->CHANNEL_SAVE = gSubMenuSelection;
 			#if 0
@@ -1267,10 +1209,6 @@ void MENU_AcceptSetting(void)
 //			gRequestSaveChannel = 1;
 			return;
 
-		case MENU_1_CALL:
-			gEeprom.CHAN_1_CALL = gSubMenuSelection;
-			break;
-
 		case MENU_S_LIST:
 			gEeprom.SCAN_LIST_DEFAULT = gSubMenuSelection;
 			break;
@@ -1279,10 +1217,6 @@ void MENU_AcceptSetting(void)
 			case MENU_AL_MOD:
 				break;
 		#endif
-
-		case MENU_D_ST:
-			gEeprom.DTMF_SIDE_TONE = gSubMenuSelection;
-			break;
 
 #ifdef ENABLE_DTMF_CALLING
 		case MENU_D_RSP:
@@ -1293,14 +1227,6 @@ void MENU_AcceptSetting(void)
 			gEeprom.DTMF_auto_reset_time = gSubMenuSelection;
 			break;
 #endif
-		case MENU_D_PRE:
-			gEeprom.DTMF_PRELOAD_TIME = gSubMenuSelection * 10;
-			break;
-
-		case MENU_PTT_ID:
-			gTxVfo->DTMF_PTT_ID_TX_MODE = gSubMenuSelection;
-			gRequestSaveChannel         = 1;
-			return;
 
 		case MENU_BAT_TXT:
 			gSetting_battery_text = gSubMenuSelection;
@@ -1313,16 +1239,6 @@ void MENU_AcceptSetting(void)
 			gRequestSaveChannel = 1;
 			return;
 #endif
-
-		case MENU_D_LIVE_DEC:
-			gSetting_live_DTMF_decoder = gSubMenuSelection;
-			gDTMF_RX_live_timeout = 0;
-			memset(gDTMF_RX_live, 0, sizeof(gDTMF_RX_live));
-			if (!gSetting_live_DTMF_decoder)
-				BK4819_DisableDTMF();
-			gFlagReconfigureVfos     = true;
-			gUpdateStatus            = true;
-			break;
 
 #ifdef ENABLE_DTMF_CALLING
 		case MENU_D_LIST:
@@ -1339,9 +1255,6 @@ void MENU_AcceptSetting(void)
 #endif
 		case MENU_PONMSG:
 			gEeprom.POWER_ON_DISPLAY_MODE = gSubMenuSelection;
-			break;
-
-		case MENU_ROGER:
 			break;
 
 		case MENU_AM:
@@ -1461,10 +1374,6 @@ void MENU_ShowCurrentSetting(void)
 			gSubMenuSelection = FREQUENCY_GetSortedIdxFromStepIdx(gTxVfo->STEP_SETTING);
 			break;
 
-		case MENU_TXP:
-			gSubMenuSelection = gTxVfo->OUTPUT_POWER;
-			break;
-
 		case MENU_RESET:
 			gSubMenuSelection = 0;
 			break;
@@ -1500,33 +1409,6 @@ void MENU_ShowCurrentSetting(void)
 			}
 		break;
 		}
-
-		case MENU_T_DCS:
-			switch (gTxVfo->freq_config_TX.CodeType)
-			{
-				case CODE_TYPE_DIGITAL:
-					gSubMenuSelection = gTxVfo->freq_config_TX.Code + 1;
-					break;
-				case CODE_TYPE_REVERSE_DIGITAL:
-					gSubMenuSelection = gTxVfo->freq_config_TX.Code + 105;
-					break;
-				default:
-					gSubMenuSelection = 0;
-					break;
-			}
-			break;
-
-		case MENU_T_CTCS:
-			gSubMenuSelection = (gTxVfo->freq_config_TX.CodeType == CODE_TYPE_CONTINUOUS_TONE) ? gTxVfo->freq_config_TX.Code + 1 : 0;
-			break;
-
-		case MENU_SFT_D:
-			gSubMenuSelection = gTxVfo->TX_OFFSET_FREQUENCY_DIRECTION;
-			break;
-
-		case MENU_OFFSET:
-			gSubMenuSelection = gTxVfo->TX_OFFSET_FREQUENCY;
-			break;
 
 		case MENU_W_N:
 			gSubMenuSelection = gTxVfo->CHANNEL_BANDWIDTH;
@@ -1615,10 +1497,6 @@ void MENU_ShowCurrentSetting(void)
 			break;
 
 #endif
-
-		case MENU_BCL:
-			gSubMenuSelection = gTxVfo->BUSY_CHANNEL_LOCK;
-			break;
 
 		case MENU_MEM_CH:
 			#if 0
@@ -1722,10 +1600,6 @@ void MENU_ShowCurrentSetting(void)
 			gSubMenuSelection = gTxVfo->Compander;
 			return;
 
-		case MENU_1_CALL:
-			gSubMenuSelection = gEeprom.CHAN_1_CALL;
-			break;
-
 		case MENU_S_LIST:
 			gSubMenuSelection = gEeprom.SCAN_LIST_DEFAULT;
 			break;
@@ -1744,10 +1618,6 @@ void MENU_ShowCurrentSetting(void)
 				break;
 		#endif
 
-		case MENU_D_ST:
-			gSubMenuSelection = gEeprom.DTMF_SIDE_TONE;
-			break;
-
 #ifdef ENABLE_DTMF_CALLING
 		case MENU_D_RSP:
 			gSubMenuSelection = gEeprom.DTMF_DECODE_RESPONSE;
@@ -1757,13 +1627,6 @@ void MENU_ShowCurrentSetting(void)
 			gSubMenuSelection = gEeprom.DTMF_auto_reset_time;
 			break;
 #endif
-		case MENU_D_PRE:
-			gSubMenuSelection = gEeprom.DTMF_PRELOAD_TIME / 10;
-			break;
-
-		case MENU_PTT_ID:
-			gSubMenuSelection = gTxVfo->DTMF_PTT_ID_TX_MODE;
-			break;
 
 		case MENU_BAT_TXT:
 			gSubMenuSelection = gSetting_battery_text;
@@ -1778,16 +1641,9 @@ void MENU_ShowCurrentSetting(void)
 			gSubMenuSelection = gDTMF_chosen_contact + 1;
 			break;
 #endif
-		case MENU_D_LIVE_DEC:
-			gSubMenuSelection = gSetting_live_DTMF_decoder;
-			break;
 
 		case MENU_PONMSG:
 			gSubMenuSelection = gEeprom.POWER_ON_DISPLAY_MODE;
-			break;
-
-		case MENU_ROGER:
-			gSubMenuSelection = 0;
 			break;
 
 		case MENU_AM:
@@ -1948,27 +1804,6 @@ static void MENU_Key_0_to_9(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 		return;
 	}
 
-	if (UI_MENU_GetCurrentMenuId() == MENU_OFFSET) {
-		uint32_t Frequency;
-
-		if (gInputBoxIndex < 6) { // invalid frequency
-#ifdef ENABLE_VOICE
-			gAnotherVoiceID = (VOICE_ID_t)Key;
-#endif
-			return;
-		}
-
-#ifdef ENABLE_VOICE
-		gAnotherVoiceID = (VOICE_ID_t)Key;
-#endif
-
-		Frequency = StrToUL(INPUTBOX_GetAscii())*100;
-		gSubMenuSelection = FREQUENCY_RoundToStep(Frequency, gTxVfo->StepFrequency);
-
-		gInputBoxIndex = 0;
-		return;
-	}
-
 
 
 #ifdef ENABLE_ARDF
@@ -1995,7 +1830,6 @@ static void MENU_Key_0_to_9(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 
 	if (UI_MENU_GetCurrentMenuId() == MENU_MEM_CH ||
 		UI_MENU_GetCurrentMenuId() == MENU_DEL_CH ||
-		UI_MENU_GetCurrentMenuId() == MENU_1_CALL ||
 		UI_MENU_GetCurrentMenuId() == MENU_MEM_NAME)
 	{	// enter 3-digit channel number
 
@@ -2069,19 +1903,14 @@ static void MENU_Key_EXIT(bool bKeyPressed, bool bKeyHeld)
 
 		if (gIsInSubMenu)
 		{
-			if (gInputBoxIndex == 0 || UI_MENU_GetCurrentMenuId() != MENU_OFFSET)
-			{
-				gAskForConfirmation = 0;
-				gIsInSubMenu        = false;
-				gInputBoxIndex      = 0;
-				gFlagRefreshSetting = true;
+			gAskForConfirmation = 0;
+			gIsInSubMenu        = false;
+			gInputBoxIndex      = 0;
+			gFlagRefreshSetting = true;
 
-				#ifdef ENABLE_VOICE
-					gAnotherVoiceID = VOICE_ID_CANCEL;
-				#endif
-			}
-			else
-				gInputBox[--gInputBoxIndex] = 10;
+			#ifdef ENABLE_VOICE
+				gAnotherVoiceID = VOICE_ID_CANCEL;
+			#endif
 
 			// ***********************
 
@@ -2138,13 +1967,10 @@ static void MENU_Key_MENU(const bool bKeyPressed, const bool bKeyHeld)
 		#ifdef ENABLE_VOICE
 			MENU_PlayCurrentMenuVoice();
 		#endif
-        if (UI_MENU_GetCurrentMenuId() == MENU_UPCODE 
-			|| UI_MENU_GetCurrentMenuId() == MENU_DWCODE 
-#ifdef ENABLE_DTMF_CALLING 
-			|| UI_MENU_GetCurrentMenuId() == MENU_ANI_ID
-#endif
-			)
+#ifdef ENABLE_DTMF_CALLING
+        if (UI_MENU_GetCurrentMenuId() == MENU_ANI_ID)
             return;
+#endif
 		#if 1
 			if (UI_MENU_GetCurrentMenuId() == MENU_DEL_CH || UI_MENU_GetCurrentMenuId() == MENU_MEM_NAME)
 				if (!RADIO_CheckValidChannel(gSubMenuSelection, false, 0))
@@ -2392,23 +2218,6 @@ static void MENU_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
 		return;
 	}
 
-	if (UI_MENU_GetCurrentMenuId() == MENU_OFFSET) {
-		int32_t Offset = (Direction * gTxVfo->StepFrequency) + gSubMenuSelection;
-		if (Offset < 99999990) {
-			if (Offset < 0)
-				Offset = 99999990;
-		}
-		else
-			Offset = 0;
-
-		gSubMenuSelection     = FREQUENCY_RoundToStep(Offset, gTxVfo->StepFrequency);
-		gRequestDisplayScreen = DISPLAY_MENU;
-#ifdef ENABLE_VOICE
-		MENU_PlayValueVoice(UI_MENU_GetCurrentMenuId(), gSubMenuSelection);
-#endif
-		return;
-	}
-
 
 #ifdef ENABLE_ARDF
 
@@ -2461,7 +2270,6 @@ static void MENU_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
 	switch (UI_MENU_GetCurrentMenuId())
 	{
 		case MENU_DEL_CH:
-		case MENU_1_CALL:
 		case MENU_MEM_NAME:
 			bCheckScanList = false;
 			break;

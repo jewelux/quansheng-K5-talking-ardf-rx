@@ -125,15 +125,10 @@ void Main(void)
 
 	const BOOT_Mode_t  BootMode = BOOT_GetMode();
 
-	if (BootMode == BOOT_MODE_F_LOCK)
-	{
-		gF_LOCK = true;            // flag to say include the hidden menu items
-	}
-
 	// count the number of menu items
 	gMenuListCount = 0;
 	while (MenuList[gMenuListCount].name[0] != '\0') {
-		if(!gF_LOCK && MenuList[gMenuListCount].menu_id == FIRST_HIDDEN_MENU_ITEM)
+		if(MenuList[gMenuListCount].menu_id == FIRST_HIDDEN_MENU_ITEM)
 			break;
 
 		gMenuListCount++;

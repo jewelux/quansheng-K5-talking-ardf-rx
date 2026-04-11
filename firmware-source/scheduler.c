@@ -99,7 +99,6 @@ void SystickHandler(void)
 		if (gCurrentFunction != FUNCTION_MONITOR)
 			DECREMENT_AND_TRIGGER(gScanPauseDelayIn_10ms, gScheduleScanListen);
 
-	DECREMENT_AND_TRIGGER(gTailToneEliminationCountdown_10ms, gFlagTailToneEliminationComplete);
 
 #ifdef ENABLE_VOICE
 	DECREMENT_AND_TRIGGER(gCountdownToPlayNextVoice_10ms, gFlagPlayQueuedVoice);

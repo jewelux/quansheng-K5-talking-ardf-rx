@@ -33,17 +33,6 @@ enum POWER_OnDisplayMode_t {
 };
 typedef enum POWER_OnDisplayMode_t POWER_OnDisplayMode_t;
 
-enum TxLockModes_t {
-	F_LOCK_DEF, //all default frequencies + configurable
-	F_LOCK_FCC,
-	F_LOCK_CE,
-	F_LOCK_GB,
-	F_LOCK_430,
-	F_LOCK_438,
-	F_LOCK_ALL,	// disable TX on all frequencies
-	F_LOCK_NONE, // enable TX on all frequencies
-	F_LOCK_LEN
-};
 
 enum {
 	SCAN_RESUME_TO = 0,
@@ -51,11 +40,6 @@ enum {
 	SCAN_RESUME_SE
 };
 
-enum {
-	CROSS_BAND_OFF = 0,
-	CROSS_BAND_CHAN_A,
-	CROSS_BAND_CHAN_B
-};
 
 enum {
 	DUAL_WATCH_OFF = 0,
@@ -108,18 +92,6 @@ enum ACTION_OPT_t {
 	typedef enum VOICE_Prompt_t VOICE_Prompt_t;
 #endif
 
-enum ALARM_Mode_t {
-	ALARM_MODE_SITE = 0,
-	ALARM_MODE_TONE
-};
-typedef enum ALARM_Mode_t ALARM_Mode_t;
-
-enum ROGER_Mode_t {
-	ROGER_MODE_OFF = 0,
-	ROGER_MODE_ROGER,
-	ROGER_MODE_MDC
-};
-typedef enum ROGER_Mode_t ROGER_Mode_t;
 
 enum CHANNEL_DisplayMode_t {
 	MDF_FREQUENCY = 0,
@@ -158,7 +130,6 @@ typedef struct {
 #endif
 
 	uint8_t               SQUELCH_LEVEL;
-	uint8_t               TX_TIMEOUT_TIMER;
 	bool                  KEY_LOCK;
 	bool                  VOX_SWITCH;
 	uint8_t               VOX_LEVEL;
@@ -167,10 +138,8 @@ typedef struct {
 #endif
 	bool                  BEEP_CONTROL;
 	uint8_t               CHANNEL_DISPLAY_MODE;
-	bool                  TAIL_TONE_ELIMINATION;
 	bool                  VFO_OPEN;
 	uint8_t               DUAL_WATCH;
-	uint8_t               CROSS_BAND_RX_TX;
 	uint8_t               BATTERY_SAVE;
 	uint8_t               BACKLIGHT_TIME;
 	uint8_t               SCAN_RESUME_MODE;
@@ -186,12 +155,7 @@ typedef struct {
 	uint8_t               field38_0x33;
 
 	bool                  AUTO_KEYPAD_LOCK;
-#if defined(ENABLE_ALARM) || defined(ENABLE_TX1750)
-	ALARM_Mode_t      ALARM_MODE;
-#endif
 	POWER_OnDisplayMode_t POWER_ON_DISPLAY_MODE;
-	ROGER_Mode_t          ROGER;
-	uint8_t               REPEATER_TAIL_TONE_ELIMINATION;
 	uint8_t               KEY_1_SHORT_PRESS_ACTION;
 	uint8_t               KEY_1_LONG_PRESS_ACTION;
 	uint8_t               KEY_2_SHORT_PRESS_ACTION;

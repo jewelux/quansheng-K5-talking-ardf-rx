@@ -70,8 +70,6 @@ void COMMON_SwitchVFOs()
 
     gEeprom.TX_VFO ^= 1;
 
-    if (gEeprom.CROSS_BAND_RX_TX != CROSS_BAND_OFF)
-        gEeprom.CROSS_BAND_RX_TX = gEeprom.TX_VFO + 1;
     if (gEeprom.DUAL_WATCH != DUAL_WATCH_OFF)
         gEeprom.DUAL_WATCH = gEeprom.TX_VFO + 1;
 

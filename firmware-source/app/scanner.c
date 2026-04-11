@@ -371,7 +371,6 @@ void SCANNER_Start(bool singleFreq)
 void SCANNER_Stop(void)
 {
 	if(SCANNER_IsScanning()) {
-		gEeprom.CROSS_BAND_RX_TX = gBackup_CROSS_BAND_RX_TX;
 		gVfoConfigureMode        = VFO_CONFIGURE_RELOAD;
 		gFlagResetVfos           = true;
 		gUpdateStatus            = true;

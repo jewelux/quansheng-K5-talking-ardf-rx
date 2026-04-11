@@ -1715,7 +1715,7 @@ void BK4819_PrepareFSKReceive(void)
 	BK4819_WriteRegister(BK4819_REG_59, 0x3068);
 }
 
-static void BK4819_PlayRogerNormal(void)
+static void __attribute__((unused)) BK4819_PlayRogerNormal(void)
 {
 	#if 0
 		const uint32_t tone1_Hz = 500;
@@ -1802,11 +1802,6 @@ void BK4819_PlayRogerMDC(void)
 
 void BK4819_PlayRoger(void)
 {
-	if (gEeprom.ROGER == ROGER_MODE_ROGER) {
-		BK4819_PlayRogerNormal();
-	} else if (gEeprom.ROGER == ROGER_MODE_MDC) {
-		BK4819_PlayRogerMDC();
-	}
 }
 
 void BK4819_Enable_AfDac_DiscMode_TxDsp(void)

@@ -146,12 +146,6 @@ void RADIO_ConfigureChannel(const unsigned int VFO, const unsigned int configure
 		{
 			RADIO_InitInfo(pVfo, gEeprom.ScreenChannel[VFO], NoaaFrequencyTable[channel - NOAA_CHANNEL_FIRST]);
 
-			if (gEeprom.CROSS_BAND_RX_TX == CROSS_BAND_OFF)
-				return;
-
-			gEeprom.CROSS_BAND_RX_TX = CROSS_BAND_OFF;
-
-			gUpdateStatus = true;
 			return;
 		}
 #endif
@@ -513,13 +507,13 @@ static void RADIO_SelectCurrentVfo(void)
 	// otherwise it is set to gRxVfo which is set to gTxVfo in RADIO_SelectVfos
 	// so in the end gCurrentVfo is equal to gTxVfo unless dual watch changes it on incomming transmition (again, this can only happen when XB off)
 	// note: it is called only in certain situations so could be not up-to-date
- 	gCurrentVfo = (gEeprom.CROSS_BAND_RX_TX == CROSS_BAND_OFF || gEeprom.DUAL_WATCH != DUAL_WATCH_OFF) ? gRxVfo : gTxVfo;
+ 	gCurrentVfo = gRxVfo;
 }
 
 void RADIO_SelectVfos(void)
 {
 	// if crossband without DW is used then RX_VFO is the opposite to the TX_VFO
-	gEeprom.RX_VFO = (gEeprom.CROSS_BAND_RX_TX == CROSS_BAND_OFF || gEeprom.DUAL_WATCH != DUAL_WATCH_OFF) ? gEeprom.TX_VFO : !gEeprom.TX_VFO;
+	gEeprom.RX_VFO = gEeprom.TX_VFO;
 
 	gTxVfo = &gEeprom.VfoInfo[gEeprom.TX_VFO];
 	gRxVfo = &gEeprom.VfoInfo[gEeprom.RX_VFO];
@@ -852,7 +846,7 @@ void RADIO_SetVfoState(VfoState_t State)
 		VfoState[1] = VFO_STATE_TX_DISABLE;
 	} else {
 		// 1of11
-		const unsigned int vfo = (gEeprom.CROSS_BAND_RX_TX == CROSS_BAND_OFF) ? gEeprom.RX_VFO : gEeprom.TX_VFO;
+		const unsigned int vfo = gEeprom.RX_VFO;
 		VfoState[vfo] = State;
 	}
 

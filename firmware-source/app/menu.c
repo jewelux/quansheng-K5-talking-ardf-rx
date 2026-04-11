@@ -910,7 +910,6 @@ void MENU_AcceptSetting(void)
 			{
 				// an ARDF mode was switched on. make sure to use RxMode MAIN_ONLY!
 				gEeprom.DUAL_WATCH = DUAL_WATCH_OFF;
-				gEeprom.CROSS_BAND_RX_TX = CROSS_BAND_OFF;
 
 				gVfoConfigureMode    = VFO_CONFIGURE;
 				gFlagReconfigureVfos = true;
@@ -1209,7 +1208,6 @@ void MENU_AcceptSetting(void)
 
 		case MENU_TDR:
 			gEeprom.DUAL_WATCH = (gEeprom.TX_VFO + 1) * (gSubMenuSelection & 1);
-			gEeprom.CROSS_BAND_RX_TX = (gEeprom.TX_VFO + 1) * ((gSubMenuSelection & 2) > 0);
 
 			gFlagReconfigureVfos = true;
 			gUpdateStatus        = true;
@@ -1220,7 +1218,6 @@ void MENU_AcceptSetting(void)
 			break;
 
 		case MENU_TOT:
-			gEeprom.TX_TIMEOUT_TIMER = gSubMenuSelection;
 			break;
 
 		#ifdef ENABLE_VOICE
@@ -1262,11 +1259,9 @@ void MENU_AcceptSetting(void)
 			return;
 
 		case MENU_STE:
-			gEeprom.TAIL_TONE_ELIMINATION = gSubMenuSelection;
 			break;
 
 		case MENU_RP_STE:
-			gEeprom.REPEATER_TAIL_TONE_ELIMINATION = gSubMenuSelection;
 			break;
 
 		case MENU_MIC:
@@ -1299,7 +1294,6 @@ void MENU_AcceptSetting(void)
 
 		#ifdef ENABLE_ALARM
 			case MENU_AL_MOD:
-				gEeprom.ALARM_MODE = gSubMenuSelection;
 				break;
 		#endif
 
@@ -1365,7 +1359,6 @@ void MENU_AcceptSetting(void)
 			break;
 
 		case MENU_ROGER:
-			gEeprom.ROGER = gSubMenuSelection;
 			break;
 
 		case MENU_AM:
@@ -1399,27 +1392,14 @@ void MENU_AcceptSetting(void)
 			return;
 
 		case MENU_350TX:
-			gSetting_350TX = gSubMenuSelection;
 			break;
 
-		case MENU_F_LOCK: {
-			if(gSubMenuSelection == F_LOCK_NONE) { // select 10 times to enable
-				gUnlockAllTxConfCnt++;
-				if(gUnlockAllTxConfCnt < 10)
-					return;
-			}
-			else
-				gUnlockAllTxConfCnt = 0;
-
-			gSetting_F_LOCK = gSubMenuSelection;
+		case MENU_F_LOCK:
 			break;
-		}
 		case MENU_200TX:
-			gSetting_200TX = gSubMenuSelection;
 			break;
 
 		case MENU_500TX:
-			gSetting_500TX = gSubMenuSelection;
 			break;
 
 		case MENU_350EN:
@@ -1705,7 +1685,7 @@ void MENU_ShowCurrentSetting(void)
 			break;
 
 		case MENU_TDR:
-			gSubMenuSelection = (gEeprom.DUAL_WATCH != DUAL_WATCH_OFF) + (gEeprom.CROSS_BAND_RX_TX != CROSS_BAND_OFF) * 2;
+			gSubMenuSelection = (gEeprom.DUAL_WATCH != DUAL_WATCH_OFF);
 			break;
 
 		case MENU_BEEP:
@@ -1713,7 +1693,7 @@ void MENU_ShowCurrentSetting(void)
 			break;
 
 		case MENU_TOT:
-			gSubMenuSelection = gEeprom.TX_TIMEOUT_TIMER;
+			gSubMenuSelection = 0;
 			break;
 
 		#ifdef ENABLE_VOICE
@@ -1747,11 +1727,11 @@ void MENU_ShowCurrentSetting(void)
 			break;
 
 		case MENU_STE:
-			gSubMenuSelection = gEeprom.TAIL_TONE_ELIMINATION;
+			gSubMenuSelection = 0;
 			break;
 
 		case MENU_RP_STE:
-			gSubMenuSelection = gEeprom.REPEATER_TAIL_TONE_ELIMINATION;
+			gSubMenuSelection = 0;
 			break;
 
 		case MENU_MIC:
@@ -1786,7 +1766,7 @@ void MENU_ShowCurrentSetting(void)
 
 		#ifdef ENABLE_ALARM
 			case MENU_AL_MOD:
-				gSubMenuSelection = gEeprom.ALARM_MODE;
+				gSubMenuSelection = 0;
 				break;
 		#endif
 
@@ -1833,7 +1813,7 @@ void MENU_ShowCurrentSetting(void)
 			break;
 
 		case MENU_ROGER:
-			gSubMenuSelection = gEeprom.ROGER;
+			gSubMenuSelection = 0;
 			break;
 
 		case MENU_AM:
@@ -1860,19 +1840,19 @@ void MENU_ShowCurrentSetting(void)
 			break;
 
 		case MENU_350TX:
-			gSubMenuSelection = gSetting_350TX;
+			gSubMenuSelection = 0;
 			break;
 
 		case MENU_F_LOCK:
-			gSubMenuSelection = gSetting_F_LOCK;
+			gSubMenuSelection = 0;
 			break;
 
 		case MENU_200TX:
-			gSubMenuSelection = gSetting_200TX;
+			gSubMenuSelection = 0;
 			break;
 
 		case MENU_500TX:
-			gSubMenuSelection = gSetting_500TX;
+			gSubMenuSelection = 0;
 			break;
 
 		case MENU_350EN:

@@ -251,11 +251,6 @@ static void HandleReceive(void)
 
 	uint8_t Mode = END_OF_RX_MODE_SKIP;
 
-	if (gFlagTailToneEliminationComplete) {
-		Mode = END_OF_RX_MODE_END;
-		goto Skip;
-	}
-
 	if (gScanStateDir != SCAN_OFF && IS_FREQ_CHANNEL(gNextMrChannel)) { // we are scanning in the frequency mode
 		if (g_SquelchLost)
 			return;
@@ -344,15 +339,7 @@ static void HandleReceive(void)
 	else
 		Mode = END_OF_RX_MODE_END;
 
-	if (!gEndOfRxDetectedMaybe         &&
-	     Mode == END_OF_RX_MODE_SKIP   &&
-	     gNextTimeslice40ms            &&
-	     gEeprom.TAIL_TONE_ELIMINATION &&
-	     (gCurrentCodeType == CODE_TYPE_DIGITAL || gCurrentCodeType == CODE_TYPE_REVERSE_DIGITAL) &&
-	     BK4819_GetCTCType() == 1)
-		Mode = END_OF_RX_MODE_TTE;
-	else
-		gNextTimeslice40ms = false;
+	gNextTimeslice40ms = false;
 
 Skip:
 	switch (Mode) {
@@ -387,14 +374,6 @@ Skip:
 			break;
 
 		case END_OF_RX_MODE_TTE:
-			if (gEeprom.TAIL_TONE_ELIMINATION) {
-				AUDIO_AudioPathOff();
-
-				gTailToneEliminationCountdown_10ms = 20;
-				gFlagTailToneEliminationComplete   = false;
-				gEndOfRxDetectedMaybe = true;
-				gEnableSpeaker        = false;
-			}
 			break;
 	}
 }
@@ -468,9 +447,7 @@ void APP_StartListening(FUNCTION_Type_t function)
 		gDualWatchCountdown_10ms = dual_watch_count_after_2_10ms;
 		gScheduleDualWatch       = false;
 
-		// when crossband is active only the main VFO should be used for TX
-		if(gEeprom.CROSS_BAND_RX_TX == CROSS_BAND_OFF)
-			gRxVfoIsActive = true;
+		gRxVfoIsActive = true;
 
 		// let the user see DW is not active
 		gDualWatchActive = false;
@@ -1420,8 +1397,6 @@ static void ALARM_Off(void)
 	AUDIO_AudioPathOff();
 	gEnableSpeaker = false;
 
-	gAlarmState = ALARM_STATE_OFF;
-
 #ifdef ENABLE_VOX
 	gVoxResumeCountdown = 80;
 #endif
@@ -1481,8 +1456,7 @@ static void ProcessKey(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 	}
 	else { // key pressed or held
 		const int m = UI_MENU_GetCurrentMenuId();
-		if 	(	//not when PTT and the backlight shouldn't turn on on TX
-				!(Key == KEY_PTT && !(gSetting_backlight_on_tx_rx & BACKLIGHT_ON_TR_TX))
+		if 	(	Key != KEY_PTT
 				// not in the backlight menu
 				&& !(gScreenToDisplay == DISPLAY_MENU && ( m == MENU_ABR || m == MENU_ABR_MAX || m == MENU_ABR_MIN))
 			)

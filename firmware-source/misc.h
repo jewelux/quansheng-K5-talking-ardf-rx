@@ -57,13 +57,6 @@ enum {
 	VFO_CONFIGURE_RELOAD
 };
 
-enum AlarmState_t {
-	ALARM_STATE_OFF = 0,
-	ALARM_STATE_TXALARM,
-	ALARM_STATE_SITE_ALARM,
-	ALARM_STATE_TX1750
-};
-typedef enum AlarmState_t AlarmState_t;
 
 enum ReceptionMode_t {
 	RX_MODE_NONE = 0,   // squelch close ?
@@ -73,10 +66,8 @@ enum ReceptionMode_t {
 typedef enum ReceptionMode_t ReceptionMode_t;
 
 enum BacklightOnRxTx_t {
-	BACKLIGHT_ON_TR_OFF,
-	BACKLIGHT_ON_TR_TX,
-	BACKLIGHT_ON_TR_RX,
-	BACKLIGHT_ON_TR_TXRX
+	BACKLIGHT_ON_TR_OFF = 0,
+	BACKLIGHT_ON_TR_RX  = 2,
 };
 
 extern const uint8_t         fm_radio_countdown_500ms;
@@ -117,7 +108,6 @@ extern const uint16_t        NOAA_countdown_10ms;
 extern const uint16_t        NOAA_countdown_2_10ms;
 extern const uint16_t        NOAA_countdown_3_10ms;
 
-extern const uint16_t        dual_watch_count_after_tx_10ms;
 extern const uint16_t        dual_watch_count_after_rx_10ms;
 extern const uint16_t        dual_watch_count_after_1_10ms;
 extern const uint16_t        dual_watch_count_after_2_10ms;
@@ -140,14 +130,10 @@ extern const uint16_t        scan_pause_delay_in_7_10ms;
 
 extern const uint8_t         gMicGain_dB2[5];
 
-extern bool                  gSetting_350TX;
 #ifdef ENABLE_DTMF_CALLING
 extern bool                  gSetting_KILLED;
 #endif
-extern bool                  gSetting_200TX;
-extern bool                  gSetting_500TX;
 extern bool                  gSetting_350EN;
-extern uint8_t               gSetting_F_LOCK;
 extern bool                  gSetting_ScrambleEnable;
 
 #ifdef ENABLE_ARDF
@@ -206,10 +192,6 @@ extern volatile uint8_t      gSerialConfigCountDown_500ms;
 
 extern volatile bool         gNextTimeslice_500ms;
 
-extern volatile uint16_t     gTxTimerCountdown_500ms;
-extern volatile bool         gTxTimeoutReached;
-
-extern volatile uint16_t     gTailToneEliminationCountdown_10ms;
 
 #ifdef ENABLE_NOAA
 	extern volatile uint16_t gNOAA_Countdown_10ms;
@@ -217,7 +199,6 @@ extern volatile uint16_t     gTailToneEliminationCountdown_10ms;
 extern bool                  gEnableSpeaker;
 extern uint8_t               gKeyInputCountdown;
 extern uint8_t               gKeyLockCountdown;
-extern uint8_t               gRTTECountdown_10ms;
 extern bool                  bIsInLockScreen;
 extern uint8_t               gUpdateStatus;
 extern uint8_t               gFoundCTCSS;
@@ -245,7 +226,6 @@ enum
 extern volatile bool     gScheduleScanListen;
 extern volatile uint16_t gScanPauseDelayIn_10ms;
 
-extern AlarmState_t          gAlarmState;
 extern uint16_t              gMenuCountdown;
 extern bool                  gPttWasReleased;
 extern bool                  gPttWasPressed;
@@ -259,7 +239,6 @@ extern bool                  gRequestSaveSettings;
 	extern bool              gRequestSaveFM;
 #endif
 extern uint8_t               gKeypadLocked;
-extern bool                  gFlagPrepareTX;
 
 extern bool                  gFlagAcceptSetting;   // accept menu setting
 extern bool                  gFlagRefreshSetting;  // refresh menu display
@@ -283,19 +262,15 @@ extern bool                  g_SquelchLost;
 
 extern volatile uint16_t     gFlashLightBlinkCounter;
 
-extern bool                  gFlagEndTransmission;
 extern uint8_t               gNextMrChannel;
 extern ReceptionMode_t       gRxReceptionMode;
 
  //TRUE when dual watch is momentarly suspended and RX_VFO is locked to either last TX or RX
 extern bool                  gRxVfoIsActive;
-extern uint8_t               gAlarmToneCounter;
-extern uint16_t              gAlarmRunningCounter;
 extern bool                  gKeyBeingHeld;
 extern bool                  gPttIsPressed;
 extern uint8_t               gPttDebounceCounter;
 extern uint8_t               gMenuListCount;
-extern uint8_t               gBackup_CROSS_BAND_RX_TX;
 extern uint8_t               gScanDelay_10ms;
 extern uint8_t               gFSKWriteIndex;
 #ifdef ENABLE_NOAA
@@ -304,7 +279,6 @@ extern uint8_t               gFSKWriteIndex;
 #endif
 extern volatile bool         gNextTimeslice;
 extern bool                  gUpdateDisplay;
-extern bool                  gF_LOCK;
 #ifdef ENABLE_FMRADIO
 	extern uint8_t           gFM_ChannelPosition;
 #endif
@@ -319,7 +293,6 @@ extern volatile bool         gNextTimeslice40ms;
 	extern volatile uint16_t gNOAACountdown_10ms;
 	extern volatile bool     gScheduleNOAA;
 #endif
-extern volatile bool         gFlagTailToneEliminationComplete;
 extern volatile uint8_t      gVFOStateResumeCountdown_500ms;
 #ifdef ENABLE_FMRADIO
 	extern volatile bool     gScheduleFM;

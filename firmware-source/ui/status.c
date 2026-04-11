@@ -133,7 +133,7 @@ void UI_DisplayStatus()
 #endif
 
 	if(!SCANNER_IsScanning()) {
-		uint8_t dw = (gEeprom.DUAL_WATCH != DUAL_WATCH_OFF) + (gEeprom.CROSS_BAND_RX_TX != CROSS_BAND_OFF) * 2;
+		uint8_t dw = (gEeprom.DUAL_WATCH != DUAL_WATCH_OFF);
 		if(dw == 1 || dw == 3) { // DWR - dual watch + respond
 			if(gDualWatchActive)
 				memcpy(line + x + (dw==1?0:2), BITMAP_TDR1, sizeof(BITMAP_TDR1) - (dw==1?0:5));

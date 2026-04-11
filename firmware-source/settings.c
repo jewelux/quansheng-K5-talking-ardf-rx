@@ -51,7 +51,6 @@ void SETTINGS_InitEEPROM(void)
 	EEPROM_ReadBuffer(0x0E70, Data, 8);
 	gEeprom.CHAN_1_CALL          = IS_MR_CHANNEL(Data[0]) ? Data[0] : MR_CHANNEL_FIRST;
 	gEeprom.SQUELCH_LEVEL        = (Data[1] < 10) ? Data[1] : 1;
-	gEeprom.TX_TIMEOUT_TIMER     = (Data[2] < 11) ? Data[2] : 1;
 	#ifdef ENABLE_NOAA
 		gEeprom.NOAA_AUTO_SCAN   = (Data[3] <  2) ? Data[3] : false;
 	#endif
@@ -70,11 +69,9 @@ void SETTINGS_InitEEPROM(void)
 	gEeprom.BACKLIGHT_MIN_STAT	  = BLMIN_STAT_ON;
 #endif
 	gEeprom.CHANNEL_DISPLAY_MODE  = (Data[1] < 4) ? Data[1] : MDF_FREQUENCY;    // 4 instead of 3 - extra display mode
-	gEeprom.CROSS_BAND_RX_TX      = (Data[2] < 3) ? Data[2] : CROSS_BAND_OFF;
 	gEeprom.BATTERY_SAVE          = (Data[3] < 5) ? Data[3] : 4;
 	gEeprom.DUAL_WATCH            = (Data[4] < 3) ? Data[4] : DUAL_WATCH_CHAN_A;
 	gEeprom.BACKLIGHT_TIME        = (Data[5] < ARRAY_SIZE(gSubMenu_BACKLIGHT)) ? Data[5] : 3;
-	gEeprom.TAIL_TONE_ELIMINATION = (Data[6] < 2) ? Data[6] : false;
 	gEeprom.VFO_OPEN              = (Data[7] < 2) ? Data[7] : true;
 
 	// 0E80..0E87
@@ -156,11 +153,6 @@ void SETTINGS_InitEEPROM(void)
 
 	// 0EA8..0EAF
 	EEPROM_ReadBuffer(0x0EA8, Data, 8);
-	#ifdef ENABLE_ALARM
-		gEeprom.ALARM_MODE                 = (Data[0] <  2) ? Data[0] : true;
-	#endif
-	gEeprom.ROGER                          = (Data[1] <  3) ? Data[1] : ROGER_MODE_OFF;
-	gEeprom.REPEATER_TAIL_TONE_ELIMINATION = (Data[2] < 11) ? Data[2] : 0;
 	gEeprom.TX_VFO                         = (Data[3] <  2) ? Data[3] : 0;
 	gEeprom.BATTERY_TYPE                   = (Data[4] < BATTERY_TYPE_UNKNOWN) ? Data[4] : BATTERY_TYPE_1600_MAH;
 
@@ -336,13 +328,9 @@ gARDFMistuneFreqRaw = 0;
 	
 	// 0F40..0F47
 	EEPROM_ReadBuffer(0x0F40, Data, 8);
-	gSetting_F_LOCK            = (Data[0] < F_LOCK_LEN) ? Data[0] : F_LOCK_DEF;
-	gSetting_350TX             = (Data[1] < 2) ? Data[1] : false;  // was true
 #ifdef ENABLE_DTMF_CALLING
 	gSetting_KILLED            = (Data[2] < 2) ? Data[2] : false;
 #endif
-	gSetting_200TX             = (Data[3] < 2) ? Data[3] : false;
-	gSetting_500TX             = (Data[4] < 2) ? Data[4] : false;
 	gSetting_350EN             = (Data[5] < 2) ? Data[5] : true;
 	gSetting_ScrambleEnable    = (Data[6] < 2) ? Data[6] : true;
 	//gSetting_TX_EN             = (Data[7] & (1u << 0)) ? true : false;
@@ -641,7 +629,7 @@ void SETTINGS_SaveSettings(void)
 
 	State[0] = gEeprom.CHAN_1_CALL;
 	State[1] = gEeprom.SQUELCH_LEVEL;
-	State[2] = gEeprom.TX_TIMEOUT_TIMER;
+	State[2] = 0;
 	#ifdef ENABLE_NOAA
 		State[3] = gEeprom.NOAA_AUTO_SCAN;
 	#else
@@ -660,11 +648,11 @@ void SETTINGS_SaveSettings(void)
 
 	State[0] = (gEeprom.BACKLIGHT_MIN << 4) + gEeprom.BACKLIGHT_MAX;
 	State[1] = gEeprom.CHANNEL_DISPLAY_MODE;
-	State[2] = gEeprom.CROSS_BAND_RX_TX;
+	State[2] = 0;
 	State[3] = gEeprom.BATTERY_SAVE;
 	State[4] = gEeprom.DUAL_WATCH;
 	State[5] = gEeprom.BACKLIGHT_TIME;
-	State[6] = gEeprom.TAIL_TONE_ELIMINATION;
+	State[6] = 0;
 	State[7] = gEeprom.VFO_OPEN;
 	EEPROM_WriteBuffer(0x0E78, State);
 
@@ -697,13 +685,9 @@ void SETTINGS_SaveSettings(void)
 	EEPROM_WriteBuffer(0x0EA0, State);
 
 
-	#if defined(ENABLE_ALARM) || defined(ENABLE_TX1750)
-		State[0] = gEeprom.ALARM_MODE;
-	#else
-		State[0] = false;
-	#endif
-	State[1] = gEeprom.ROGER;
-	State[2] = gEeprom.REPEATER_TAIL_TONE_ELIMINATION;
+	State[0] = 0;
+	State[1] = 0;
+	State[2] = 0;
 	State[3] = gEeprom.TX_VFO;
 	State[4] = gEeprom.BATTERY_TYPE;
 	EEPROM_WriteBuffer(0x0EA8, State);
@@ -739,13 +723,13 @@ void SETTINGS_SaveSettings(void)
 	EEPROM_WriteBuffer(0x0F18, State);
 
 	memset(State, 0xFF, sizeof(State));
-	State[0]  = gSetting_F_LOCK;
-	State[1]  = gSetting_350TX;
+	State[0]  = 0;
+	State[1]  = 0;
 #ifdef ENABLE_DTMF_CALLING
 	State[2]  = gSetting_KILLED;
 #endif
-	State[3]  = gSetting_200TX;
-	State[4]  = gSetting_500TX;
+	State[3]  = 0;
+	State[4]  = 0;
 	State[5]  = gSetting_350EN;
 	State[6]  = gSetting_ScrambleEnable;
 	//if (!gSetting_TX_EN)             State[7] &= ~(1u << 0);

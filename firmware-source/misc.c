@@ -45,7 +45,6 @@ const uint16_t    key_debounce_10ms                =    20 / 10;   // 20ms
 
 const uint8_t     scan_delay_10ms                  =   210 / 10;   // 210ms
 
-const uint16_t    dual_watch_count_after_tx_10ms   =  3600 / 10;   // 3.6 sec after TX ends
 const uint16_t    dual_watch_count_after_rx_10ms   =  1000 / 10;   // 1 sec after RX ends ?
 const uint16_t    dual_watch_count_after_1_10ms    =  5000 / 10;   // 5 sec
 const uint16_t    dual_watch_count_after_2_10ms    =  3600 / 10;   // 3.6 sec
@@ -80,14 +79,10 @@ const uint32_t    gDefaultAesKey[4]                = {0x4AA5CC60, 0x0312CC5F, 0x
 
 const uint8_t     gMicGain_dB2[5]                  = {3, 8, 16, 24, 31};
 
-bool              gSetting_350TX;
 #ifdef ENABLE_DTMF_CALLING
 bool              gSetting_KILLED;
 #endif
-bool              gSetting_200TX;
-bool              gSetting_500TX;
 bool              gSetting_350EN;
-uint8_t           gSetting_F_LOCK;
 bool              gSetting_ScrambleEnable;
 
 #ifdef ENABLE_ARDF
@@ -134,11 +129,6 @@ volatile uint8_t  gSerialConfigCountDown_500ms;
 
 volatile bool     gNextTimeslice_500ms;
 
-volatile uint16_t gTxTimerCountdown_500ms;
-volatile bool     gTxTimeoutReached;
-
-volatile uint16_t gTailToneEliminationCountdown_10ms;
-
 volatile uint8_t    gVFOStateResumeCountdown_500ms;
 
 #ifdef ENABLE_NOAA
@@ -148,7 +138,6 @@ volatile uint8_t    gVFOStateResumeCountdown_500ms;
 bool              gEnableSpeaker;
 uint8_t           gKeyInputCountdown = 0;
 uint8_t           gKeyLockCountdown;
-uint8_t           gRTTECountdown_10ms;
 bool              bIsInLockScreen;
 uint8_t           gUpdateStatus;
 uint8_t           gFoundCTCSS;
@@ -165,9 +154,6 @@ bool     		  gCssBackgroundScan;
 volatile bool     gScheduleScanListen = true;
 volatile uint16_t gScanPauseDelayIn_10ms;
 
-#if defined(ENABLE_ALARM) || defined(ENABLE_TX1750)
-	AlarmState_t  gAlarmState;
-#endif
 uint16_t          gMenuCountdown;
 bool              gPttWasReleased;
 bool              gPttWasPressed;
@@ -181,7 +167,6 @@ bool              gRequestSaveSettings;
 #ifdef ENABLE_FMRADIO
 	bool          gRequestSaveFM;
 #endif
-bool              gFlagPrepareTX;
 
 bool              gFlagAcceptSetting;
 bool              gFlagRefreshSetting;
@@ -203,20 +188,14 @@ bool              g_SquelchLost;
 
 volatile uint16_t gFlashLightBlinkCounter;
 
-bool              gFlagEndTransmission;
 uint8_t           gNextMrChannel;
 ReceptionMode_t   gRxReceptionMode;
 
 bool              gRxVfoIsActive;
-#ifdef ENABLE_ALARM
-	uint8_t       gAlarmToneCounter;
-	uint16_t      gAlarmRunningCounter;
-#endif
 bool              gKeyBeingHeld;
 bool              gPttIsPressed;
 uint8_t           gPttDebounceCounter;
 uint8_t           gMenuListCount;
-uint8_t           gBackup_CROSS_BAND_RX_TX;
 uint8_t           gScanDelay_10ms;
 uint8_t           gFSKWriteIndex;
 
@@ -226,8 +205,6 @@ uint8_t           gFSKWriteIndex;
 #endif
 
 bool              gUpdateDisplay;
-
-bool              gF_LOCK = false;
 
 uint8_t           gShowChPrefix;
 
@@ -242,7 +219,6 @@ volatile bool     gNextTimeslice40ms;
 	volatile uint16_t gNOAACountdown_10ms = 0;
 	volatile bool     gScheduleNOAA       = true;
 #endif
-volatile bool     gFlagTailToneEliminationComplete;
 #ifdef ENABLE_FMRADIO
 	volatile bool gScheduleFM;
 #endif

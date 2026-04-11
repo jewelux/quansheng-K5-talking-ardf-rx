@@ -161,13 +161,8 @@ void     RADIO_SetupRegisters(bool switchToForeground);
 #ifdef ENABLE_NOAA
 	void RADIO_ConfigureNOAA(void);
 #endif
-void     RADIO_SetTxParameters(void);
 void 	 RADIO_SetupAGC(bool listeningAM, bool disable);
 void     RADIO_SetModulation(ModulationMode_t modulation);
 void     RADIO_SetVfoState(VfoState_t State);
-void     RADIO_PrepareTX(void);
-void     RADIO_SendCssTail(void);
-void     RADIO_PrepareCssTX(void);
-void     RADIO_SendEndOfTransmission(void);
 
 #endif

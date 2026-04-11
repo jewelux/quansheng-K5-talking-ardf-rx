@@ -374,7 +374,7 @@ void ACTION_Handle(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 #ifdef ENABLE_FMRADIO
 void ACTION_FM(void)
 {
-	if (gCurrentFunction != FUNCTION_TRANSMIT && gCurrentFunction != FUNCTION_MONITOR)
+	if (gCurrentFunction != FUNCTION_MONITOR)
 	{
 		gInputBoxIndex = 0;
 

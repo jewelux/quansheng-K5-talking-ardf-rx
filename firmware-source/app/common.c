@@ -38,8 +38,7 @@ void COMMON_PlayCurrentVfoVoice(void)
 void COMMON_KeypadLockToggle() 
 {
 
-    if (gScreenToDisplay != DISPLAY_MENU &&
-        gCurrentFunction != FUNCTION_TRANSMIT)
+    if (gScreenToDisplay != DISPLAY_MENU)
     {	// toggle the keyboad lock
 
         #ifdef ENABLE_VOICE

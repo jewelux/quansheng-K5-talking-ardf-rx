@@ -129,36 +129,8 @@ void UI_DisplayAudioBar(void)
 		if(gLowBattery && !gLowBatteryConfirmed)
 			return;
 
-		const unsigned int line      = 3;
-
-		if (gCurrentFunction != FUNCTION_TRANSMIT ||
-			gScreenToDisplay != DISPLAY_MAIN
-#ifdef ENABLE_DTMF_CALLING
-			|| gDTMF_CallState != DTMF_CALL_STATE_NONE
-#endif
-			)
-		{
-			return;  // screen is in use
-		}
-
-#if defined(ENABLE_ALARM) || defined(ENABLE_TX1750)
-		if (gAlarmState != ALARM_STATE_OFF)
-			return;
-#endif
-		const unsigned int voice_amp  = BK4819_GetVoiceAmplitudeOut();  // 15:0
-
-		// make non-linear to make more sensitive at low values
-		const unsigned int level      = MIN(voice_amp * 8, 65535u);
-		const unsigned int sqrt_level = MIN(sqrt16(level), 124u);
-		uint8_t bars = 13 * sqrt_level / 124;
-
-		uint8_t *p_line = gFrameBuffer[line];
-		memset(p_line, 0, LCD_WIDTH);
-
-		DrawLevelBar(62, line, bars);
-
-		if (gCurrentFunction == FUNCTION_TRANSMIT)
-			ST7565_BlitFullScreen();
+		// Audio bar only applies during TX - disabled in RX-only firmware
+		return;
 	}
 }
 #endif
@@ -188,7 +160,7 @@ void DisplayRSSIBar(const bool now)
 	if ((gEeprom.KEY_LOCK && gKeypadLocked > 0) || center_line != CENTER_LINE_RSSI)
 		return;     // display is in use
 
-	if (gCurrentFunction == FUNCTION_TRANSMIT ||
+	if (
 		( (gScreenToDisplay != DISPLAY_MAIN)
 #ifdef	ENABLE_ARDF
                   && (gScreenToDisplay != DISPLAY_ARDF)
@@ -430,24 +402,7 @@ void UI_DisplayMain(void)
 				memcpy(p_line0 + 0, BITMAP_VFO_NotDefault, sizeof(BITMAP_VFO_NotDefault));
 		}
 
-		if (gCurrentFunction == FUNCTION_TRANSMIT)
-		{	// transmitting
-
-#ifdef ENABLE_ALARM
-			if (gAlarmState == ALARM_STATE_SITE_ALARM)
-				mode = VFO_MODE_RX;
-			else
-#endif
-			{
-				if (activeTxVFO == vfo_num)
-				{	// show the TX symbol
-					mode = VFO_MODE_TX;
-					UI_PrintStringSmallBold("TX", 14, 0, line);
-				}
-			}
-		}
-		else
-		{	// receiving .. show the RX symbol
+		{	// show the RX symbol
 			mode = VFO_MODE_RX;
 			if (FUNCTION_IsRx() && gEeprom.RX_VFO == vfo_num) {
 				UI_PrintStringSmallBold("RX", 14, 0, line);
@@ -491,13 +446,6 @@ void UI_DisplayMain(void)
 
 		enum VfoState_t state = VfoState[vfo_num];
 
-#ifdef ENABLE_ALARM
-		if (gCurrentFunction == FUNCTION_TRANSMIT && gAlarmState == ALARM_STATE_SITE_ALARM) {
-			if (activeTxVFO == vfo_num)
-				state = VFO_STATE_ALARM;
-		}
-#endif
-
 		uint32_t frequency = gEeprom.VfoInfo[vfo_num].pRX->Frequency;
 
 		if (state != VFO_STATE_NORMAL)
@@ -529,12 +477,6 @@ void UI_DisplayMain(void)
 		}
 		else
 		{
-			if (gCurrentFunction == FUNCTION_TRANSMIT)
-			{	// transmitting
-				if (activeTxVFO == vfo_num)
-					frequency = gEeprom.VfoInfo[vfo_num].pTX->Frequency;
-			}
-
 			if (IS_MR_CHANNEL(gEeprom.ScreenChannel[vfo_num]))
 			{	// it's a channel
 
@@ -737,14 +679,6 @@ void UI_DisplayMain(void)
 	{	// we're free to use the middle line
 
 		const bool rx = FUNCTION_IsRx();
-
-#ifdef ENABLE_AUDIO_BAR
-		if (gSetting_mic_bar && gCurrentFunction == FUNCTION_TRANSMIT) {
-			center_line = CENTER_LINE_AUDIO_BAR;
-			UI_DisplayAudioBar();
-		}
-		else
-#endif
 
 #if defined(ENABLE_AM_FIX) && defined(ENABLE_AM_FIX_SHOW_DATA)
 		if (rx && gEeprom.VfoInfo[gEeprom.RX_VFO].Modulation == MODULATION_AM && gSetting_AM_fix)

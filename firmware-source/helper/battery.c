@@ -175,12 +175,6 @@ void BATTERY_TimeSlice500ms(void)
 
 	UI_DisplayBattery(0, gLowBatteryBlink);
 
-	if (gCurrentFunction == FUNCTION_TRANSMIT) {
-		return;
-	}
-
-	// not transmitting
-
 	if (lowBatteryCountdown < lowBatteryPeriod) {
 		if (lowBatteryCountdown == lowBatteryPeriod-1 && !gChargingWithTypeC && !gLowBatteryConfirmed) {
 			AUDIO_PlayBeep(BEEP_500HZ_60MS_DOUBLE_BEEP);

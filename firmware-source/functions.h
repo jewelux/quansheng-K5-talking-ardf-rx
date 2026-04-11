@@ -22,12 +22,11 @@
 enum FUNCTION_Type_t
 {
 	FUNCTION_FOREGROUND = 0,  // ???
-	FUNCTION_TRANSMIT,        // transmitting
-	FUNCTION_MONITOR,         // receiving with squelch forced open
-	FUNCTION_INCOMING,        // receiving a signal (squelch is open)
-	FUNCTION_RECEIVE,         // RX mode, squelch closed
-	FUNCTION_POWER_SAVE,      // sleeping
-	FUNCTION_BAND_SCOPE,      // bandscope mode (panadpter/spectrum) .. not yet implemented
+	FUNCTION_MONITOR = 2,     // receiving with squelch forced open
+	FUNCTION_INCOMING = 3,    // receiving a signal (squelch is open)
+	FUNCTION_RECEIVE = 4,     // RX mode, squelch closed
+	FUNCTION_POWER_SAVE = 5,  // sleeping
+	FUNCTION_BAND_SCOPE = 6,  // bandscope mode (panadpter/spectrum) .. not yet implemented
 	FUNCTION_N_ELEM
 };
 

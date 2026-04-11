@@ -408,7 +408,6 @@ static void HandlePowerSave()
 
 static void (*HandleFunction_fn_table[])(void) = {
 	[FUNCTION_FOREGROUND] = &CheckForIncoming,
-	[FUNCTION_TRANSMIT] = &FUNCTION_NOP,
 	[FUNCTION_MONITOR] = &FUNCTION_NOP,
 	[FUNCTION_INCOMING] = &HandleIncoming,
 	[FUNCTION_RECEIVE] = &HandleReceive,
@@ -617,35 +616,33 @@ static void CheckRadioInterrupts(void)
 		if (interrupts.dtmf5ToneFound) {	
 			const char c = DTMF_GetCharacter(BK4819_GetDTMF_5TONE_Code()); // save the RX'ed DTMF character
 			if (c != 0xff) {
-				if (gCurrentFunction != FUNCTION_TRANSMIT) {
-					if (gSetting_live_DTMF_decoder) {
-						size_t len = strlen(gDTMF_RX_live);
-						if (len >= sizeof(gDTMF_RX_live) - 1) { // make room
-							memmove(&gDTMF_RX_live[0], &gDTMF_RX_live[1], sizeof(gDTMF_RX_live) - 1);
-							len--;
-						}
-						gDTMF_RX_live[len++]  = c;
-						gDTMF_RX_live[len]    = 0;
-						gDTMF_RX_live_timeout = DTMF_RX_live_timeout_500ms;  // time till we delete it
-						gUpdateDisplay        = true;
+				if (gSetting_live_DTMF_decoder) {
+					size_t len = strlen(gDTMF_RX_live);
+					if (len >= sizeof(gDTMF_RX_live) - 1) { // make room
+						memmove(&gDTMF_RX_live[0], &gDTMF_RX_live[1], sizeof(gDTMF_RX_live) - 1);
+						len--;
 					}
+					gDTMF_RX_live[len++]  = c;
+					gDTMF_RX_live[len]    = 0;
+					gDTMF_RX_live_timeout = DTMF_RX_live_timeout_500ms;  // time till we delete it
+					gUpdateDisplay        = true;
+				}
 
 #ifdef ENABLE_DTMF_CALLING
-					if (gRxVfo->DTMF_DECODING_ENABLE || gSetting_KILLED) {
-						if (gDTMF_RX_index >= sizeof(gDTMF_RX) - 1) { // make room
-							memmove(&gDTMF_RX[0], &gDTMF_RX[1], sizeof(gDTMF_RX) - 1);
-							gDTMF_RX_index--;
-						}
-						gDTMF_RX[gDTMF_RX_index++] = c;
-						gDTMF_RX[gDTMF_RX_index]   = 0;
-						gDTMF_RX_timeout           = DTMF_RX_timeout_500ms;  // time till we delete it
-						gDTMF_RX_pending           = true;
-						
-						SYSTEM_DelayMs(3);//fix DTMF not reply@Yurisu
-						DTMF_HandleRequest();
+				if (gRxVfo->DTMF_DECODING_ENABLE || gSetting_KILLED) {
+					if (gDTMF_RX_index >= sizeof(gDTMF_RX) - 1) { // make room
+						memmove(&gDTMF_RX[0], &gDTMF_RX[1], sizeof(gDTMF_RX) - 1);
+						gDTMF_RX_index--;
 					}
-#endif
+					gDTMF_RX[gDTMF_RX_index++] = c;
+					gDTMF_RX[gDTMF_RX_index]   = 0;
+					gDTMF_RX_timeout           = DTMF_RX_timeout_500ms;  // time till we delete it
+					gDTMF_RX_pending           = true;
+					
+					SYSTEM_DelayMs(3);//fix DTMF not reply@Yurisu
+					DTMF_HandleRequest();
 				}
+#endif
 			}
 		}
 
@@ -720,19 +717,6 @@ static void CheckRadioInterrupts(void)
 	}
 }
 
-void APP_EndTransmission(void)
-{
-	// back to RX mode
-	RADIO_SendEndOfTransmission();
-
-	gFlagEndTransmission = true;
-
-	if (gMonitor) {
-		 //turn the monitor back on
-		gFlagReconfigureVfos = true;
-	}
-}
-
 #ifdef ENABLE_VOX
 static void HandleVox(void)
 {
@@ -767,26 +751,6 @@ static void HandleVox(void)
 		else if (gVoxStopCountdown_10ms == 0)
 			gVOX_NoiseDetected = false;
 
-		if (gCurrentFunction == FUNCTION_TRANSMIT && !gPttIsPressed && !gVOX_NoiseDetected) {
-			if (gFlagEndTransmission) {
-				//if (gCurrentFunction != FUNCTION_FOREGROUND)
-					FUNCTION_Select(FUNCTION_FOREGROUND);
-			}
-			else {
-				APP_EndTransmission();
-
-				if (gEeprom.REPEATER_TAIL_TONE_ELIMINATION == 0) {
-					//if (gCurrentFunction != FUNCTION_FOREGROUND)
-						FUNCTION_Select(FUNCTION_FOREGROUND);
-				}
-				else
-					gRTTECountdown_10ms = gEeprom.REPEATER_TAIL_TONE_ELIMINATION * 10;
-			}
-
-			gUpdateStatus        = true;
-			gUpdateDisplay       = true;
-			gFlagEndTransmission = false;
-		}
 		return;
 	}
 
@@ -795,14 +759,6 @@ static void HandleVox(void)
 
 		if (gCurrentFunction == FUNCTION_POWER_SAVE)
 			FUNCTION_Select(FUNCTION_FOREGROUND);
-
-		if (gCurrentFunction != FUNCTION_TRANSMIT && !SerialConfigInProgress()) {
-#ifdef ENABLE_DTMF_CALLING
-			gDTMF_ReplyState = DTMF_REPLY_NONE;
-#endif
-			RADIO_PrepareTX();
-			gUpdateDisplay = true;
-		}
 	}
 }
 #endif
@@ -816,24 +772,10 @@ void APP_Update(void)
 	}
 #endif
 
-	if (gCurrentFunction == FUNCTION_TRANSMIT && (gTxTimeoutReached || SerialConfigInProgress()))
-	{	// transmitter timed out or must de-key
-		gTxTimeoutReached = false;
-
-		APP_EndTransmission();
-
-		AUDIO_PlayBeep(BEEP_880HZ_60MS_TRIPLE_BEEP);
-
-		RADIO_SetVfoState(VFO_STATE_TIMEOUT);
-
-		GUI_DisplayScreen();
-	}
-
 	if (gReducedService)
 		return;
 
-	if (gCurrentFunction != FUNCTION_TRANSMIT)
-		HandleFunction();
+	HandleFunction();
 
 #ifdef ENABLE_FMRADIO
 //	if (gFmRadioCountdown_500ms > 0)
@@ -1014,8 +956,7 @@ static void CheckKeys(void)
 #ifdef ENABLE_ARDF
 				if (!SerialConfigInProgress() &&
 				    gSetting_ARDFEnable &&
-				    gARDFDFSimpleMode &&
-				    gCurrentFunction != FUNCTION_TRANSMIT)
+				    gARDFDFSimpleMode)
 				{
 					if (gPttHoldEventSent)
 						ARDF_SnapshotSpeedIncr();
@@ -1175,14 +1116,6 @@ void APP_TimeSlice10ms(void)
 	if (gCurrentFunction != FUNCTION_POWER_SAVE || !gRxIdleMode)
 		CheckRadioInterrupts();
 
-	if (gCurrentFunction == FUNCTION_TRANSMIT)
-	{	// transmitting
-#ifdef ENABLE_AUDIO_BAR
-		if (gSetting_mic_bar && (gFlashLightBlinkCounter % (150 / 10)) == 0) // once every 150ms
-			UI_DisplayAudioBar();
-#endif
-	}
-
 	if (gUpdateDisplay) {
 		gUpdateDisplay = false;
 		GUI_DisplayScreen();
@@ -1209,66 +1142,6 @@ void APP_TimeSlice10ms(void)
 	if (gVoxPauseCountdown > 0)
 		gVoxPauseCountdown--;
 #endif
-
-	if (gCurrentFunction == FUNCTION_TRANSMIT) {
-#ifdef ENABLE_ALARM
-		if (gAlarmState == ALARM_STATE_TXALARM || gAlarmState == ALARM_STATE_SITE_ALARM) {
-			uint16_t Tone;
-
-			gAlarmRunningCounter++;
-			gAlarmToneCounter++;
-
-			Tone = 500 + (gAlarmToneCounter * 25);
-			if (Tone > 1500) {
-				Tone              = 500;
-				gAlarmToneCounter = 0;
-			}
-
-			BK4819_SetScrambleFrequencyControlWord(Tone);
-
-			if (gEeprom.ALARM_MODE == ALARM_MODE_TONE && gAlarmRunningCounter == 512) {
-				gAlarmRunningCounter = 0;
-
-				if (gAlarmState == ALARM_STATE_TXALARM) {
-					gAlarmState = ALARM_STATE_SITE_ALARM;
-
-					if(gEeprom.TAIL_TONE_ELIMINATION)
-						RADIO_SendCssTail();
-					BK4819_SetupPowerAmplifier(0, 0);
-					BK4819_ToggleGpioOut(BK4819_GPIO1_PIN29_PA_ENABLE, false);
-					BK4819_Enable_AfDac_DiscMode_TxDsp();
-					BK4819_ToggleGpioOut(BK4819_GPIO5_PIN1_RED, false);
-
-					GUI_DisplayScreen();
-				}
-				else {
-					gAlarmState = ALARM_STATE_TXALARM;
-
-					GUI_DisplayScreen();
-
-					BK4819_ToggleGpioOut(BK4819_GPIO5_PIN1_RED, true);
-					RADIO_SetTxParameters();
-					BK4819_TransmitTone(true, 500);
-					SYSTEM_DelayMs(2);
-					AUDIO_AudioPathOn();
-
-					gEnableSpeaker    = true;
-					gAlarmToneCounter = 0;
-				}
-			}
-		}
-#endif
-		// repeater tail tone elimination
-		if (gRTTECountdown_10ms > 0) {
-			if (--gRTTECountdown_10ms == 0) {
-				//if (gCurrentFunction != FUNCTION_FOREGROUND)
-					FUNCTION_Select(FUNCTION_FOREGROUND);
-
-				gUpdateStatus  = true;
-				gUpdateDisplay = true;
-			}
-		}
-	}
 
 #ifdef ENABLE_FMRADIO
 	if (gFmRadioMode && gFM_RestoreCountdown_10ms > 0) {
@@ -1413,16 +1286,12 @@ void APP_TimeSlice500ms(void)
 
 	// Skipped authentic device check
 
-	if (gCurrentFunction != FUNCTION_TRANSMIT)
+	if ((gBatteryCheckCounter & 1) == 0)
 	{
-
-		if ((gBatteryCheckCounter & 1) == 0)
-		{
-			BOARD_ADC_GetBatteryInfo(&gBatteryVoltages[gBatteryVoltageIndex++], &gBatteryCurrent);
-			if (gBatteryVoltageIndex > 3)
-				gBatteryVoltageIndex = 0;
-			BATTERY_GetReadings(true);
-		}
+		BOARD_ADC_GetBatteryInfo(&gBatteryVoltages[gBatteryVoltageIndex++], &gBatteryCurrent);
+		if (gBatteryVoltageIndex > 3)
+			gBatteryVoltageIndex = 0;
+		BATTERY_GetReadings(true);
 	}
 
 	// regular display updates (once every 2 sec) - if need be
@@ -1520,17 +1389,13 @@ void APP_TimeSlice500ms(void)
 	UI_MAIN_TimeSlice500ms();
 
 #ifdef ENABLE_DTMF_CALLING
-	if (gCurrentFunction != FUNCTION_TRANSMIT) {
-		if (gDTMF_DecodeRingCountdown_500ms > 0) {
-			// make "ring-ring" sound
-			gDTMF_DecodeRingCountdown_500ms--;
-			AUDIO_PlayBeep(BEEP_880HZ_200MS);
-		}
-	} else {
-		gDTMF_DecodeRingCountdown_500ms = 0;
+	if (gDTMF_DecodeRingCountdown_500ms > 0) {
+		// make "ring-ring" sound
+		gDTMF_DecodeRingCountdown_500ms--;
+		AUDIO_PlayBeep(BEEP_880HZ_200MS);
 	}
 
-	if (gDTMF_CallState  != DTMF_CALL_STATE_NONE && gCurrentFunction != FUNCTION_TRANSMIT
+	if (gDTMF_CallState  != DTMF_CALL_STATE_NONE
 		&& gCurrentFunction != FUNCTION_RECEIVE && gDTMF_auto_reset_time_500ms > 0
 		&& --gDTMF_auto_reset_time_500ms == 0)
 	{
@@ -1554,10 +1419,6 @@ static void ALARM_Off(void)
 {
 	AUDIO_AudioPathOff();
 	gEnableSpeaker = false;
-
-	if (gAlarmState == ALARM_STATE_TXALARM || gAlarmState == ALARM_STATE_TX1750) {
-		RADIO_SendEndOfTransmission();
-	}
 
 	gAlarmState = ALARM_STATE_OFF;
 
@@ -1671,7 +1532,7 @@ static void ProcessKey(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 #endif
 	                      );
 
-	if ((gEeprom.KEY_LOCK || lowBatPopup) && gCurrentFunction != FUNCTION_TRANSMIT && Key != KEY_PTT)
+	if ((gEeprom.KEY_LOCK || lowBatPopup) && Key != KEY_PTT)
 	{	// keyboard is locked or low battery popup
 
 		// close low battery popup
@@ -1739,7 +1600,7 @@ static void ProcessKey(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 	bool bFlag = false;
 
 #ifdef ENABLE_VOICE
-	if (bKeyPressed && !bKeyHeld && gCurrentFunction != FUNCTION_TRANSMIT) {
+	if (bKeyPressed && !bKeyHeld) {
 		if (Key <= KEY_9) {
 			gVoiceWriteIndex             = 0;
 			gVoiceReadIndex              = 0;
@@ -1783,75 +1644,7 @@ static void ProcessKey(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 #ifdef ENABLE_ARDF
 #endif
 
-	if (gCurrentFunction == FUNCTION_TRANSMIT) {
-#if defined(ENABLE_ALARM) || defined(ENABLE_TX1750)
-		if (gAlarmState == ALARM_STATE_OFF)
-#endif
-		{
-			char Code;
-
-			if (Key == KEY_PTT) {
-				GENERIC_Key_PTT(bKeyPressed);
-				goto Skip;
-			}
-
-			if (Key == KEY_SIDE2) { // transmit 1750Hz tone
-				Code = 0xFE;
-			}
-			else {
-				Code = DTMF_GetCharacter(Key - KEY_0);
-				if (Code == 0xFF)
-					goto Skip;
-				// transmit DTMF keys
-			}
-
-			if (!bKeyPressed || bKeyHeld) {
-				if (!bKeyPressed) {
-					AUDIO_AudioPathOff();
-
-					gEnableSpeaker = false;
-
-					BK4819_ExitDTMF_TX(false);
-
-					if (gCurrentVfo->SCRAMBLING_TYPE == 0 || !gSetting_ScrambleEnable)
-						BK4819_DisableScramble();
-					else
-						BK4819_EnableScramble(gCurrentVfo->SCRAMBLING_TYPE - 1);
-				}
-			}
-			else {
-				if (gEeprom.DTMF_SIDE_TONE) { // user will here the DTMF tones in speaker
-					AUDIO_AudioPathOn();
-					gEnableSpeaker = true;
-				}
-
-				BK4819_DisableScramble();
-
-				if (Code == 0xFE)
-					BK4819_TransmitTone(gEeprom.DTMF_SIDE_TONE, 1750);
-				else
-					BK4819_PlayDTMFEx(gEeprom.DTMF_SIDE_TONE, Code);
-			}
-		}
-#if defined(ENABLE_ALARM) || defined(ENABLE_TX1750)
-		else if ((!bKeyHeld && bKeyPressed) || (gAlarmState == ALARM_STATE_TX1750 && bKeyHeld && !bKeyPressed)) {
-			ALARM_Off();
-
-			if (gEeprom.REPEATER_TAIL_TONE_ELIMINATION == 0)
-				FUNCTION_Select(FUNCTION_FOREGROUND);
-			else
-				gRTTECountdown_10ms = gEeprom.REPEATER_TAIL_TONE_ELIMINATION * 10;
-
-			if (Key == KEY_PTT)
-			{
-				gPttWasPressed  = true;
-			}
-			else if (!bKeyHeld)
-				gPttWasReleased = true;
-		}
-#endif
-	}
-	else if (Key != KEY_SIDE1 && Key != KEY_SIDE2 && gScreenToDisplay != DISPLAY_INVALID) {
+	if (Key != KEY_SIDE1 && Key != KEY_SIDE2 && gScreenToDisplay != DISPLAY_INVALID) {
 		ProcessKeysFunctions[gScreenToDisplay](Key, bKeyPressed, bKeyHeld);
 	}
 	else if (!SCANNER_IsScanning()
@@ -1984,11 +1777,6 @@ Skip:
 		gMenuCountdown      = menu_timeout_500ms;
 
 		MENU_ShowCurrentSetting();
-	}
-
-	if (gFlagPrepareTX) {
-		RADIO_PrepareTX();
-		gFlagPrepareTX = false;
 	}
 
 #ifdef ENABLE_VOICE

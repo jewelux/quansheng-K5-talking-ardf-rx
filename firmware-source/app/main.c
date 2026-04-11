@@ -694,7 +694,7 @@ static void MAIN_Key_EXIT(bool bKeyPressed, bool bKeyHeld)
 		gBeepToPlay = BEEP_1KHZ_60MS_OPTIONAL;
 
 #ifdef ENABLE_DTMF_CALLING
-		if (gDTMF_CallState != DTMF_CALL_STATE_NONE && gCurrentFunction != FUNCTION_TRANSMIT)
+		if (gDTMF_CallState != DTMF_CALL_STATE_NONE)
 		{	// clear CALL mode being displayed
 			gDTMF_CallState = DTMF_CALL_STATE_NONE;
 			gUpdateDisplay  = true;
@@ -858,9 +858,6 @@ static void MAIN_Key_MENU(const bool bKeyPressed, const bool bKeyHeld)
 
 static void MAIN_Key_STAR(bool bKeyPressed, bool bKeyHeld)
 {
-	if (gCurrentFunction == FUNCTION_TRANSMIT)
-		return;
-	
 	if (gInputBoxIndex) {
 		if (!bKeyHeld && bKeyPressed)
 			gBeepToPlay = BEEP_500HZ_60MS_DOUBLE_BEEP_OPTIONAL;

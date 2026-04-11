@@ -64,7 +64,6 @@ void SystickHandler(void)
 	if ((gGlobalSysTickCounter % 50) == 0) {
 		gNextTimeslice_500ms = true;
 		
-		DECREMENT_AND_TRIGGER(gTxTimerCountdown_500ms, gTxTimeoutReached);
 		DECREMENT(gSerialConfigCountDown_500ms);
 	}
 
@@ -86,18 +85,18 @@ void SystickHandler(void)
 		DECREMENT_AND_TRIGGER(gPowerSave_10ms, gPowerSaveCountdownExpired);
 
 	if (gScanStateDir == SCAN_OFF && !gCssBackgroundScan && gEeprom.DUAL_WATCH != DUAL_WATCH_OFF)
-		if (gCurrentFunction != FUNCTION_MONITOR && gCurrentFunction != FUNCTION_TRANSMIT && gCurrentFunction != FUNCTION_RECEIVE)
+		if (gCurrentFunction != FUNCTION_MONITOR && gCurrentFunction != FUNCTION_RECEIVE)
 			DECREMENT_AND_TRIGGER(gDualWatchCountdown_10ms, gScheduleDualWatch);
 
 #ifdef ENABLE_NOAA
 	if (gScanStateDir == SCAN_OFF && !gCssBackgroundScan && gEeprom.DUAL_WATCH == DUAL_WATCH_OFF)
-		if (gIsNoaaMode && gCurrentFunction != FUNCTION_MONITOR && gCurrentFunction != FUNCTION_TRANSMIT)
+		if (gIsNoaaMode && gCurrentFunction != FUNCTION_MONITOR)
 			if (gCurrentFunction != FUNCTION_RECEIVE)
 				DECREMENT_AND_TRIGGER(gNOAA_Countdown_10ms, gScheduleNOAA);
 #endif
 
 	if (gScanStateDir != SCAN_OFF)
-		if (gCurrentFunction != FUNCTION_MONITOR && gCurrentFunction != FUNCTION_TRANSMIT)
+		if (gCurrentFunction != FUNCTION_MONITOR)
 			DECREMENT_AND_TRIGGER(gScanPauseDelayIn_10ms, gScheduleScanListen);
 
 	DECREMENT_AND_TRIGGER(gTailToneEliminationCountdown_10ms, gFlagTailToneEliminationComplete);
@@ -108,7 +107,7 @@ void SystickHandler(void)
 
 #ifdef ENABLE_FMRADIO
 	if (gFM_ScanState != FM_SCAN_OFF && gCurrentFunction != FUNCTION_MONITOR)
-		if (gCurrentFunction != FUNCTION_TRANSMIT && gCurrentFunction != FUNCTION_RECEIVE)
+		if (gCurrentFunction != FUNCTION_RECEIVE)
 			DECREMENT_AND_TRIGGER(gFmPlayCountdown_10ms, gScheduleFM);
 #endif
 

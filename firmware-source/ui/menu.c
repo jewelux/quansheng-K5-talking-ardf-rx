@@ -110,7 +110,6 @@ const t_menu_item MenuList[] =
 	{"M Long",    VOICE_ID_INVALID,                    MENU_MLONG         },
 
 	{"KeyLck", VOICE_ID_INVALID,                       MENU_AUTOLK        },
-	{"TxTOut", VOICE_ID_TRANSMIT_OVER_TIME,            MENU_TOT           },
 	{"BatSav", VOICE_ID_SAVE_MODE,                     MENU_SAVE          },
 	{"Mic",    VOICE_ID_INVALID,                       MENU_MIC           },
 #ifdef ENABLE_AUDIO_BAR
@@ -152,9 +151,6 @@ const t_menu_item MenuList[] =
 	// hidden menu items from here on
 	// enabled if pressing both the PTT and upper side button at power-on
 	{"F Lock", VOICE_ID_INVALID,                       MENU_F_LOCK        },
-	{"Tx 200", VOICE_ID_INVALID,                       MENU_200TX         }, // was "200TX"
-	{"Tx 350", VOICE_ID_INVALID,                       MENU_350TX         }, // was "350TX"
-	{"Tx 500", VOICE_ID_INVALID,                       MENU_500TX         }, // was "500TX"
 	{"350 En", VOICE_ID_INVALID,                       MENU_350EN         }, // was "350EN"
 #ifdef ENABLE_F_CAL_MENU
 	{"FrCali", VOICE_ID_INVALID,                       MENU_F_CALI        }, // reference xtal calibration
@@ -207,21 +203,6 @@ const char gSubMenu_SAVE[][4] =
 	"1:2",
 	"1:3",
 	"1:4"
-};
-
-const char gSubMenu_TOT[][7] =
-{
-	"30 sec",
-	"1 min",
-	"2 min",
-	"3 min",
-	"4 min",
-	"5 min",
-	"6 min",
-	"7 min",
-	"8 min",
-	"9 min",
-	"15 min"
 };
 
 const char* const gSubMenu_RXMode[] =
@@ -662,9 +643,6 @@ void UI_DisplayMenu(void)
 		#ifdef ENABLE_NOAA
 			case MENU_NOAA_S:
 		#endif
-		case MENU_350TX:
-		case MENU_200TX:
-		case MENU_500TX:
 		case MENU_350EN:
 			strcpy(String, gSubMenu_OFF_ON[gSubMenuSelection]);
 			break;
@@ -731,10 +709,6 @@ void UI_DisplayMenu(void)
 
 		case MENU_TDR:
 			strcpy(String, gSubMenu_RXMode[gSubMenuSelection]);
-			break;
-
-		case MENU_TOT:
-			strcpy(String, gSubMenu_TOT[gSubMenuSelection]);
 			break;
 
 		#ifdef ENABLE_VOICE

@@ -647,9 +647,6 @@ int MENU_GetLimits(uint8_t menu_id, int32_t *pMin, int32_t *pMax)
 		#ifdef ENABLE_NOAA
 			case MENU_NOAA_S:
 		#endif
-		case MENU_350TX:
-		case MENU_200TX:
-		case MENU_500TX:
 		case MENU_350EN:
 			*pMin = 0;
 			*pMax = ARRAY_SIZE(gSubMenu_OFF_ON) - 1;
@@ -658,11 +655,6 @@ int MENU_GetLimits(uint8_t menu_id, int32_t *pMin, int32_t *pMax)
 		case MENU_AM:
 			*pMin = 0;
 			*pMax = ARRAY_SIZE(gModulationStr) - 1;
-			break;
-
-		case MENU_TOT:
-			*pMin = 0;
-			*pMax = ARRAY_SIZE(gSubMenu_TOT) - 1;
 			break;
 
 		#ifdef ENABLE_VOX
@@ -1142,9 +1134,6 @@ void MENU_AcceptSetting(void)
 			gEeprom.BEEP_CONTROL = gSubMenuSelection;
 			break;
 
-		case MENU_TOT:
-			break;
-
 		#ifdef ENABLE_VOICE
 			case MENU_VOICE:
 				gEeprom.VOICE_PROMPT = gSubMenuSelection;
@@ -1287,15 +1276,7 @@ void MENU_AcceptSetting(void)
 			SETTINGS_FactoryReset(gSubMenuSelection);
 			return;
 
-		case MENU_350TX:
-			break;
-
 		case MENU_F_LOCK:
-			break;
-		case MENU_200TX:
-			break;
-
-		case MENU_500TX:
 			break;
 
 		case MENU_350EN:
@@ -1544,10 +1525,6 @@ void MENU_ShowCurrentSetting(void)
 			gSubMenuSelection = gEeprom.BEEP_CONTROL;
 			break;
 
-		case MENU_TOT:
-			gSubMenuSelection = 0;
-			break;
-
 		#ifdef ENABLE_VOICE
 			case MENU_VOICE:
 				gSubMenuSelection = gEeprom.VOICE_PROMPT;
@@ -1669,19 +1646,7 @@ void MENU_ShowCurrentSetting(void)
 			#endif
 			break;
 
-		case MENU_350TX:
-			gSubMenuSelection = 0;
-			break;
-
 		case MENU_F_LOCK:
-			gSubMenuSelection = 0;
-			break;
-
-		case MENU_200TX:
-			gSubMenuSelection = 0;
-			break;
-
-		case MENU_500TX:
 			gSubMenuSelection = 0;
 			break;
 

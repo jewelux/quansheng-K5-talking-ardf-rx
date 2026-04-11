@@ -35,7 +35,6 @@ enum
 	MENU_STEP,
 	MENU_R_DCS,
 	MENU_R_CTCS,
-	MENU_TOT,
 	MENU_W_N,
 #ifdef ENABLE_ARDF
 	MENU_ARDF,
@@ -104,9 +103,6 @@ enum
 #endif
 	MENU_RESET,
 	MENU_F_LOCK,
-	MENU_200TX,
-	MENU_350TX,
-	MENU_500TX,
 	MENU_350EN,
 #ifdef ENABLE_F_CAL_MENU
 	MENU_F_CALI,  // reference xtal calibration
@@ -131,7 +127,6 @@ extern const char gSubMenu_ARDF_Remember_Gain[4][6];
 extern const char        gSubMenu_W_N[4][7];
 extern const char        gSubMenu_OFF_ON[2][4];
 extern const char        gSubMenu_SAVE[5][4];
-extern const char        gSubMenu_TOT[11][7];
 extern const char* const gSubMenu_RXMode[4];
 
 #ifdef ENABLE_VOICE

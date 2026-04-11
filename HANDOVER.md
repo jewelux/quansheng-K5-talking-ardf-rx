@@ -37,6 +37,7 @@ ggf. weiteren KI-Agenten. Jede Sitzung muss diese Datei lesen und aktualisieren.
 
 | Datum (UTC)  | Agent / Sitzung         | Aenderung                                              |
 | ------------ | ----------------------- | ------------------------------------------------------ |
+| 2026-04-11   | Copilot Cloud Agent     | Unterbrochene Arbeit fortgesetzt: Compile-Error behoben, TX-Menues/Dead-Code entfernt (48468->45184 bytes) |
 | 2026-04-11   | Copilot Cloud Agent     | Scrambler/Descrambler komplett entfernt (48856->48468 bytes) |
 | 2026-04-11   | Copilot Cloud Agent     | Codebase-Audit erstellt (`AUDIT_REMAINING_FEATURES.md`) |
 | 2026-04-11   | Copilot Cloud Agent     | TX-Code Phase 1+2: FUNCTION_TRANSMIT, TX-Variablen/Flags/Enums entfernt (52136->48856 bytes) |
@@ -55,7 +56,7 @@ ggf. weiteren KI-Agenten. Jede Sitzung muss diese Datei lesen und aktualisieren.
 | ---- | ------------------------------------------------------------- | ---------- | -------------- |
 | 1    | Entscheidungen in `AUDIT_REMAINING_FEATURES.md` treffen       | Warte auf Do9RE | Do9RE |
 | 2    | Gewaehlte Optionen aus Audit umsetzen                         | Warte auf Entscheidungen | Agent |
-| 3    | TX-Code Phase 3-5 (BK4819 TX, DTMF TX, Menues, etc.)         | Offen, teilweise durch Audit abgedeckt | Agent |
+| 3    | TX-Code Phase 3-5 (BK4819 TX, DTMF TX, Menues, etc.)         | Groesstenteils erledigt — siehe Sitzung 7 | Agent |
 
 ---
 
@@ -106,6 +107,35 @@ ggf. weiteren KI-Agenten. Jede Sitzung muss diese Datei lesen und aktualisieren.
 ## Sitzungs-Protokoll
 
 <!-- Kurzes Protokoll jeder Agenten-Sitzung — chronologisch, neueste oben -->
+
+### 2026-04-11 (7. Sitzung) — Copilot Cloud Agent
+
+**Auftrag:** Unterbrochene Arbeit fortsetzen (DTMF-Entfernung, TX-Code Phase 3-5).
+
+**Durchgefuehrt:**
+- Compile-Error behoben: `DTMF_clear_input_box()` Aufruf in `ui/ui.c` entfernt (Funktion existierte nicht mehr)
+- MENU_TOT (TxTOut = TX-Timeout) aus Menue-System entfernt inkl. `gSubMenu_TOT` Array
+- MENU_200TX, MENU_350TX, MENU_500TX (TX-Band-Freischaltung) aus Hidden-Menue entfernt
+- TX-Ausgangsleistungs-Berechnung aus `RADIO_ConfigureSquelchAndOutputPower()` entfernt
+- `FREQUENCY_CalculateOutputPower()` als Dead Code entfernt (aus `frequencies.c` und `frequencies.h`)
+- Binary-Groesse: 48468 -> 45184 Bytes (3284 Bytes / 6.8% kleiner)
+- HANDOVER.md aktualisiert
+
+**Status nach dieser Sitzung:**
+- TX ist komplett blockiert (ENABLE_PREVENT_TX=1, TX_freq_check gibt immer -1 zurueck)
+- Alle TX-Menue-Eintraege entfernt (MENU_TXP, MENU_T_DCS, MENU_T_CTCS, MENU_SFT_D, MENU_OFFSET, MENU_TOT, MENU_ROGER, MENU_PTT_ID, MENU_BCL, MENU_200TX, MENU_350TX, MENU_500TX)
+- DTMF-Calling komplett hinter #ifdef ENABLE_DTMF_CALLING (=0, nicht kompiliert)
+- Scrambler/Descrambler komplett entfernt
+- BK4819 TX-Funktionen (Roger, DTMF TX, PA, PrepareTransmit, TransmitTone) entfernt
+- PTT-Handler auf Beep-only vereinfacht
+- FUNCTION_TRANSMIT und zugehoerige State-Machine entfernt
+- Verbleibende TX-Infrastruktur (FrequencyReverse, OUTPUT_POWER Struct-Feld, PTT_ID_t Enum) bleibt fuer EEPROM-Kompatibilitaet
+- BK4819_EnterTxMute/ExitTxMute/EnableTXLink bleiben (werden fuer RX-Audio-Feedback/Beeps benoetigt)
+
+**Keine Aenderungen an:**
+- Build-Skripten
+- EEPROM-Layout (Struct-Felder bleiben fuer Kompatibilitaet)
+- FrequencyReverse-Funktion (RX-relevant fuer Repeater-Eingabe)
 
 ### 2026-04-11 (4. Sitzung) — Copilot Cloud Agent
 

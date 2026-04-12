@@ -166,6 +166,8 @@ def unpack_firmware(packed_data: bytes):
     if file_crc != calc_crc_bytes:
         print("  WARNUNG: CRC der Firmware-Datei stimmt nicht!")
         print(f"    Erwartet: {calc_crc_bytes.hex()}, Gefunden: {file_crc.hex()}")
+        print("    Die Datei koennte beschaedigt sein!")
+        raise ValueError("CRC-Pruefung fehlgeschlagen — Firmware-Datei ist ungueltig.")
 
     # XOR-Dekodierung
     decoded = fw_xor(packed_data[:-2])
@@ -301,8 +303,8 @@ class K5Radio:
 
         # Endadresse berechnen (aufgerundet auf naechstes Vielfaches von 0x100)
         address_final = (total_size + 0xFF) & ~0xFF
-        if address_final > 0xF000:
-            raise ValueError(f"Firmware zu gross: Endadresse 0x{address_final:04X} > 0xF000")
+        if address_final > MAX_FW_SIZE + 1:
+            raise ValueError(f"Firmware zu gross: Endadresse 0x{address_final:04X} > 0x{MAX_FW_SIZE + 1:04X}")
 
         # Befehlsstruktur:
         # 0x19 0x05 = cmd_id
@@ -371,7 +373,7 @@ def flash_firmware(port_name: str, fw_path: str):
     if file_type == 'packed':
         print("  Dateityp: gepackte Firmware (.packed.bin)")
         raw_fw, version_info = unpack_firmware(fw_data)
-        print(f"  Version: {version_info.split(b'\\x00')[0].decode('ascii', errors='replace')}")
+        print(f"  Version: {version_info.split(b'\x00')[0].decode('ascii', errors='replace')}")
     else:
         print("  Dateityp: rohe Firmware (.bin)")
         raw_fw = fw_data

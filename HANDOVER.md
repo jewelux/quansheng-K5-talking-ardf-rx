@@ -37,6 +37,7 @@ ggf. weiteren KI-Agenten. Jede Sitzung muss diese Datei lesen und aktualisieren.
 
 | Datum (UTC)  | Agent / Sitzung         | Aenderung                                              |
 | ------------ | ----------------------- | ------------------------------------------------------ |
+| 2026-04-12   | Copilot Cloud Agent     | Build/Flash-Scripts: `make clean` statt manuelle Suche, k5flash.py nur build-output/, Quellverzeichnis-Aufraeumung |
 | 2026-04-12   | Copilot Cloud Agent     | Morse-Bugs behoben, Voice/Morse getrennt, Kompass-Modus, Batterie-Morse, Makefile-Flags |
 | 2026-04-12   | Copilot Cloud Agent     | Menue: PTT=Bestaetigen, SIDE1/2=Hoch/Runter; Morse auto-advance; Squelch Level 1 Fix; Flash V3 Warnung; Build Cleanup; README Tastatur; V2 Evaluation |
 | 2026-04-12   | Copilot Cloud Agent     | Voice-Prompt-Evaluation erstellt: `VOICE_PROMPT_EVALUATION.md` + `utils/generate_voice_prompts.sh` |
@@ -130,6 +131,51 @@ ggf. weiteren KI-Agenten. Jede Sitzung muss diese Datei lesen und aktualisieren.
 ## Sitzungs-Protokoll
 
 <!-- Kurzes Protokoll jeder Agenten-Sitzung — chronologisch, neueste oben -->
+
+### 2026-04-12 (12. Sitzung) — Copilot Cloud Agent
+
+**Auftrag:** Build- und Flash-Scripts bereinigen. Problemstellung: Build-Script zeigt
+Dateien aus anderen Verzeichnissen an, Flash-Script listet Artefakte ausserhalb von
+build-output. Aufraeumfunktion soll auch Quellverzeichnis sauber halten.
+
+**Durchgefuehrt:**
+
+1. **`msys2_build.sh` — Pre-Build-Cleanup:**
+   - `find -name '*.o' -delete` und manuelles `rm` ersetzt durch `make clean`
+   - Sauberer, keine Ausgabe von Dutzenden Subdirectory-Dateien
+
+2. **`msys2_build.sh` — Post-Build-Cleanup:**
+   - Nach dem Verschieben der Binaries nach build-output: `make clean` + `rm -f firmware_uvk5_v1`
+   - Quellverzeichnis bleibt frei von .o, .d, ELF-Dateien
+
+3. **`msys2_build.sh` — `do_cleanup()` erweitert:**
+   - Raeumt jetzt **beides** auf: Quellverzeichnis (via `make clean`) UND build-output
+   - `ls -t` durch `find -printf '%T@'` ersetzt fuer zuverlaessigere Sortierung
+   - Unnoetige `local base` Variable entfernt
+
+4. **`win_make.bat` — Pre-Build:**
+   - `del /q /s *.o *.d ...` ersetzt durch `make clean` — kein rekursives Rauschen mehr
+   - Nur noch ELF/BIN-Reste manuell geloescht
+
+5. **`win_make.bat` — Post-Build:**
+   - `make clean` nach dem Verschieben der Binaries
+   - Quellverzeichnis bleibt sauber
+
+6. **`k5flash.py` — Firmware-Suche auf build-output beschraenkt:**
+   - `os.listdir('.')` (aktuelles Verzeichnis) komplett entfernt
+   - Nur noch `build-output/` wird durchsucht
+   - Anzeige zeigt Quelle: "Firmware-Dateien in build-output/"
+   - Keine Ghost-Dateien mehr aus firmware-source/
+
+**Ergebnis:**
+- Build-Output: nur in build-output/, Quellverzeichnis bleibt sauber
+- Flash-Script: zeigt nur Dateien aus build-output/
+- Keine Phantom-Dateien mehr in der Auswahl
+
+**Keine Aenderungen an:**
+- Firmware-Quellcode
+- Makefile
+- EEPROM-Layout
 
 ### 2026-04-12 (11. Sitzung) — Copilot Cloud Agent
 

@@ -615,31 +615,24 @@ def interactive_mode():
     print(f"\n  Gewaehlter Port: {port_name}")
     print()
 
-    # Firmware-Datei suchen
-    # Zuerst im build-output Verzeichnis suchen
+    # Firmware-Datei suchen — nur im build-output Verzeichnis
     script_dir = os.path.dirname(os.path.abspath(__file__))
     build_dir = os.path.join(script_dir, '..', 'build-output')
     build_dir = os.path.normpath(build_dir)
 
     candidates = []
 
-    # build-output/ durchsuchen
+    # Nur build-output/ durchsuchen (dort liegen die fertigen Binaries)
     if os.path.isdir(build_dir):
         for f in sorted(os.listdir(build_dir), reverse=True):
+            full = os.path.join(build_dir, f)
             if f.endswith('.packed.bin'):
-                candidates.append(os.path.join(build_dir, f))
+                candidates.append(full)
             elif f.endswith('.bin') and not f.endswith('.packed.bin'):
-                candidates.append(os.path.join(build_dir, f))
-
-    # Aktuelles Verzeichnis durchsuchen
-    for f in sorted(os.listdir('.'), reverse=True):
-        full = os.path.abspath(f)
-        if full not in [os.path.abspath(c) for c in candidates]:
-            if f.endswith('.packed.bin') or (f.endswith('.bin') and 'firmware' in f.lower()):
                 candidates.append(full)
 
     if candidates:
-        print("  Gefundene Firmware-Dateien:")
+        print(f"  Firmware-Dateien in build-output/:")
         for i, path in enumerate(candidates, 1):
             size = os.path.getsize(path)
             name = os.path.basename(path)

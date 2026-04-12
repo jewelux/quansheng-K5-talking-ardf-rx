@@ -58,20 +58,38 @@ Why `V2_0` may not yet appear as a downloadable firmware on GitHub:
 - `F`: enable the function layer
 - `F + 2`: switch A/B
 - `F + 3`: switch VFO/MR
+- `STAR (*)`: currently unused (available for future functions)
 
 ### ARDF Simple Mode
 
-- `PTT short`: snapshot / field-strength beeper
+- `PTT short`: snapshot / field-strength beeper (1-9 beeps)
 - `UP/DOWN`: manual gain change
+- `F + UP/DOWN`: frequency step or memory channel change
 - `EXIT short`: active fox and remaining time
 - `EXIT long`: fox frequency and modulation
 - `MENU long`: ARDF-specific acoustic help
+- `SIDE1 short/long`: configurable via menu (e.g. ARDF ON/OFF, gain middle, snapshot speed)
+- `SIDE2 short/long`: configurable via menu (e.g. ARDF ON/OFF, gain middle, snapshot speed)
 
 ### Menu Use
 
+- `UP/DOWN`: navigate between menu items
+- `SIDE1/SIDE2`: navigate UP/DOWN (one-handed operation, accessibility)
+- `MENU`: enter submenu / confirm selection
+- `PTT`: confirm selection (same as MENU, one-handed operation)
+- `EXIT`: leave submenu / close menu
 - menu items with spoken names use voice clips where available
 - menu items without spoken names use Morse output
 - Morse speed can be adjusted from `15` to `70 wpm` in `5 wpm` steps
+- navigating during Morse output automatically announces the newly focused item
+
+### Side Keys (configurable via menu)
+
+Available actions for SIDE1/SIDE2 short and long press:
+
+- None, Flashlight, Monitor, Scan, VOX, A/B switch, VFO/MR switch
+- Demodulation switch, Spectrum, Keylock
+- ARDF ON/OFF, ARDF Gain Middle, ARDF Snapshot Speed UP/DOWN
 
 ## What Is Different In V2_0
 

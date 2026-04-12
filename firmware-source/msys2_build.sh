@@ -402,6 +402,80 @@ do_build() {
     fi
 }
 
+# ---------------------------------------------------------------------------
+# Build-Verzeichnis aufraeumen (alte Dateien entfernen)
+# ---------------------------------------------------------------------------
+do_cleanup() {
+    local out_dir
+    local script_dir
+    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    out_dir="$script_dir/../build-output"
+
+    if [[ ! -d "$out_dir" ]]; then
+        info "Kein Build-Verzeichnis vorhanden — nichts aufzuraeumen."
+        return
+    fi
+
+    out_dir="$(cd "$out_dir" && pwd)"
+
+    # Zaehle alle Dateien
+    local total_files
+    total_files=$(find "$out_dir" -maxdepth 1 -type f | wc -l)
+
+    if [[ "$total_files" -eq 0 ]]; then
+        info "Build-Verzeichnis ist bereits leer."
+        return
+    fi
+
+    info "Build-Verzeichnis: $out_dir"
+    info "Enthaltene Dateien: $total_files"
+    echo ""
+
+    # Aktuellste .bin und .packed.bin identifizieren
+    local newest_bin newest_packed
+    newest_bin=$(ls -t "$out_dir"/firmware_uvk5_v1*.bin 2>/dev/null | grep -v '\.packed\.bin$' | head -1)
+    newest_packed=$(ls -t "$out_dir"/firmware_uvk5_v1*.packed.bin 2>/dev/null | head -1)
+
+    if [[ -n "$newest_bin" || -n "$newest_packed" ]]; then
+        info "Aktuellste Dateien (werden behalten):"
+        [[ -n "$newest_bin" ]]    && echo "    ${BOLD}$(basename "$newest_bin")${RESET}"
+        [[ -n "$newest_packed" ]] && echo "    ${BOLD}$(basename "$newest_packed")${RESET}"
+        echo ""
+    fi
+
+    # Dateien die geloescht werden sollen auflisten
+    local to_delete=()
+    while IFS= read -r -d '' file; do
+        local base
+        base=$(basename "$file")
+        # Aktuellste Dateien behalten
+        if [[ "$file" == "$newest_bin" || "$file" == "$newest_packed" ]]; then
+            continue
+        fi
+        to_delete+=("$file")
+    done < <(find "$out_dir" -maxdepth 1 -type f -print0)
+
+    if [[ ${#to_delete[@]} -eq 0 ]]; then
+        info "Keine alten Dateien zum Loeschen gefunden."
+        return
+    fi
+
+    echo "  Folgende ${#to_delete[@]} aeltere Dateien wuerden geloescht:"
+    for f in "${to_delete[@]}"; do
+        echo "    - $(basename "$f")"
+    done
+    echo ""
+
+    if ask_yes_no "Alte Dateien jetzt loeschen?"; then
+        for f in "${to_delete[@]}"; do
+            rm -f "$f"
+        done
+        ok "${#to_delete[@]} Dateien geloescht."
+    else
+        info "Aufraeumen abgebrochen."
+    fi
+}
+
 # ===========================================================================
 # Hauptprogramm
 # ===========================================================================
@@ -432,6 +506,11 @@ main() {
 
     if ask_yes_no "Firmware jetzt bauen?"; then
         do_build
+
+        echo ""
+        if ask_yes_no "Build-Verzeichnis aufraeumen (alte Dateien entfernen)?"; then
+            do_cleanup
+        fi
     else
         info "Build abgebrochen. Alle Abhaengigkeiten sind vorhanden."
     fi

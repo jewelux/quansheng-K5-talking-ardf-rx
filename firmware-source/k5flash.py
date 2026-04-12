@@ -348,6 +348,76 @@ def print_banner():
     print()
 
 
+def print_version_warning():
+    """Zeigt Warnhinweise zur Geraeteversion an."""
+    print("  ┌─────────────────────────────────────────────────────┐")
+    print("  │  WICHTIG: Geraeteversion beachten!                  │")
+    print("  │                                                     │")
+    print("  │  V1 (DP32G030)  — dieses Flash-Tool ist kompatibel  │")
+    print("  │  V2 (PY32F030)  — NICHT kompatibel, eigene Tools!   │")
+    print("  │  V3 (PY32F071)  — NICHT kompatibel, eigene Tools!   │")
+    print("  │                                                     │")
+    print("  │  Version steht unter dem Akku / auf dem Aufkleber.  │")
+    print("  │  Falsche Firmware -> Geraet funktionslos!           │")
+    print("  └─────────────────────────────────────────────────────┘")
+    print()
+
+
+def select_device_version():
+    """
+    Fragt die Geraeteversion interaktiv ab.
+    Gibt 'v1' zurueck wenn kompatibel, None wenn abgebrochen.
+    """
+    print("  Welche Hardware-Version hat dein Radio?")
+    print("    1. V1 (Original, DP32G030 MCU)")
+    print("    2. V3 / K1 (PY32F071 MCU)")
+    print("    3. Unsicher / weiss nicht")
+    print()
+
+    choice = input("  Auswahl [1/2/3]: ").strip()
+
+    if choice == '1':
+        print()
+        print("  ✓ V1 erkannt — dieses Tool ist kompatibel.")
+        return 'v1'
+
+    elif choice == '2':
+        print()
+        print("  ╔═════════════════════════════════════════════════════╗")
+        print("  ║  V3/K1 Geraete verwenden eine andere MCU           ║")
+        print("  ║  (PY32F071 statt DP32G030).                        ║")
+        print("  ║                                                     ║")
+        print("  ║  Die Firmware aus diesem Projekt ist NUR fuer V1!   ║")
+        print("  ║                                                     ║")
+        print("  ║  Fuer V3/K1 Firmware und Flash-Tools siehe:         ║")
+        print("  ║    https://armel.github.io/uvtools2/                ║")
+        print("  ║    https://github.com/armel/uv-k1-k5v3-firmware-custom  ║")
+        print("  ║    https://github.com/qrp73/K5TOOL                 ║")
+        print("  ╚═════════════════════════════════════════════════════╝")
+        print()
+        return None
+
+    elif choice == '3':
+        print()
+        print("  So findest du die Version heraus:")
+        print("    - Unter dem Akku auf dem Aufkleber steht z.B. 'V1', 'V3'")
+        print("    - V1: schwarzes PCB, DP32G030 Chip")
+        print("    - V3: gruenes PCB, PY32F071 Chip, oft als 'K1' vermarktet")
+        print("    - Im Bootloader-Modus: Version ≤1.00.xx = V1, ≥1.01.xx = V3")
+        print()
+        print("  Hinweis: Wenn du das falsche Firmware-Image flashst,")
+        print("  wird das Radio funktionslos (aber per Bootloader rettbar).")
+        print()
+        answer = input("  Trotzdem als V1 fortfahren? [j/N]: ").strip().lower()
+        if answer in ('j', 'y', 'ja', 'yes'):
+            return 'v1'
+        return None
+
+    else:
+        print("  Ungueltige Auswahl.")
+        return None
+
+
 def list_serial_ports():
     """Listet alle verfuegbaren seriellen Ports auf."""
     try:
@@ -496,6 +566,15 @@ def flash_firmware(port_name: str, fw_path: str):
 def interactive_mode():
     """Interaktiver Modus: Port und Datei werden abgefragt."""
     print_banner()
+    print_version_warning()
+
+    # Geraeteversion abfragen
+    version = select_device_version()
+    if version is None:
+        print("  Flash-Vorgang abgebrochen.")
+        return
+
+    print()
 
     # Serielle Ports auflisten
     ports = list_serial_ports()

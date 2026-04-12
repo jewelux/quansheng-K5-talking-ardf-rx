@@ -397,8 +397,22 @@ void RADIO_ConfigureSquelchAndOutputPower(VFO_Info_t *pInfo)
 		pInfo->SquelchCloseNoiseThresh  = 127;   // 127 ~ 0
 		pInfo->SquelchOpenGlitchThresh  = 255;   // 255 ~ 0
 	}
+	else if (gEeprom.SQUELCH_LEVEL == 1)
+	{	// squelch == 1: near-open for ARDF close-range use
+		// Only minimal RSSI required, noise and glitch thresholds fully relaxed.
+		// This prevents squelch closure from receiver overload at very short range
+		// (e.g. antenna touching the fox transmitter).
+		pInfo->SquelchOpenRSSIThresh    = 4;     // barely above noise floor
+		pInfo->SquelchCloseRSSIThresh   = 2;
+
+		pInfo->SquelchOpenNoiseThresh   = 127;   // ignore noise
+		pInfo->SquelchCloseNoiseThresh  = 127;
+
+		pInfo->SquelchCloseGlitchThresh = 255;   // ignore glitch
+		pInfo->SquelchOpenGlitchThresh  = 255;
+	}
 	else
-	{	// squelch >= 1
+	{	// squelch >= 2
 		Base += gEeprom.SQUELCH_LEVEL;                                        // my eeprom squelch-1
 																			  // VHF   UHF
 		EEPROM_ReadBuffer(Base + 0x00, &pInfo->SquelchOpenRSSIThresh,    1);  //  50    10

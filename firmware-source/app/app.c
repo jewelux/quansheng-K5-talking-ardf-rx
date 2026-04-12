@@ -1550,7 +1550,9 @@ static void ProcessKey(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 #ifdef ENABLE_ARDF
 #endif
 
-	if (Key != KEY_SIDE1 && Key != KEY_SIDE2 && gScreenToDisplay != DISPLAY_INVALID) {
+	if ((Key != KEY_SIDE1 && Key != KEY_SIDE2 && gScreenToDisplay != DISPLAY_INVALID)
+	    || (gScreenToDisplay == DISPLAY_MENU && (Key == KEY_SIDE1 || Key == KEY_SIDE2)))
+	{
 		ProcessKeysFunctions[gScreenToDisplay](Key, bKeyPressed, bKeyHeld);
 	}
 	else if (!SCANNER_IsScanning()

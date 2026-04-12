@@ -118,9 +118,14 @@ static void MENU_StopVoicePlayback(void)
 	gAnotherVoiceID          = VOICE_ID_INVALID;
 }
 
+static KEY_Code_t gMorseAbortKey = KEY_INVALID;
+
 static bool MENU_IsAbortKeyPressed(void)
 {
-	return KEYBOARD_Poll() != KEY_INVALID;
+	KEY_Code_t key = KEYBOARD_Poll();
+	if (key != KEY_INVALID)
+		gMorseAbortKey = key;
+	return key != KEY_INVALID;
 }
 
 static void MENU_WaitForKeyReleaseBeforeMorse(void)
@@ -296,6 +301,7 @@ static void MENU_PlayCurrentMenuVoice(void)
 		return;
 
 	MENU_StopVoicePlayback();
+	gMorseAbortKey = KEY_INVALID;
 
 	if (MenuList[gMenuCursor].voice_id != VOICE_ID_INVALID) {
 		gAnotherVoiceID = MenuList[gMenuCursor].voice_id;
@@ -2153,6 +2159,23 @@ static void MENU_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
 
 		#ifdef ENABLE_VOICE
 			MENU_PlayCurrentMenuVoice();
+
+			// if morse was interrupted by a navigation key, advance and re-announce
+			while (gMorseAbortKey == KEY_UP || gMorseAbortKey == KEY_DOWN
+			       || gMorseAbortKey == KEY_SIDE1 || gMorseAbortKey == KEY_SIDE2)
+			{
+				Direction = (gMorseAbortKey == KEY_UP || gMorseAbortKey == KEY_SIDE1) ? 1 : -1;
+				gMorseAbortKey = KEY_INVALID;
+
+				// wait for key release before advancing
+				while (KEYBOARD_Poll() != KEY_INVALID)
+					SYSTEM_DelayMs(10);
+
+				gMenuCursor = NUMBER_AddWithWraparound(gMenuCursor, -Direction, 0, gMenuListCount - 1);
+				gFlagRefreshSetting   = true;
+				gRequestDisplayScreen = DISPLAY_MENU;
+				MENU_PlayCurrentMenuVoice();
+			}
 		#endif
 
 		if (UI_MENU_GetCurrentMenuId() != MENU_ABR
@@ -2275,9 +2298,11 @@ void MENU_ProcessKeys(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 			MENU_Key_MENU(bKeyPressed, bKeyHeld);
 			break;
 		case KEY_UP:
+		case KEY_SIDE1:  // side key 1 = UP for one-handed operation
 			MENU_Key_UP_DOWN(bKeyPressed, bKeyHeld,  1);
 			break;
 		case KEY_DOWN:
+		case KEY_SIDE2:  // side key 2 = DOWN for one-handed operation
 			MENU_Key_UP_DOWN(bKeyPressed, bKeyHeld, -1);
 			break;
 		case KEY_EXIT:
@@ -2309,7 +2334,7 @@ void MENU_ProcessKeys(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 			GENERIC_Key_F(bKeyPressed, bKeyHeld);
 			break;
 		case KEY_PTT:
-			GENERIC_Key_PTT(bKeyPressed);
+			MENU_Key_MENU(bKeyPressed, bKeyHeld);  // PTT confirms menu entries (one-handed operation)
 			break;
 		default:
 			if (!bKeyHeld && bKeyPressed)

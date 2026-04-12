@@ -15,7 +15,10 @@ REM Ausgabeverzeichnis (neben firmware-source\)
 set "OUTDIR=%BUILDROOT%..\build-output"
 if not exist "%OUTDIR%" mkdir "%OUTDIR%"
 
-del /q /s *.o *.d firmware_uvk5_v1 firmware_uvk5_v1.bin firmware_uvk5_v1.packed.bin 2>nul
+REM Alte Build-Artefakte loeschen (via Makefile, sauber und ohne /s Rauschen)
+make clean 2>nul
+del /q firmware_uvk5_v1 firmware_uvk5_v1.bin firmware_uvk5_v1.packed.bin 2>nul
+
 if defined PYTHON_CMD (
     make -B MY_PYTHON="%PYTHON_CMD%"
 ) else (
@@ -32,6 +35,9 @@ if exist firmware_uvk5_v1.packed.bin (
     move /Y firmware_uvk5_v1.packed.bin "%OUTDIR%\firmware_uvk5_v1.packed.bin" >nul
     copy /Y "%OUTDIR%\firmware_uvk5_v1.packed.bin" "%OUTDIR%\firmware_uvk5_v1_%BUILDSTAMP%.packed.bin" >nul
 )
+
+REM Quellverzeichnis aufraeumen (Objekt-Dateien, ELF, Dependencies)
+make clean 2>nul
 del /q firmware_uvk5_v1 2>nul
 
 echo.

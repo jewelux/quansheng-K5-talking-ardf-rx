@@ -334,11 +334,11 @@ do_build() {
     out_dir="$(cd "$out_dir" && pwd)"
     info "Ausgabeverzeichnis: $out_dir"
 
-    # Alte Build-Artefakte loeschen (im Quellverzeichnis)
-    info "Loesche alte Build-Artefakte ..."
+    # Alte Build-Artefakte loeschen (im Quellverzeichnis, via Makefile)
+    info "Loesche alte Build-Artefakte (make clean) ..."
+    make clean 2>/dev/null || true
+    # Sicherheitshalber ELF und lose Binaries entfernen
     rm -f firmware_uvk5_v1 firmware_uvk5_v1.bin firmware_uvk5_v1.packed.bin
-    find . -name '*.o' -delete 2>/dev/null || true
-    find . -name '*.d' -delete 2>/dev/null || true
     ok "Alte Artefakte geloescht."
 
     # Build-Kommando zusammensetzen
@@ -380,8 +380,11 @@ do_build() {
             ok "Kopie: firmware_uvk5_v1_${stamp}.packed.bin"
         fi
 
-        # ELF-Datei aufraeumen (wird nicht zum Flashen gebraucht)
+        # ELF-Datei und Objekt-Dateien aufraeumen (Quellverzeichnis sauber halten)
+        info "Raeume Quellverzeichnis auf (make clean) ..."
+        make clean 2>/dev/null || true
         rm -f firmware_uvk5_v1
+        ok "Quellverzeichnis aufgeraeumt."
 
         separator
         echo ""
@@ -406,35 +409,48 @@ do_build() {
 # Build-Verzeichnis aufraeumen (alte Dateien entfernen)
 # ---------------------------------------------------------------------------
 do_cleanup() {
-    local out_dir
     local script_dir
     script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    out_dir="$script_dir/../build-output"
+    local out_dir="$script_dir/../build-output"
 
+    separator
+    info "Aufraeumen ..."
+    separator
+    echo ""
+
+    # --- Teil 1: Quellverzeichnis aufraeumen (Objekt-/Dependency-Dateien) ---
+    info "Raeume Quellverzeichnis auf (make clean) ..."
+    cd "$script_dir"
+    make clean 2>/dev/null || true
+    rm -f firmware_uvk5_v1 firmware_uvk5_v1.bin firmware_uvk5_v1.packed.bin
+    ok "Quellverzeichnis sauber (alle .o, .d, ELF, .bin entfernt)."
+    echo ""
+
+    # --- Teil 2: Build-Ausgabeverzeichnis aufraeumen ---
     if [[ ! -d "$out_dir" ]]; then
-        info "Kein Build-Verzeichnis vorhanden — nichts aufzuraeumen."
+        info "Kein Build-Ausgabeverzeichnis vorhanden — nichts aufzuraeumen."
         return
     fi
 
     out_dir="$(cd "$out_dir" && pwd)"
 
-    # Zaehle alle Dateien
+    # Zaehle Dateien NUR im Build-Output-Verzeichnis
     local total_files
     total_files=$(find "$out_dir" -maxdepth 1 -type f | wc -l)
 
     if [[ "$total_files" -eq 0 ]]; then
-        info "Build-Verzeichnis ist bereits leer."
+        info "Build-Ausgabeverzeichnis ist bereits leer."
         return
     fi
 
-    info "Build-Verzeichnis: $out_dir"
+    info "Build-Ausgabeverzeichnis: $out_dir"
     info "Enthaltene Dateien: $total_files"
     echo ""
 
-    # Aktuellste .bin und .packed.bin identifizieren
+    # Aktuellste .bin und .packed.bin identifizieren (nur im Ausgabeverzeichnis)
     local newest_bin newest_packed
-    newest_bin=$(ls -t "$out_dir"/firmware_uvk5_v1*.bin 2>/dev/null | grep -v '\.packed\.bin$' | head -1)
-    newest_packed=$(ls -t "$out_dir"/firmware_uvk5_v1*.packed.bin 2>/dev/null | head -1)
+    newest_bin=$(find "$out_dir" -maxdepth 1 -name 'firmware_uvk5_v1*.bin' ! -name '*.packed.bin' -type f -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2-)
+    newest_packed=$(find "$out_dir" -maxdepth 1 -name 'firmware_uvk5_v1*.packed.bin' -type f -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2-)
 
     if [[ -n "$newest_bin" || -n "$newest_packed" ]]; then
         info "Aktuellste Dateien (werden behalten):"
@@ -446,8 +462,6 @@ do_cleanup() {
     # Dateien die geloescht werden sollen auflisten
     local to_delete=()
     while IFS= read -r -d '' file; do
-        local base
-        base=$(basename "$file")
         # Aktuellste Dateien behalten
         if [[ "$file" == "$newest_bin" || "$file" == "$newest_packed" ]]; then
             continue

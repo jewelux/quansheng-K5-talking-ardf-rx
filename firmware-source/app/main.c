@@ -928,26 +928,41 @@ static void MAIN_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
 
 		}
 
-		// ARDF: adjust manual gain
-
 #ifdef ENABLE_VOICE
 		MAIN_StopVoicePlayback();
 #endif
 
-		if ( Direction == 1 )
+		if ( gARDFSquelchMode )
 		{
-			ARDF_GainIncr();
+			// Squelch adjustment mode: UP/DOWN changes squelch level
+			int16_t sql = (int16_t)gEeprom.SQUELCH_LEVEL + Direction;
+			if (sql < 0)  sql = 0;
+			if (sql > 9)  sql = 9;
+			gEeprom.SQUELCH_LEVEL = (uint8_t)sql;
+			gVfoConfigureMode    = VFO_CONFIGURE;
+			gFlagReconfigureVfos = true;
+#ifdef ENABLE_VOICE
+			MENU_PlayMorseNumber(gEeprom.SQUELCH_LEVEL);
+#endif
 		}
 		else
 		{
-			ARDF_GainDecr();
-		}
+			// ARDF: adjust manual gain
+			if ( Direction == 1 )
+			{
+				ARDF_GainIncr();
+			}
+			else
+			{
+				ARDF_GainDecr();
+			}
 
-		ARDF_ActivateGainIndex();
+			ARDF_ActivateGainIndex();
 
 #ifdef ENABLE_VOICE
-		MAIN_PlayArdfGainVoice();
+			MAIN_PlayArdfGainVoice();
 #endif
+		}
 	
 		return;
 	}

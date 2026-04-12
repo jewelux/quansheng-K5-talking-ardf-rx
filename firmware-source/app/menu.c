@@ -280,7 +280,7 @@ static const char *MENU_GetMorseLabel(const uint8_t menu_id)
 	}
 }
 
-static void MENU_PlayMorseString(const char *text)
+void MENU_PlayMorseString(const char *text)
 {
 	const uint16_t unit_ms = MENU_GetMorseUnitMs();
 	const uint16_t dash_ms = unit_ms * 3U;
@@ -433,14 +433,11 @@ static void MENU_PlayStepVoice(const uint16_t step_10hz)
 
 static void MENU_PlayValueVoice(const uint8_t menu_id, const int32_t value)
 {
-	if (gEeprom.VOICE_PROMPT == VOICE_PROMPT_OFF)
-		return;
+	const bool voice_off = (gEeprom.VOICE_PROMPT == VOICE_PROMPT_OFF);
 
 	switch (menu_id)
 	{
-		case MENU_STEP:
-			MENU_PlayStepVoice(gStepFrequencyTable[FREQUENCY_GetStepIdxFromSortedIdx((uint8_t)value)]);
-			break;
+		// --- Morse-based announcements (work regardless of voice setting) ---
 
 		case MENU_AM:
 			if (value >= 0 && (unsigned int)value < ARRAY_SIZE(gModulationStr))
@@ -457,11 +454,22 @@ static void MENU_PlayValueVoice(const uint8_t menu_id, const int32_t value)
 				MENU_PlayMorseString("DF");
 			break;
 
+		// --- Voice-based announcements (skipped when voice is off) ---
+
+		case MENU_STEP:
+			if (!voice_off)
+				MENU_PlayStepVoice(gStepFrequencyTable[FREQUENCY_GetStepIdxFromSortedIdx((uint8_t)value)]);
+			break;
+
 		case MENU_BEEP:
-			gAnotherVoiceID = (value <= 0) ? VOICE_ID_OFF : VOICE_ID_ON;
+			if (!voice_off)
+				gAnotherVoiceID = (value <= 0) ? VOICE_ID_OFF : VOICE_ID_ON;
 			break;
 
 		case MENU_ABR:
+			if (voice_off)
+				break;
+
 			if (value <= 0)
 			{
 				gAnotherVoiceID = VOICE_ID_OFF;
@@ -491,30 +499,38 @@ static void MENU_PlayValueVoice(const uint8_t menu_id, const int32_t value)
 		case MENU_ARDF_GAIN_REMEMBER:
 		case MENU_ARDF_CYCLE_END_BEEP:
 		case MENU_ARDF_SNAPSHOT_SPEED:
-			MENU_PlayNumberVoice((uint16_t)value);
-			break;
-
-		case MENU_VOICE:
-			if (value <= 0)
-				gAnotherVoiceID = VOICE_ID_OFF;
-			else
+			if (!voice_off)
 				MENU_PlayNumberVoice((uint16_t)value);
 			break;
 
+		case MENU_VOICE:
+			if (!voice_off)
+			{
+				if (value <= 0)
+					gAnotherVoiceID = VOICE_ID_OFF;
+				else
+					MENU_PlayNumberVoice((uint16_t)value);
+			}
+			break;
+
 		case MENU_RESET:
-			MENU_PlayNumberVoice((uint16_t)(value + 1));
+			if (!voice_off)
+				MENU_PlayNumberVoice((uint16_t)(value + 1));
 			break;
 
 		case MENU_MORSE_SPEED:
-			MENU_QueueFixedDigitsVoice((uint16_t)value, 2);
+			if (!voice_off)
+				MENU_QueueFixedDigitsVoice((uint16_t)value, 2);
 			break;
 
 		case MENU_ARDF_FOXDURATION:
-			MENU_PlayNumberVoice((uint16_t)((value + 50) / 100));
+			if (!voice_off)
+				MENU_PlayNumberVoice((uint16_t)((value + 50) / 100));
 			break;
 
 		case MENU_ARDF_TIME_RESET:
-			gAnotherVoiceID = VOICE_ID_CONFIRM;
+			if (!voice_off)
+				gAnotherVoiceID = VOICE_ID_CONFIRM;
 			break;
 
 		default:
@@ -928,19 +944,20 @@ void MENU_AcceptSetting(void)
 #ifdef ENABLE_ARDF
 		
 		case MENU_ARDF:
+		{
+			// Direct mapping: 0=OFF, 1=ARDF, 2=DF Simple
+			const bool new_enable   = (gSubMenuSelection != 0);
+			const bool new_dfSimple = (gSubMenuSelection == 2);
 
-			if ( gSubMenuSelection == 2 )
+			if ( new_dfSimple )
 			{
-				// DF simple mode implies ARDF on
-				gSubMenuSelection = 3;
-
 				// DF simple settings
 				gARDFNumFoxes = 0;
 				gARDFGainRemember = 0;
 				gEeprom.SQUELCH_LEVEL = 0;
 			}
 
-			if ( (gSubMenuSelection & 0x01) != 0 )
+			if ( new_enable )
 			{
 				// an ARDF mode was switched on. make sure to use RxMode MAIN_ONLY!
 				gEeprom.DUAL_WATCH = DUAL_WATCH_OFF;
@@ -950,11 +967,11 @@ void MENU_AcceptSetting(void)
 				gUpdateStatus        = true;
 			}
 
-			if ( ((gSetting_ARDFEnable & 0x01) + (gARDFDFSimpleMode << 1)) != gSubMenuSelection )
+			if ( gSetting_ARDFEnable != new_enable || gARDFDFSimpleMode != new_dfSimple )
 			{
 				// value changed
-				gSetting_ARDFEnable = gSubMenuSelection & 0x01;
-				gARDFDFSimpleMode = (gSubMenuSelection >> 1) & 0x01;
+				gSetting_ARDFEnable = new_enable;
+				gARDFDFSimpleMode = new_dfSimple;
 
 				RADIO_SetupAGC(gRxVfo->Modulation == MODULATION_AM, false); // if gSetting_ARDFEnable is set, AGC will be switched off
 
@@ -962,6 +979,7 @@ void MENU_AcceptSetting(void)
 			}
 
 			break; // not return, save SQL and others, too
+		}
 
 		case MENU_ARDF_NUMFOXES:
 

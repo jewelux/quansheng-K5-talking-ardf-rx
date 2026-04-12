@@ -1560,6 +1560,22 @@ static void ProcessKey(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 	}
 
 #ifdef ENABLE_ARDF
+	// In ARDF mode, SIDE2 toggles between squelch and gain adjustment mode
+	if (gSetting_ARDFEnable &&
+	    Key == KEY_SIDE2 &&
+	    !bKeyHeld && bKeyPressed &&
+	    (gScreenToDisplay == DISPLAY_MAIN || gScreenToDisplay == DISPLAY_ARDF))
+	{
+		gARDFSquelchMode = !gARDFSquelchMode;
+		gBeepToPlay = BEEP_1KHZ_60MS_OPTIONAL;
+#ifdef ENABLE_VOICE
+		if (gARDFSquelchMode)
+			MENU_PlayMorseString("SQL");
+		else
+			MENU_PlayMorseString("GAIN");
+#endif
+		goto Skip;
+	}
 #endif
 
 	if ((Key != KEY_SIDE1 && Key != KEY_SIDE2 && gScreenToDisplay != DISPLAY_INVALID)

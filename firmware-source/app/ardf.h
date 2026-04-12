@@ -78,6 +78,7 @@ extern int16_t               gARDFClockCorrAddTicksPerMin;
 extern int8_t                gARDFMistuneFreqRaw;
 extern uint8_t               gARDFMistuneAddGainIdxSteps;
 extern uint8_t               gARDFSnapshotSpeed;
+extern bool                  gARDFSquelchMode;    // true = UP/DOWN adjusts squelch, false = UP/DOWN adjusts gain
 #ifdef ARDF_ENABLE_SHOW_DEBUG_DATA
 extern int16_t               gARDFdebug;
 extern int16_t               gARDFdebug2;

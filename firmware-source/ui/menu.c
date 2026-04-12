@@ -528,7 +528,8 @@ void UI_DisplayMenu(void)
 		#ifdef ENABLE_ARDF
 
 		case MENU_ARDF:
-			strcpy(String, gSubMenu_ARDF[gSubMenuSelection]);
+			if ((unsigned int)gSubMenuSelection < ARRAY_SIZE(gSubMenu_ARDF))
+				strcpy(String, gSubMenu_ARDF[gSubMenuSelection]);
 			break;
 
 		case MENU_ARDF_NUMFOXES:

@@ -455,6 +455,7 @@ void ACTION_ARDFOnOff(void)
    if ( gSetting_ARDFEnable )
    {
       gSetting_ARDFEnable = false;
+      gARDFSquelchMode = false;  // reset toggle when ARDF disabled
    }
    else
    {

@@ -36,6 +36,7 @@ void MENU_ProcessKeys(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld);
 
 #ifdef ENABLE_VOICE
 void MENU_PlayMorseNumber(uint16_t number);
+void MENU_PlayMorseString(const char *text);
 #endif
 
 #endif

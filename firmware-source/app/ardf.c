@@ -102,6 +102,7 @@ int16_t           gARDFClockCorrAddTicksPerMin = ARDF_CLOCK_CORR_TICKS_PER_MIN;
 int8_t            gARDFMistuneFreqRaw = ARDF_GAIN_MISTUNE_HZ_DEFAULT/ARDF_MISTUNE_RES_HZ;
 uint8_t           gARDFMistuneAddGainIdxSteps = ARDF_GAIN_INDEX_ADD_STEPS_MISTUNE_DEFAULT;
 uint8_t           gARDFSnapshotSpeed = ARDF_SNAPSHOT_SPEED_DEFAULT;
+bool              gARDFSquelchMode = false;  // false = UP/DOWN adjusts gain, true = adjusts squelch
 #ifdef ARDF_ENABLE_SHOW_DEBUG_DATA
 int16_t           gARDFdebug = 0;
 int16_t           gARDFdebug2 = 0;
@@ -280,8 +281,9 @@ void ARDF_SnapshotSpeedDecr(void)
 void ARDF_CompassMode(void)
 {
    // Continuous RSSI-to-tone compass mode.
-   // Rapidly alternates between reading RSSI (receiver active) and
-   // playing a short tone whose frequency is proportional to signal strength.
+   // Uses time-slicing: briefly switches to RX to read RSSI, then
+   // plays a tone whose frequency represents signal strength.
+   // Audio path stays enabled throughout to avoid amplifier settle issues.
    // Runs while PTT is held; returns when PTT is released.
 
    // Tone frequency mapping: RSSI dBm range to audible Hz range
@@ -291,6 +293,9 @@ void ARDF_CompassMode(void)
    #define COMPASS_RSSI_MAX_DBM  (-50)  // strongest signal (dBm)
    #define COMPASS_FREQ_SPAN     (COMPASS_FREQ_MAX_HZ - COMPASS_FREQ_MIN_HZ)
    #define COMPASS_RSSI_SPAN     (COMPASS_RSSI_MAX_DBM - COMPASS_RSSI_MIN_DBM)
+
+   #define COMPASS_TONE_MS       60    // audible tone pulse duration
+   #define COMPASS_RX_SETTLE_MS  30    // time for RSSI to stabilise
 
    uint16_t tone_cfg = BK4819_ReadRegister(BK4819_REG_71);
    uint16_t af_gain_cfg = BK4819_ReadRegister(BK4819_REG_48);
@@ -302,9 +307,26 @@ void ARDF_CompassMode(void)
       (58u <<  4) |
       ( 8u <<  0));
 
+   // Keep audio path enabled throughout the loop to avoid amplifier
+   // power-up settling issues that caused silence after the first tone.
+   AUDIO_AudioPathOn();
+
    while (!GPIO_CheckBit(&GPIOC->DATA, GPIOC_PIN_PTT))
    {
-      // --- Phase 1: Read RSSI (receiver is active) ---
+      // --- Phase 1: Switch to RX mode and read RSSI ---
+      BK4819_EnterTxMute();
+      BK4819_WriteRegister(BK4819_REG_70, 0);
+      BK4819_WriteRegister(BK4819_REG_30, 0);
+      BK4819_WriteRegister(BK4819_REG_30,
+         BK4819_REG_30_ENABLE_VCO_CALIB |
+         BK4819_REG_30_ENABLE_RX_LINK   |
+         BK4819_REG_30_ENABLE_AF_DAC    |
+         BK4819_REG_30_ENABLE_DISC_MODE |
+         BK4819_REG_30_ENABLE_PLL_VCO   |
+         BK4819_REG_30_ENABLE_RX_DSP);
+      BK4819_SetAF(BK4819_AF_MUTE);       // mute AF during RX phase
+      SYSTEM_DelayMs(COMPASS_RX_SETTLE_MS);
+
       uint16_t rssi_raw = BK4819_GetRSSI();
       int16_t  rssi_dBm = (rssi_raw / 2) - 160;
 
@@ -314,21 +336,16 @@ void ARDF_CompassMode(void)
       if (freq < COMPASS_FREQ_MIN_HZ)  freq = COMPASS_FREQ_MIN_HZ;
       if (freq > COMPASS_FREQ_MAX_HZ)  freq = COMPASS_FREQ_MAX_HZ;
 
-      // --- Phase 2: Play short tone pulse ---
+      // --- Phase 2: Play tone pulse ---
       BK4819_PlayTone((uint16_t)freq, true);
       SYSTEM_DelayMs(2);
-      AUDIO_AudioPathOn();
       BK4819_ExitTxMute();
-      SYSTEM_DelayMs(60);   // audible pulse
+      SYSTEM_DelayMs(COMPASS_TONE_MS);
       BK4819_EnterTxMute();
-      AUDIO_AudioPathOff();
-
-      // --- Phase 3: Restore RX for next RSSI reading ---
-      BK4819_TurnsOffTones_TurnsOnRX();
-      SYSTEM_DelayMs(20);   // let RSSI settle
    }
 
    // Teardown: restore original state
+   BK4819_EnterTxMute();
    BK4819_WriteRegister(BK4819_REG_71, tone_cfg);
    BK4819_TurnsOffTones_TurnsOnRX();
    RADIO_SetModulation(gRxVfo->Modulation);

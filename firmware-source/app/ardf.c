@@ -295,7 +295,7 @@ void ARDF_CompassMode(void)
    #define COMPASS_RSSI_SPAN     (COMPASS_RSSI_MAX_DBM - COMPASS_RSSI_MIN_DBM)
 
    #define COMPASS_TONE_MS       60    // audible tone pulse duration
-   #define COMPASS_RX_SETTLE_MS  30    // time for RSSI to stabilise
+   #define COMPASS_RX_SETTLE_MS  30    // time for RSSI to stabilize
 
    uint16_t tone_cfg = BK4819_ReadRegister(BK4819_REG_71);
    uint16_t af_gain_cfg = BK4819_ReadRegister(BK4819_REG_48);

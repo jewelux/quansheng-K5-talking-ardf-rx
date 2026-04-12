@@ -58,11 +58,12 @@ Why `V2_0` may not yet appear as a downloadable firmware on GitHub:
 - `F`: enable the function layer
 - `F + 2`: switch A/B
 - `F + 3`: switch VFO/MR
-- `STAR (*)`: currently unused (available for future functions)
+- `STAR (*)`: play battery percentage as Morse code (works with keypad lock on)
 
 ### ARDF Simple Mode
 
 - `PTT short`: snapshot / field-strength beeper (1-9 beeps)
+- `PTT hold`: compass mode — continuous RSSI-to-tone for direction finding (release to stop)
 - `UP/DOWN`: manual gain change
 - `F + UP/DOWN`: frequency step or memory channel change
 - `EXIT short`: active fox and remaining time
@@ -70,18 +71,22 @@ Why `V2_0` may not yet appear as a downloadable firmware on GitHub:
 - `MENU long`: ARDF-specific acoustic help
 - `SIDE1 short/long`: configurable via menu (e.g. ARDF ON/OFF, gain middle, snapshot speed)
 - `SIDE2 short/long`: configurable via menu (e.g. ARDF ON/OFF, gain middle, snapshot speed)
+- `STAR (*)`: play battery percentage as Morse code
 
 ### Menu Use
 
 - `UP/DOWN`: navigate between menu items
-- `SIDE1/SIDE2`: navigate UP/DOWN (one-handed operation, accessibility)
+- `SIDE1/SIDE2`: navigate UP/DOWN (one-handed operation, accessibility — works in submenus too)
 - `MENU`: enter submenu / confirm selection
 - `PTT`: confirm selection (same as MENU, one-handed operation)
 - `EXIT`: leave submenu / close menu
 - menu items with spoken names use voice clips where available
-- menu items without spoken names use Morse output
+- menu items without spoken names use Morse output (works even when voice prompt is OFF)
 - Morse speed can be adjusted from `15` to `70 wpm` in `5 wpm` steps
 - navigating during Morse output automatically announces the newly focused item
+- Voice prompts and Morse output are independent settings:
+  - Voice prompt OFF: voice clips are muted but Morse continues to work
+  - Morse speed adjustable independently via menu
 
 ### Side Keys (configurable via menu)
 

@@ -284,6 +284,14 @@ void ARDF_CompassMode(void)
    // playing a short tone whose frequency is proportional to signal strength.
    // Runs while PTT is held; returns when PTT is released.
 
+   // Tone frequency mapping: RSSI dBm range to audible Hz range
+   #define COMPASS_FREQ_MIN_HZ   300   // tone at weakest signal
+   #define COMPASS_FREQ_MAX_HZ   2400  // tone at strongest signal
+   #define COMPASS_RSSI_MIN_DBM  (-130) // weakest signal (dBm)
+   #define COMPASS_RSSI_MAX_DBM  (-50)  // strongest signal (dBm)
+   #define COMPASS_FREQ_SPAN     (COMPASS_FREQ_MAX_HZ - COMPASS_FREQ_MIN_HZ)
+   #define COMPASS_RSSI_SPAN     (COMPASS_RSSI_MAX_DBM - COMPASS_RSSI_MIN_DBM)
+
    uint16_t tone_cfg = BK4819_ReadRegister(BK4819_REG_71);
 
    while (!GPIO_CheckBit(&GPIOC->DATA, GPIOC_PIN_PTT))
@@ -292,10 +300,11 @@ void ARDF_CompassMode(void)
       uint16_t rssi_raw = BK4819_GetRSSI();
       int16_t  rssi_dBm = (rssi_raw / 2) - 160;
 
-      // Map RSSI to tone frequency: -130 dBm → 300 Hz, -50 dBm → 2400 Hz
-      int16_t freq = 300 + ((rssi_dBm + 130) * 2100 / 80);
-      if (freq < 300)  freq = 300;
-      if (freq > 2400) freq = 2400;
+      // Map RSSI to tone frequency
+      int16_t freq = COMPASS_FREQ_MIN_HZ +
+                     ((rssi_dBm - COMPASS_RSSI_MIN_DBM) * COMPASS_FREQ_SPAN / COMPASS_RSSI_SPAN);
+      if (freq < COMPASS_FREQ_MIN_HZ)  freq = COMPASS_FREQ_MIN_HZ;
+      if (freq > COMPASS_FREQ_MAX_HZ)  freq = COMPASS_FREQ_MAX_HZ;
 
       // --- Phase 2: Play short tone pulse ---
       BK4819_PlayTone((uint16_t)freq, true);

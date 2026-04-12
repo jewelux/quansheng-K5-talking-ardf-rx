@@ -37,6 +37,7 @@ ggf. weiteren KI-Agenten. Jede Sitzung muss diese Datei lesen und aktualisieren.
 
 | Datum (UTC)  | Agent / Sitzung         | Aenderung                                              |
 | ------------ | ----------------------- | ------------------------------------------------------ |
+| 2026-04-12   | Copilot Cloud Agent     | Morse-Bugs behoben, Voice/Morse getrennt, Kompass-Modus, Batterie-Morse, Makefile-Flags |
 | 2026-04-12   | Copilot Cloud Agent     | Menue: PTT=Bestaetigen, SIDE1/2=Hoch/Runter; Morse auto-advance; Squelch Level 1 Fix; Flash V3 Warnung; Build Cleanup; README Tastatur; V2 Evaluation |
 | 2026-04-12   | Copilot Cloud Agent     | Voice-Prompt-Evaluation erstellt: `VOICE_PROMPT_EVALUATION.md` + `utils/generate_voice_prompts.sh` |
 | 2026-04-12   | Copilot Cloud Agent     | MSYS2 Flash-Tool erstellt: `k5flash.py` + `msys2_flash.sh` |
@@ -57,10 +58,12 @@ ggf. weiteren KI-Agenten. Jede Sitzung muss diese Datei lesen und aktualisieren.
 
 | Prio | Aufgabe                                                       | Status     | Verantwortlich |
 | ---- | ------------------------------------------------------------- | ---------- | -------------- |
-| 0    | Entscheidungen in `V2_EVALUATION.md` treffen                  | Warte auf Do9RE | Do9RE |
+| 0    | Entscheidungen in `V2_EVALUATION.md` treffen                  | Groesstenteils umgesetzt | Agent |
 | 0    | Entscheidungen in `VOICE_PROMPT_EVALUATION.md` treffen        | Warte auf Do9RE | Do9RE |
 | 1    | Entscheidungen in `AUDIT_REMAINING_FEATURES.md` treffen       | Warte auf Do9RE | Do9RE |
-| 2    | Gewaehlte Optionen aus V2-Evaluation umsetzen                 | Warte auf Entscheidungen | Agent |
+| 2    | Auf/absteigende Tonfolge fuer Ein/Aus-Schalten (7.2*)         | Offen      | Agent |
+| 2    | Batterie-Warn-Beep als unterscheidbare Tonfolge (7.2*)        | Offen      | Agent |
+| 2    | Tastensperr-Feedback als eigener Ton (7.2*)                   | Offen      | Agent |
 | 3    | Gewaehlte Optionen aus Voice-Evaluation umsetzen              | Warte auf Entscheidungen | Agent |
 | 4    | Gewaehlte Optionen aus Audit umsetzen                         | Warte auf Entscheidungen | Agent |
 | 5    | TX-Code Phase 3-5 (BK4819 TX, DTMF TX, Menues, etc.)         | Groesstenteils erledigt — siehe Sitzung 7 | Agent |
@@ -127,6 +130,79 @@ ggf. weiteren KI-Agenten. Jede Sitzung muss diese Datei lesen und aktualisieren.
 ## Sitzungs-Protokoll
 
 <!-- Kurzes Protokoll jeder Agenten-Sitzung — chronologisch, neueste oben -->
+
+### 2026-04-12 (11. Sitzung) — Copilot Cloud Agent
+
+**Auftrag:** Diverse Bugfixes und neue Features nach V2-Evaluation umsetzen.
+
+**Durchgefuehrt:**
+
+1. **Morse-Skip-Bug behoben:**
+   - `MENU_WaitForKeyReleaseBeforeMorse()` hat `gMorseAbortKey` ueber `MENU_IsAbortKeyPressed()`
+     gesetzt, waehrend die Navigationstaste noch gehalten wurde
+   - Nach Morse-Ende sah die While-Schleife den gesetzten Key und sprang zum naechsten Punkt
+   - Fix: `KEYBOARD_Poll()` direkt verwenden statt `MENU_IsAbortKeyPressed()`
+   - Zusaetzlich: `gMorseAbortKey = KEY_INVALID` nach Wait-For-Release, vor Morse-Start
+
+2. **Morse-Timing nach ITU-Standard korrigiert:**
+   - Alter Code: Jeder Ton hatte ~92ms Hardware-Overhead (62ms Setup + 30ms Teardown)
+   - Zwischen zwei Elementen: `unit_ms + 92ms` statt `unit_ms` (bei 20 WPM: 152ms statt 60ms)
+   - Neu: Setup-Once/Element/Teardown-Architektur
+     - `MENU_MorseAudioSetup()`: Tongenerator + Speaker einmalig einrichten
+     - `MENU_PlayMorseElement()`: Nur Mute/Unmute pro Element (~0.1ms Overhead)
+     - `MENU_MorseAudioTeardown()`: Einmaliges Aufraeumen am Ende
+   - `MENU_DelayInterruptible()`: Finaler `MENU_IsAbortKeyPressed()` entfernt (verursachte
+     falsche Abort-Erkennung bei zufaelligem Tastendruck am Delay-Ende)
+
+3. **Voice/Morse getrennt:**
+   - Morse-Ausgabe funktioniert jetzt unabhaengig vom Voice-Prompt-Setting
+   - `MENU_PlayMorseString()`: VOICE_PROMPT_OFF-Check entfernt
+   - `MENU_PlayCurrentMenuVoice()`: Prueft Voice-Clips nur wenn Voice ON,
+     Morse-Fallback immer verfuegbar
+   - `settings.c`: ENABLE_CUSTOM_MENU_LAYOUT erzwingt VOICE_PROMPT nicht mehr auf ENGLISH
+   - Benutzer kann Voice abschalten und behaelt Morse
+
+4. **ARDF Kompass-Modus implementiert (V2-Eval 6.2 OPTION_D):**
+   - PTT gehalten in ARDF DF-Modus → kontinuierlicher RSSI-zu-Ton
+   - Tonhoehe proportional zur Signalstaerke (-130 dBm = 300 Hz, -50 dBm = 2400 Hz)
+   - Schnelle Puls-Technik: RSSI lesen (RX aktiv), kurzer Ton (60ms), RX wiederherstellen
+   - ~80ms Zykluszeit = ~12 Updates/Sekunde
+   - PTT loslassen → zurueck zum normalen Empfangsmodus
+   - `ardf.c`: `ARDF_CompassMode()` implementiert
+   - `app.c`: PTT-Hold-Handler ruft Kompass statt ProcessKey auf
+
+5. **Batterie-Status per Morse (KEY_STAR):**
+   - STAR-Taste (kurz druecken) auf Haupt-/ARDF-Bildschirm morst Batterie-Prozent
+   - Funktioniert auch bei Tastensperre (KEY_STAR in Key-Lock-Bypass aufgenommen)
+   - `MENU_PlayMorseNumber()`: Oeffentliche Funktion zum Morsen beliebiger Zahlen
+   - `app/menu.h`: Deklaration hinzugefuegt
+   - `app/main.c`: `MAIN_Key_STAR()` mit `BATTERY_VoltsToPercent()` integriert
+
+6. **Morse-Labels fuer alle Menuepunkte:**
+   - 30+ neue Morse-Labels in `MENU_GetMorseLabel()` hinzugefuegt
+   - Alle Menuepunkte ohne Voice-Clip haben jetzt Morse-Fallback
+   - ARDF-Untermenues, AM-Fix, Flashlight, etc. abgedeckt
+
+7. **Makefile-Flags (V2-Evaluation Entscheidungen):**
+   - `ENABLE_AM_FIX=1` (war 0)
+   - `ENABLE_WIDE_RX=1` (war 0)
+   - `ENABLE_FLASHLIGHT=1` (war 0)
+
+8. **Dokumentation aktualisiert:**
+   - README: KEY_STAR Batterie-Morse, PTT-Hold Kompass, Voice/Morse Trennung
+   - HANDOVER: Session-Protokoll, TODOs aktualisiert
+
+**Ergebnis:**
+- Build erfolgreich: 46844 Bytes
+- Morse-Timing jetzt ITU-konform (kein Hardware-Overhead zwischen Elementen)
+- Morse funktioniert unabhaengig von Voice-Setting
+- Kompass-Modus fuer Peilung per PTT-Hold
+- Batterie-Check per STAR-Taste (auch bei Tastensperre)
+
+**Keine Aenderungen an:**
+- EEPROM-Layout
+- Bestehenden Voice-Clips
+- Build-Skripten
 
 ### 2026-04-12 (10. Sitzung) — Copilot Cloud Agent
 

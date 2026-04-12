@@ -167,7 +167,7 @@ static void MENU_MorseAudioSetup(void)
 	SYSTEM_DelayMs(2);
 	AUDIO_AudioPathOn();
 	SYSTEM_DelayMs(60);
-	// tone generator running but muted — ready for elements
+	// tone generator running but muted -- ready for elements
 }
 
 // One-time audio teardown after morse string

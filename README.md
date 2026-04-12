@@ -122,7 +122,22 @@ win_make.bat
 
 ## Flashing
 
-This repository does not duplicate external flashing guides. Please use the original tools directly.
+**Important:** This firmware is built for V1 hardware (DP32G030 MCU) only.
+V3/K1 radios (PY32F071 MCU) require different firmware and different tools.
+Check the version label under the battery compartment before flashing.
+
+### MSYS2 Flash Tool (included)
+
+The repository includes a Python flash script in `firmware-source/`:
+
+```
+python3 k5flash.py              (interactive mode with device version check)
+python3 k5flash.py COM3 firmware.packed.bin   (command line mode)
+```
+
+The interactive mode asks for the device version and warns about incompatible hardware.
+
+### External Tools
 
 Recommended starting points:
 

@@ -37,6 +37,7 @@ ggf. weiteren KI-Agenten. Jede Sitzung muss diese Datei lesen und aktualisieren.
 
 | Datum (UTC)  | Agent / Sitzung         | Aenderung                                              |
 | ------------ | ----------------------- | ------------------------------------------------------ |
+| 2026-04-12   | Copilot Cloud Agent     | Menue: PTT=Bestaetigen, SIDE1/2=Hoch/Runter; Morse auto-advance; Squelch Level 1 Fix; Flash V3 Warnung; Build Cleanup; README Tastatur; V2 Evaluation |
 | 2026-04-12   | Copilot Cloud Agent     | Voice-Prompt-Evaluation erstellt: `VOICE_PROMPT_EVALUATION.md` + `utils/generate_voice_prompts.sh` |
 | 2026-04-12   | Copilot Cloud Agent     | MSYS2 Flash-Tool erstellt: `k5flash.py` + `msys2_flash.sh` |
 | 2026-04-11   | Copilot Cloud Agent     | Unterbrochene Arbeit fortgesetzt: Compile-Error behoben, TX-Menues/Dead-Code entfernt (48468->45184 bytes) |
@@ -56,11 +57,13 @@ ggf. weiteren KI-Agenten. Jede Sitzung muss diese Datei lesen und aktualisieren.
 
 | Prio | Aufgabe                                                       | Status     | Verantwortlich |
 | ---- | ------------------------------------------------------------- | ---------- | -------------- |
+| 0    | Entscheidungen in `V2_EVALUATION.md` treffen                  | Warte auf Do9RE | Do9RE |
 | 0    | Entscheidungen in `VOICE_PROMPT_EVALUATION.md` treffen        | Warte auf Do9RE | Do9RE |
 | 1    | Entscheidungen in `AUDIT_REMAINING_FEATURES.md` treffen       | Warte auf Do9RE | Do9RE |
-| 2    | Gewaehlte Optionen aus Voice-Evaluation umsetzen              | Warte auf Entscheidungen | Agent |
-| 3    | Gewaehlte Optionen aus Audit umsetzen                         | Warte auf Entscheidungen | Agent |
-| 4    | TX-Code Phase 3-5 (BK4819 TX, DTMF TX, Menues, etc.)         | Groesstenteils erledigt — siehe Sitzung 7 | Agent |
+| 2    | Gewaehlte Optionen aus V2-Evaluation umsetzen                 | Warte auf Entscheidungen | Agent |
+| 3    | Gewaehlte Optionen aus Voice-Evaluation umsetzen              | Warte auf Entscheidungen | Agent |
+| 4    | Gewaehlte Optionen aus Audit umsetzen                         | Warte auf Entscheidungen | Agent |
+| 5    | TX-Code Phase 3-5 (BK4819 TX, DTMF TX, Menues, etc.)         | Groesstenteils erledigt — siehe Sitzung 7 | Agent |
 
 ---
 
@@ -124,6 +127,66 @@ ggf. weiteren KI-Agenten. Jede Sitzung muss diese Datei lesen und aktualisieren.
 ## Sitzungs-Protokoll
 
 <!-- Kurzes Protokoll jeder Agenten-Sitzung — chronologisch, neueste oben -->
+
+### 2026-04-12 (10. Sitzung) — Copilot Cloud Agent
+
+**Auftrag:** 8 Aufgaben aus Anforderungsliste von DO9RE umsetzen.
+
+**Durchgefuehrt:**
+1. **Menue-Tasten erweitert:**
+   - PTT-Taste bestaetigt jetzt Menue-Eintraege (wie MENU-Taste)
+   - SIDE1/SIDE2 navigieren im Menue Hoch/Runter (Einhand-Bedienung)
+   - `app/menu.c`: KEY_PTT → MENU_Key_MENU, KEY_SIDE1/2 → UP/DOWN
+   - `app/app.c`: SIDE1/2 werden im DISPLAY_MENU an ProcessKeysFunctions weitergeleitet
+
+2. **Morse Auto-Advance:**
+   - Wenn Morse-Ausgabe durch Navigation-Taste unterbrochen wird,
+     wird der neue Menuepunkt sofort fokussiert und angesagt
+   - `gMorseAbortKey` trackt welche Taste die Unterbrechung ausgeloest hat
+   - While-Schleife in MENU_Key_UP_DOWN wartet auf Key-Release und wiederholt
+
+3. **Squelch Level 1 korrigiert:**
+   - Level 1 verwendet jetzt fest-kodierte, extrem niedrige Schwellen
+   - RSSI Open: 4, Noise: 127 (max), Glitch: 255 (max)
+   - Verhindert Squelch-Schliessung bei Nahfeld-Uebersteuerung (ARDF)
+
+4. **README Tastatur-Layout aktualisiert:**
+   - ARDF-Tasten, Seitentasten, Menue-Bedienung vollstaendig dokumentiert
+   - Neue Sektionen: Menue Use, Side Keys, ARDF Simple Mode erweitert
+
+5. **V2 Evaluation erstellt:**
+   - `V2_EVALUATION.md`: Analyse des Audio-Spektrum-Konzepts
+   - 4 Ansaetze (Sonifikation, Peak-Morse, Sweep-Beep, Kompass)
+   - Alle Makefile-Optionen dokumentiert mit Kommentar
+   - Entscheidungsbloecke fuer kuenftige Sitzungen
+
+6. **DTMF/Star/Hash-Status geprueft:**
+   - DTMF komplett hinter `#ifdef ENABLE_DTMF_CALLING` (=0)
+   - KEY_STAR: Im Hauptmodus aktuell OHNE Funktion (nur Beep)
+   - KEY_STAR ist frei fuer neue Funktionen
+   - KEY_F (=#-Taste physisch): Wird fuer F-Layer benutzt
+
+7. **Flash-Script V3 erweitert:**
+   - Interaktive Geraeteversions-Abfrage (V1/V3/Unsicher)
+   - Kompatibilitaets-Warnung fuer V3/K1 (andere MCU: PY32F071)
+   - Links zu V3-Tools (armel/uvtools2, K5TOOL)
+   - Identifikations-Hilfe (Aufkleber, Bootloader-Version, PCB-Farbe)
+
+8. **Build-Script Cleanup:**
+   - Neue Funktion `do_cleanup()` in `msys2_build.sh`
+   - Behaelt neueste .bin und .packed.bin, loescht aeltere
+   - Interaktive Bestaetigung mit Dateiliste
+   - Wird nach erfolgreichem Build optional angeboten
+
+**Ergebnis:**
+- Firmware: PTT/SIDE-Tasten im Menue, Morse-Auto-Advance, Squelch-Fix
+- Scripts: V3-Warnung im Flasher, Cleanup im Builder
+- Dokumentation: V2_EVALUATION.md, README aktualisiert, HANDOVER aktualisiert
+
+**Keine Aenderungen an:**
+- Makefile-Flags (bleiben wie gehabt)
+- EEPROM-Layout
+- Bestehenden Voice-Clips oder Audio-Infrastruktur
 
 ### 2026-04-12 (9. Sitzung) — Copilot Cloud Agent
 

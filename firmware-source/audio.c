@@ -83,6 +83,14 @@ void AUDIO_PlayBeep(BEEP_Type_t Beep)
 	SYSTEM_DelayMs(20);
 
 	uint16_t ToneConfig = BK4819_ReadRegister(BK4819_REG_71);
+	uint16_t AfGainConfig = BK4819_ReadRegister(BK4819_REG_48);
+
+	// Set a fixed AF DAC gain for consistent beep volume
+	BK4819_WriteRegister(BK4819_REG_48,
+		(11u << 12) |
+		( 0u << 10) |
+		(58u <<  4) |
+		( 8u <<  0));
 
 	uint16_t ToneFrequency;
 	switch (Beep)
@@ -165,6 +173,7 @@ void AUDIO_PlayBeep(BEEP_Type_t Beep)
 	BK4819_TurnsOffTones_TurnsOnRX();
 	SYSTEM_DelayMs(5);
 	BK4819_WriteRegister(BK4819_REG_71, ToneConfig);
+	BK4819_WriteRegister(BK4819_REG_48, AfGainConfig);
 
 	if (gEnableSpeaker)
 		AUDIO_AudioPathOn();
@@ -217,6 +226,9 @@ uint8_t           gVoiceWriteIndex;
 volatile uint16_t gCountdownToPlayNextVoice_10ms;
 volatile bool     gFlagPlayQueuedVoice;
 VOICE_ID_t        gAnotherVoiceID = VOICE_ID_INVALID;
+
+// Saved AF gain register for voice prompt save/restore
+static uint16_t gVoiceAfGainSaved;
 
 
 static void AUDIO_PlayVoice(uint8_t VoiceID)
@@ -272,6 +284,9 @@ void AUDIO_PlaySingleVoice(bool bFlag)
 		if (FUNCTION_IsRx())   // 1of11
 			BK4819_SetAF(BK4819_AF_MUTE);
 
+		// Save AF gain before voice playback (RADIO_SetModulation forces it to 0xF)
+		gVoiceAfGainSaved = BK4819_ReadRegister(BK4819_REG_48);
+
 		#ifdef ENABLE_FMRADIO
 			if (gFmRadioMode)
 				BK1080_Mute(true);
@@ -295,6 +310,9 @@ void AUDIO_PlaySingleVoice(bool bFlag)
 
 			if (FUNCTION_IsRx())	// 1of11
 				RADIO_SetModulation(gRxVfo->Modulation);
+
+			// Restore AF gain after RADIO_SetModulation (which forces DAC gain to 0xF)
+			BK4819_WriteRegister(BK4819_REG_48, gVoiceAfGainSaved);
 
 			#ifdef ENABLE_FMRADIO
 				if (gFmRadioMode)
@@ -436,6 +454,9 @@ void AUDIO_PlayQueuedVoice(void)
 	{
 		RADIO_SetModulation(gRxVfo->Modulation); // 1of11
 	}
+
+	// Restore AF gain after RADIO_SetModulation (which forces DAC gain to 0xF)
+	BK4819_WriteRegister(BK4819_REG_48, gVoiceAfGainSaved);
 
 	#ifdef ENABLE_FMRADIO
 		if (gFmRadioMode)

@@ -165,12 +165,20 @@ static bool MENU_DelayInterruptible(uint16_t duration_ms)
 
 // Saved tone config for one-time setup/teardown
 static uint16_t gMorseToneCfg;
+static uint16_t gMorseAfGainCfg;
 
 // One-time audio setup before a morse string
 static void MENU_MorseAudioSetup(void)
 {
 	BK4819_EnterTxMute();
-	gMorseToneCfg = BK4819_ReadRegister(BK4819_REG_71);
+	gMorseToneCfg  = BK4819_ReadRegister(BK4819_REG_71);
+	gMorseAfGainCfg = BK4819_ReadRegister(BK4819_REG_48);
+	// Set a fixed AF DAC gain for consistent Morse volume
+	BK4819_WriteRegister(BK4819_REG_48,
+		(11u << 12) |
+		( 0u << 10) |
+		(58u <<  4) |
+		( 8u <<  0));
 	BK4819_PlayTone(880, true);
 	SYSTEM_DelayMs(2);
 	AUDIO_AudioPathOn();
@@ -188,6 +196,7 @@ static void MENU_MorseAudioTeardown(void)
 	BK4819_TurnsOffTones_TurnsOnRX();
 	SYSTEM_DelayMs(5);
 	BK4819_WriteRegister(BK4819_REG_71, gMorseToneCfg);
+	BK4819_WriteRegister(BK4819_REG_48, gMorseAfGainCfg);
 }
 
 // Play a single morse element (unmute for duration, then re-mute)

@@ -293,6 +293,14 @@ void ARDF_CompassMode(void)
    #define COMPASS_RSSI_SPAN     (COMPASS_RSSI_MAX_DBM - COMPASS_RSSI_MIN_DBM)
 
    uint16_t tone_cfg = BK4819_ReadRegister(BK4819_REG_71);
+   uint16_t af_gain_cfg = BK4819_ReadRegister(BK4819_REG_48);
+
+   // Set a fixed AF DAC gain for consistent compass tone volume
+   BK4819_WriteRegister(BK4819_REG_48,
+      (11u << 12) |
+      ( 0u << 10) |
+      (58u <<  4) |
+      ( 8u <<  0));
 
    while (!GPIO_CheckBit(&GPIOC->DATA, GPIOC_PIN_PTT))
    {
@@ -324,6 +332,8 @@ void ARDF_CompassMode(void)
    BK4819_WriteRegister(BK4819_REG_71, tone_cfg);
    BK4819_TurnsOffTones_TurnsOnRX();
    RADIO_SetModulation(gRxVfo->Modulation);
+   // Restore AF gain after RADIO_SetModulation (which forces DAC gain to 0xF)
+   BK4819_WriteRegister(BK4819_REG_48, af_gain_cfg);
    AUDIO_AudioPathOn();
    gEnableSpeaker = true;
    SYSTEM_DelayMs(10);

@@ -44,6 +44,11 @@
 #include "ui/ui.h"
 #include <stdlib.h>
 
+#ifdef ENABLE_VOICE
+#include "app/menu.h"
+#include "helper/battery.h"
+#endif
+
 #ifdef ENABLE_ARDF
 #include "app/ardf.h"
 #endif
@@ -861,46 +866,34 @@ static void MAIN_Key_STAR(bool bKeyPressed, bool bKeyHeld)
 		return;
 	}
 
-	if (bKeyHeld && !gWasFKeyPressed){ // long press
-		if (!bKeyPressed) // released
-			return; 
-
-		gBeepToPlay = BEEP_500HZ_60MS_DOUBLE_BEEP_OPTIONAL;
-#ifdef ENABLE_VOICE
-		gAnotherVoiceID = VOICE_ID_CANCEL;
-#endif
+	if (bKeyHeld) {
 		return;
 	}
 
-	if (bKeyPressed) { // just pressed
+	if (bKeyPressed) {
 		return;
 	}
-	
-	// just released
-	
-	if (!gWasFKeyPressed) // pressed without the F-key
+
+	// released after short press
+
+	if (!gWasFKeyPressed)
 	{
-		gBeepToPlay = BEEP_500HZ_60MS_DOUBLE_BEEP_OPTIONAL;
+		// STAR without F-key: play battery percentage as morse
 #ifdef ENABLE_VOICE
-		gAnotherVoiceID = VOICE_ID_CANCEL;
+		{
+			const uint8_t percent = BATTERY_VoltsToPercent(gBatteryVoltageAverage);
+			MENU_PlayMorseNumber(percent);
+		}
+#else
+		gBeepToPlay = BEEP_500HZ_60MS_DOUBLE_BEEP_OPTIONAL;
 #endif
 	}
 	else
-	{	// with the F-key
+	{
 		gWasFKeyPressed = false;
-
-#ifdef ENABLE_NOAA
-		if (IS_NOAA_CHANNEL(gTxVfo->CHANNEL_SAVE)) {
-			gBeepToPlay = BEEP_500HZ_60MS_DOUBLE_BEEP_OPTIONAL;
-			return;
-		}				
-#endif
 		gBeepToPlay = BEEP_500HZ_60MS_DOUBLE_BEEP_OPTIONAL;
-#ifdef ENABLE_VOICE
-		gAnotherVoiceID = VOICE_ID_CANCEL;
-#endif
 	}
-	
+
 	gPttWasReleased = true;
 	gUpdateStatus   = true;
 }

@@ -132,7 +132,7 @@ static void MENU_WaitForKeyReleaseBeforeMorse(void)
 {
 	for (uint8_t i = 0; i < 25U; i++)
 	{
-		if (!MENU_IsAbortKeyPressed())
+		if (KEYBOARD_Poll() == KEY_INVALID)
 			return;
 
 		SYSTEM_DelayMs(10);
@@ -152,47 +152,95 @@ static bool MENU_DelayInterruptible(uint16_t duration_ms)
 		duration_ms -= chunk_ms;
 	}
 
-	return !MENU_IsAbortKeyPressed();
+	return true;
 }
 
-static bool MENU_PlayMorseTone(const uint16_t duration_ms)
-{
-	uint16_t tone_cfg;
+// Saved tone config for one-time setup/teardown
+static uint16_t gMorseToneCfg;
 
+// One-time audio setup before a morse string
+static void MENU_MorseAudioSetup(void)
+{
 	BK4819_EnterTxMute();
-	tone_cfg = BK4819_ReadRegister(BK4819_REG_71);
+	gMorseToneCfg = BK4819_ReadRegister(BK4819_REG_71);
 	BK4819_PlayTone(880, true);
 	SYSTEM_DelayMs(2);
 	AUDIO_AudioPathOn();
 	SYSTEM_DelayMs(60);
+	// tone generator running but muted — ready for elements
+}
+
+// One-time audio teardown after morse string
+static void MENU_MorseAudioTeardown(void)
+{
+	BK4819_EnterTxMute();
+	SYSTEM_DelayMs(20);
+	AUDIO_AudioPathOff();
+	SYSTEM_DelayMs(5);
+	BK4819_TurnsOffTones_TurnsOnRX();
+	SYSTEM_DelayMs(5);
+	BK4819_WriteRegister(BK4819_REG_71, gMorseToneCfg);
+}
+
+// Play a single morse element (unmute for duration, then re-mute)
+static bool MENU_PlayMorseElement(const uint16_t duration_ms)
+{
 	BK4819_ExitTxMute();
 	if (!MENU_DelayInterruptible(duration_ms))
-		goto AbortTone;
+	{
+		BK4819_EnterTxMute();
+		return false;
+	}
 	BK4819_EnterTxMute();
-	SYSTEM_DelayMs(20);
-	AUDIO_AudioPathOff();
-	SYSTEM_DelayMs(5);
-	BK4819_TurnsOffTones_TurnsOnRX();
-	SYSTEM_DelayMs(5);
-	BK4819_WriteRegister(BK4819_REG_71, tone_cfg);
 	return true;
-
-AbortTone:
-	BK4819_EnterTxMute();
-	SYSTEM_DelayMs(20);
-	AUDIO_AudioPathOff();
-	SYSTEM_DelayMs(5);
-	BK4819_TurnsOffTones_TurnsOnRX();
-	SYSTEM_DelayMs(5);
-	BK4819_WriteRegister(BK4819_REG_71, tone_cfg);
-	return false;
 }
 
 static const char *MENU_GetMorseLabel(const uint8_t menu_id)
 {
 	switch (menu_id)
 	{
+		case MENU_SQL:                  return "SQUELCH";
+		case MENU_STEP:                 return "STEP";
+		case MENU_R_DCS:                return "DCS";
+		case MENU_R_CTCS:               return "CTCSS";
+		case MENU_W_N:                  return "BANDWIDTH";
 		case MENU_AM:                   return "AM FM";
+		case MENU_COMPAND:              return "COMPAND";
+		case MENU_S_ADD1:               return "SCAN LIST 1";
+		case MENU_S_ADD2:               return "SCAN LIST 2";
+		case MENU_MEM_CH:               return "MEMORY";
+		case MENU_DEL_CH:               return "DELETE";
+		case MENU_MEM_NAME:             return "NAME";
+		case MENU_S_LIST:               return "SCAN LIST";
+		case MENU_SLIST1:               return "LIST 1";
+		case MENU_SLIST2:               return "LIST 2";
+		case MENU_SC_REV:               return "SCAN RESUME";
+		case MENU_MDF:                  return "DISPLAY";
+		case MENU_SAVE:                 return "SAVE";
+		case MENU_ABR:                  return "BACKLIGHT";
+		case MENU_ABR_MIN:              return "BACKLIGHT MINIMUM";
+		case MENU_ABR_MAX:              return "BACKLIGHT MAXIMUM";
+		case MENU_ABR_ON_TX_RX:         return "BACKLIGHT TX RX";
+		case MENU_BEEP:                 return "BEEP";
+		case MENU_AUTOLK:               return "KEY LOCK";
+		case MENU_STE:                  return "TAIL";
+		case MENU_RP_STE:               return "TAIL RP";
+		case MENU_MIC:                  return "MIC";
+		case MENU_PONMSG:               return "POWER ON";
+		case MENU_VOL:                  return "BATTERY";
+		case MENU_BAT_TXT:              return "BATTERY TEXT";
+		case MENU_TDR:                  return "RX MODE";
+		case MENU_MORSE_SPEED:          return "MORSE SPEED";
+#ifdef ENABLE_VOICE
+		case MENU_VOICE:                return "VOICE";
+#endif
+		case MENU_F1SHRT:               return "F1 SHORT";
+		case MENU_F1LONG:               return "F1 LONG";
+		case MENU_F2SHRT:               return "F2 SHORT";
+		case MENU_F2LONG:               return "F2 LONG";
+		case MENU_MLONG:                return "M LONG";
+		case MENU_RESET:                return "RESET";
+#ifdef ENABLE_ARDF
 		case MENU_ARDF:                 return "ARDF";
 		case MENU_ARDF_NUMFOXES:        return "NUMBER FOX";
 		case MENU_ARDF_FOXDURATION:     return "FOX DURATION";
@@ -201,10 +249,16 @@ static const char *MENU_GetMorseLabel(const uint8_t menu_id)
 		case MENU_ARDF_GAIN_REMEMBER:   return "GAIN REMEMBER";
 		case MENU_ARDF_CYCLE_END_BEEP:  return "END SIGNAL";
 		case MENU_ARDF_SNAPSHOT_SPEED:  return "SNAPSHOT SPEED";
-		case MENU_ABR:                  return "BACKLIGHT";
-		case MENU_ABR_MIN:              return "BACKLIGHT MINIMUM";
-		case MENU_ABR_MAX:              return "BACKLIGHT MAXIMUM";
-		case MENU_MORSE_SPEED:          return "MORSE SPEED";
+		case MENU_ARDF_CLOCK_CORR:      return "CLOCK CORRECT";
+		case MENU_ARDF_MIST_FREQ:       return "MISTUNE FREQ";
+		case MENU_ARDF_MIST_GAIN_ADD_STEPS: return "MISTUNE GAIN";
+#endif
+#ifdef ENABLE_AM_FIX
+		case MENU_AM_FIX:               return "AM FIX";
+#endif
+#ifdef ENABLE_FLASHLIGHT
+		// MENU_FLASHLIGHT is not in the menu enum but keeping for completeness
+#endif
 		default:                        return NULL;
 	}
 }
@@ -214,8 +268,10 @@ static void MENU_PlayMorseString(const char *text)
 	const uint16_t unit_ms = MENU_GetMorseUnitMs();
 	const uint16_t dash_ms = unit_ms * 3U;
 
-	if (gEeprom.VOICE_PROMPT == VOICE_PROMPT_OFF || text == NULL)
+	if (text == NULL)
 		return;
+
+	MENU_MorseAudioSetup();
 
 	for (size_t i = 0; text[i] != '\0'; i++)
 	{
@@ -223,7 +279,7 @@ static void MENU_PlayMorseString(const char *text)
 		const char *pattern;
 
 		if (MENU_IsAbortKeyPressed())
-			return;
+			goto done;
 
 		if (ch >= 'a' && ch <= 'z')
 			ch -= ('a' - 'A');
@@ -231,7 +287,7 @@ static void MENU_PlayMorseString(const char *text)
 		if (ch == ' ')
 		{
 			if (!MENU_DelayInterruptible(unit_ms * 7U))
-				return;
+				goto done;
 			continue;
 		}
 
@@ -242,24 +298,29 @@ static void MENU_PlayMorseString(const char *text)
 		for (size_t j = 0; pattern[j] != '\0'; j++)
 		{
 			if (MENU_IsAbortKeyPressed())
-				return;
+				goto done;
 
-			if (!MENU_PlayMorseTone((pattern[j] == '-') ? dash_ms : unit_ms))
-				return;
+			if (!MENU_PlayMorseElement((pattern[j] == '-') ? dash_ms : unit_ms))
+				goto done;
 
+			// intra-character gap: 1 unit
 			if (pattern[j + 1] != '\0')
 			{
 				if (!MENU_DelayInterruptible(unit_ms))
-					return;
+					goto done;
 			}
 		}
 
+		// inter-character gap: 3 units
 		if (text[i + 1] != '\0' && text[i + 1] != ' ')
 		{
 			if (!MENU_DelayInterruptible(unit_ms * 3U))
-				return;
+				goto done;
 		}
 	}
+
+done:
+	MENU_MorseAudioTeardown();
 }
 
 static uint8_t MENU_AppendFixedDigitsVoice(uint8_t index, uint16_t value, uint8_t digits)
@@ -297,31 +358,38 @@ static void MENU_QueueFixedDigitsVoice(uint16_t value, uint8_t digits)
 
 static void MENU_PlayCurrentMenuVoice(void)
 {
-	if (gEeprom.VOICE_PROMPT == VOICE_PROMPT_OFF)
-		return;
-
 	MENU_StopVoicePlayback();
 	gMorseAbortKey = KEY_INVALID;
 
-	if (MenuList[gMenuCursor].voice_id != VOICE_ID_INVALID) {
-		gAnotherVoiceID = MenuList[gMenuCursor].voice_id;
-		return;
+	// Try voice clip first (if voice prompts are enabled)
+	if (gEeprom.VOICE_PROMPT != VOICE_PROMPT_OFF)
+	{
+		if (MenuList[gMenuCursor].voice_id != VOICE_ID_INVALID) {
+			gAnotherVoiceID = MenuList[gMenuCursor].voice_id;
+			return;
+		}
 	}
 
+	// Fall back to morse (always available, independent of voice prompt setting)
 	{
 		const char *morse_label = MENU_GetMorseLabel(MenuList[gMenuCursor].menu_id);
 
 		if (morse_label != NULL)
 		{
 			MENU_WaitForKeyReleaseBeforeMorse();
+			gMorseAbortKey = KEY_INVALID;
 			MENU_PlayMorseString(morse_label);
 			return;
 		}
 	}
 
-	AUDIO_SetVoiceID(0, VOICE_ID_MENU);
-	AUDIO_SetDigitVoice(1, gMenuCursor + 1);
-	AUDIO_PlaySingleVoice(true);
+	// Last resort: voice clip for "Menu N" (only if voice enabled)
+	if (gEeprom.VOICE_PROMPT != VOICE_PROMPT_OFF)
+	{
+		AUDIO_SetVoiceID(0, VOICE_ID_MENU);
+		AUDIO_SetDigitVoice(1, gMenuCursor + 1);
+		AUDIO_PlaySingleVoice(true);
+	}
 }
 
 static void MENU_PlayNumberVoice(const uint16_t value)
@@ -2286,6 +2354,31 @@ static void MENU_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
 #ifdef ENABLE_VOICE
 	MENU_PlayValueVoice(UI_MENU_GetCurrentMenuId(), gSubMenuSelection);
 #endif
+}
+
+void MENU_PlayMorseNumber(uint16_t number)
+{
+	char buf[6];
+	uint8_t pos = 0;
+
+	if (number == 0) {
+		buf[0] = '0';
+		buf[1] = '\0';
+	} else {
+		char tmp[6];
+		while (number > 0 && pos < 5) {
+			tmp[pos++] = '0' + (number % 10);
+			number /= 10;
+		}
+		for (uint8_t i = 0; i < pos; i++)
+			buf[i] = tmp[pos - 1 - i];
+		buf[pos] = '\0';
+	}
+
+	gMorseAbortKey = KEY_INVALID;
+	MENU_WaitForKeyReleaseBeforeMorse();
+	gMorseAbortKey = KEY_INVALID;
+	MENU_PlayMorseString(buf);
 }
 
 void MENU_ProcessKeys(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)

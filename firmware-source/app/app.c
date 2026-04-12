@@ -902,10 +902,9 @@ static void CheckKeys(void)
 				    gSetting_ARDFEnable &&
 				    gARDFDFSimpleMode)
 				{
-					if (gPttHoldEventSent)
-						ARDF_SnapshotSpeedIncr();
-					else
+					if (!gPttHoldEventSent)
 						ARDF_PlaySnapshot();
+					// hold+release: compass mode already finished, nothing to do
 
 					handled_df_simple_ptt = true;
 				}
@@ -933,7 +932,21 @@ static void CheckKeys(void)
 				if (gPttHeldCounter >= key_repeat_delay_10ms)
 				{
 					gPttHoldEventSent = true;
-					ProcessKey(KEY_PTT, true, true);
+
+#ifdef ENABLE_ARDF
+					if (gSetting_ARDFEnable &&
+					    gARDFDFSimpleMode &&
+					    gScreenToDisplay != DISPLAY_MENU)
+					{
+						// PTT held in ARDF mode: start compass mode
+						// (blocks until PTT is released)
+						ARDF_CompassMode();
+					}
+					else
+#endif
+					{
+						ProcessKey(KEY_PTT, true, true);
+					}
 				}
 			}
 		}
@@ -1473,6 +1486,7 @@ static void ProcessKey(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 		// but we don't want it to complain when initial press happens
 		// we want to react on realese instead
 		else if (Key != KEY_SIDE1 && Key != KEY_SIDE2 &&        // pass side buttons
+			     Key != KEY_STAR &&                                // pass STAR for battery check
 			     !(Key == KEY_MENU && bKeyHeld)) // pass KEY_MENU held
 		{
 			if ((!bKeyPressed || bKeyHeld || (Key == KEY_MENU && bKeyPressed)) && // prevent released or held, prevent KEY_MENU pressed

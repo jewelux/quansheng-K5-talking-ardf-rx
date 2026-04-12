@@ -101,6 +101,7 @@ extern void ARDF_StopFreqMistune(void);
 extern void ARDF_PlaySnapshot(void);
 extern void ARDF_SnapshotSpeedIncr(void);
 extern void ARDF_SnapshotSpeedDecr(void);
+extern void ARDF_CompassMode(void);
 
 #endif
 

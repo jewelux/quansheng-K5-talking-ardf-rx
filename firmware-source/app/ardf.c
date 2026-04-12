@@ -19,9 +19,11 @@
 #include "app/ardf.h"
 #include "app/app.h"
 #include "driver/bk4819.h"
+#include "driver/gpio.h"
 #include "driver/st7565.h"
 #include "driver/system.h"
 #include "audio.h"
+#include "bsp/dp32g030/gpio.h"
 #include "functions.h"
 #include "misc.h"
 #include "radio.h"
@@ -273,6 +275,53 @@ void ARDF_SnapshotSpeedDecr(void)
 #endif
 }
 
+
+
+void ARDF_CompassMode(void)
+{
+   // Continuous RSSI-to-tone compass mode.
+   // Rapidly alternates between reading RSSI (receiver active) and
+   // playing a short tone whose frequency is proportional to signal strength.
+   // Runs while PTT is held; returns when PTT is released.
+
+   uint16_t tone_cfg = BK4819_ReadRegister(BK4819_REG_71);
+
+   while (!GPIO_CheckBit(&GPIOC->DATA, GPIOC_PIN_PTT))
+   {
+      // --- Phase 1: Read RSSI (receiver is active) ---
+      uint16_t rssi_raw = BK4819_GetRSSI();
+      int16_t  rssi_dBm = (rssi_raw / 2) - 160;
+
+      // Map RSSI to tone frequency: -130 dBm → 300 Hz, -50 dBm → 2400 Hz
+      int16_t freq = 300 + ((rssi_dBm + 130) * 2100 / 80);
+      if (freq < 300)  freq = 300;
+      if (freq > 2400) freq = 2400;
+
+      // --- Phase 2: Play short tone pulse ---
+      BK4819_PlayTone((uint16_t)freq, true);
+      SYSTEM_DelayMs(2);
+      AUDIO_AudioPathOn();
+      BK4819_ExitTxMute();
+      SYSTEM_DelayMs(60);   // audible pulse
+      BK4819_EnterTxMute();
+      AUDIO_AudioPathOff();
+
+      // --- Phase 3: Restore RX for next RSSI reading ---
+      BK4819_TurnsOffTones_TurnsOnRX();
+      SYSTEM_DelayMs(20);   // let RSSI settle
+   }
+
+   // Teardown: restore original state
+   BK4819_WriteRegister(BK4819_REG_71, tone_cfg);
+   BK4819_TurnsOffTones_TurnsOnRX();
+   RADIO_SetModulation(gRxVfo->Modulation);
+   AUDIO_AudioPathOn();
+   gEnableSpeaker = true;
+   SYSTEM_DelayMs(10);
+   APP_StartListening(gMonitor ? FUNCTION_MONITOR : FUNCTION_RECEIVE);
+   ARDF_ActivateGainIndex();
+   gARDFRssiMax = BK4819_GetRSSI();
+}
 
 
 void ARDF_10ms(void)

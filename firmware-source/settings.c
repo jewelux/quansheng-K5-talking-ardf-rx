@@ -134,10 +134,6 @@ void SETTINGS_InitEEPROM(void)
 	EEPROM_ReadBuffer(0x0EA0, Data, 8);
 	#ifdef ENABLE_VOICE
 	gEeprom.VOICE_PROMPT = (Data[0] < 3) ? Data[0] : VOICE_PROMPT_ENGLISH;
-	#ifdef ENABLE_CUSTOM_MENU_LAYOUT
-		if (gEeprom.VOICE_PROMPT == VOICE_PROMPT_OFF)
-			gEeprom.VOICE_PROMPT = VOICE_PROMPT_ENGLISH;
-	#endif
 	gMorseSpeedWpm = (Data[3] >= 15 && Data[3] <= 70 && (Data[3] % 5) == 0) ? Data[3] : 20;
 	#endif
 	#ifdef ENABLE_RSSI_BAR

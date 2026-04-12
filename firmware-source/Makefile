@@ -14,14 +14,14 @@ ENABLE_ALARM                  ?= 0
 ENABLE_TX1750                 ?= 0
 ENABLE_PWRON_PASSWORD         ?= 0
 ENABLE_DTMF_CALLING           ?= 0
-ENABLE_FLASHLIGHT             ?= 0
+ENABLE_FLASHLIGHT             ?= 1
 
 # ---- CUSTOM MODS ----
 ENABLE_BIG_FREQ               ?= 0
 ENABLE_SMALL_BOLD             ?= 0
 ENABLE_CUSTOM_MENU_LAYOUT     ?= 1
 ENABLE_KEEP_MEM_NAME          ?= 0
-ENABLE_WIDE_RX                ?= 0
+ENABLE_WIDE_RX                ?= 1
 ENABLE_TX_WHEN_AM             ?= 0
 ENABLE_F_CAL_MENU             ?= 0
 ENABLE_CTCSS_TAIL_PHASE_SHIFT ?= 0
@@ -29,7 +29,7 @@ ENABLE_BOOT_BEEPS             ?= 0
 ENABLE_SHOW_CHARGE_LEVEL      ?= 0
 ENABLE_REVERSE_BAT_SYMBOL     ?= 0
 ENABLE_NO_CODE_SCAN_TIMEOUT   ?= 1
-ENABLE_AM_FIX                 ?= 0
+ENABLE_AM_FIX                 ?= 1
 ENABLE_SQUELCH_MORE_SENSITIVE ?= 1
 ENABLE_FASTER_CHANNEL_SCAN    ?= 1
 ENABLE_RSSI_BAR               ?= 0

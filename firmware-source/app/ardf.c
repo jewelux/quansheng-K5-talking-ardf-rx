@@ -205,7 +205,7 @@ void ARDF_PlaySnapshot(void)
    uint8_t level;
    uint8_t remaining;
 
-   if ( !gSetting_ARDFEnable || !gARDFDFSimpleMode )
+   if ( !gSetting_ARDFEnable )
       return;
 
    level = ARDF_DFSimpleAudio_GetLevelFromdBm((gARDFRssiMax / 2) - 160);

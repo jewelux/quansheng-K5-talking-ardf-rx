@@ -118,10 +118,13 @@ static void MENU_StopVoicePlayback(void)
 	gAnotherVoiceID          = VOICE_ID_INVALID;
 }
 
-// Force immediate display update before blocking Morse playback
+// Force immediate display update before blocking Morse playback.
+// Must NOT set gFlagRefreshSetting here – that flag causes
+// MENU_ShowCurrentSetting() to run in the main loop, which resets
+// gSubMenuSelection back to the stored value and undoes the user's
+// navigation in sub-menus.
 static void MENU_ForceDisplayUpdate(void)
 {
-	gFlagRefreshSetting   = true;
 	gRequestDisplayScreen = DISPLAY_INVALID;
 	UI_DisplayMenu();
 }
@@ -1535,30 +1538,18 @@ void MENU_ShowCurrentSetting(void)
                // ARDF on without DF simple mode
                gSubMenuSelection = 1;
             }
-#ifdef ENABLE_VOICE
-			MENU_PlayValueVoice(MENU_ARDF, gSubMenuSelection);
-#endif
 			break;
 			
 		case MENU_ARDF_NUMFOXES:
 			gSubMenuSelection = gARDFNumFoxes;
-#ifdef ENABLE_VOICE
-			MENU_PlayValueVoice(MENU_ARDF_NUMFOXES, gSubMenuSelection);
-#endif
 			break;
 			
 		case MENU_ARDF_FOXDURATION:
 			gSubMenuSelection = gARDFFoxDuration10ms;
-#ifdef ENABLE_VOICE
-			MENU_PlayValueVoice(MENU_ARDF_FOXDURATION, gSubMenuSelection);
-#endif
 			break;
 
 		case MENU_ARDF_SETFOX:
 			gSubMenuSelection = gARDFActiveFox + 1;
-#ifdef ENABLE_VOICE
-			MENU_PlayValueVoice(MENU_ARDF_SETFOX, gSubMenuSelection);
-#endif
 			break;
 		
 		case MENU_ARDF_TIME_RESET:
@@ -1567,23 +1558,14 @@ void MENU_ShowCurrentSetting(void)
 		
 		case MENU_ARDF_GAIN_REMEMBER:
 			gSubMenuSelection = gARDFGainRemember;
-#ifdef ENABLE_VOICE
-			MENU_PlayValueVoice(MENU_ARDF_GAIN_REMEMBER, gSubMenuSelection);
-#endif
 			break;
 
 		case MENU_ARDF_CYCLE_END_BEEP:
 			gSubMenuSelection = gARDFCycleEndBeep_s;
-#ifdef ENABLE_VOICE
-			MENU_PlayValueVoice(MENU_ARDF_CYCLE_END_BEEP, gSubMenuSelection);
-#endif
 			break;
 
 		case MENU_ARDF_SNAPSHOT_SPEED:
 			gSubMenuSelection = gARDFSnapshotSpeed;
-#ifdef ENABLE_VOICE
-			MENU_PlayValueVoice(MENU_ARDF_SNAPSHOT_SPEED, gSubMenuSelection);
-#endif
 			break;
 
 		case MENU_ARDF_CLOCK_CORR:

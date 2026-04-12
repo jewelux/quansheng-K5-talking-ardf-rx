@@ -297,8 +297,8 @@ Morse code output speed in words per minute. Range: **15–70 WPM**.
 
 | Key | Function |
 |-----|----------|
-| **UP / DOWN** | Adjust receiver gain (default) or squelch level (after SIDE2 toggle) |
-| **SIDE2** (below PTT) | Toggle UP/DOWN between **gain adjustment** and **squelch adjustment** mode (Morse feedback: "GAIN" / "SQL") |
+| **UP / DOWN** | Adjust receiver gain (default) or squelch level (after SIDE1 toggle) |
+| **SIDE1** (directly below PTT) | Toggle UP/DOWN between **gain adjustment** and **squelch adjustment** mode (Morse feedback: "GAIN" / "SQL") |
 | **PTT** | Compass mode – continuous RSSI-to-tone output while held |
 | **F + UP/DOWN** | Frequency step or memory channel change |
 | **MENU** | Enter menu |

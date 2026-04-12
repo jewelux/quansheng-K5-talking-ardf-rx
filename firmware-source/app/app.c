@@ -901,7 +901,7 @@ static void CheckKeys(void)
 				if (!SerialConfigInProgress() &&
 				    gSetting_ARDFEnable)
 				{
-					if (!gPttHoldEventSent && gARDFDFSimpleMode)
+					if (!gPttHoldEventSent)
 						ARDF_PlaySnapshot();
 					// hold+release: compass mode already finished, nothing to do
 
@@ -1560,9 +1560,10 @@ static void ProcessKey(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 	}
 
 #ifdef ENABLE_ARDF
-	// In ARDF mode, SIDE2 toggles between squelch and gain adjustment mode
+	// In ARDF mode, SIDE1 (key directly below PTT) toggles between
+	// squelch and gain adjustment mode for UP/DOWN keys.
 	if (gSetting_ARDFEnable &&
-	    Key == KEY_SIDE2 &&
+	    Key == KEY_SIDE1 &&
 	    !bKeyHeld && bKeyPressed &&
 	    (gScreenToDisplay == DISPLAY_MAIN || gScreenToDisplay == DISPLAY_ARDF))
 	{

@@ -37,6 +37,7 @@ ggf. weiteren KI-Agenten. Jede Sitzung muss diese Datei lesen und aktualisieren.
 
 | Datum (UTC)  | Agent / Sitzung         | Aenderung                                              |
 | ------------ | ----------------------- | ------------------------------------------------------ |
+| 2026-04-12   | Copilot Cloud Agent     | Voice-Prompt-Evaluation erstellt: `VOICE_PROMPT_EVALUATION.md` + `utils/generate_voice_prompts.sh` |
 | 2026-04-12   | Copilot Cloud Agent     | MSYS2 Flash-Tool erstellt: `k5flash.py` + `msys2_flash.sh` |
 | 2026-04-11   | Copilot Cloud Agent     | Unterbrochene Arbeit fortgesetzt: Compile-Error behoben, TX-Menues/Dead-Code entfernt (48468->45184 bytes) |
 | 2026-04-11   | Copilot Cloud Agent     | Scrambler/Descrambler komplett entfernt (48856->48468 bytes) |
@@ -55,9 +56,11 @@ ggf. weiteren KI-Agenten. Jede Sitzung muss diese Datei lesen und aktualisieren.
 
 | Prio | Aufgabe                                                       | Status     | Verantwortlich |
 | ---- | ------------------------------------------------------------- | ---------- | -------------- |
+| 0    | Entscheidungen in `VOICE_PROMPT_EVALUATION.md` treffen        | Warte auf Do9RE | Do9RE |
 | 1    | Entscheidungen in `AUDIT_REMAINING_FEATURES.md` treffen       | Warte auf Do9RE | Do9RE |
-| 2    | Gewaehlte Optionen aus Audit umsetzen                         | Warte auf Entscheidungen | Agent |
-| 3    | TX-Code Phase 3-5 (BK4819 TX, DTMF TX, Menues, etc.)         | Groesstenteils erledigt — siehe Sitzung 7 | Agent |
+| 2    | Gewaehlte Optionen aus Voice-Evaluation umsetzen              | Warte auf Entscheidungen | Agent |
+| 3    | Gewaehlte Optionen aus Audit umsetzen                         | Warte auf Entscheidungen | Agent |
+| 4    | TX-Code Phase 3-5 (BK4819 TX, DTMF TX, Menues, etc.)         | Groesstenteils erledigt — siehe Sitzung 7 | Agent |
 
 ---
 
@@ -121,6 +124,43 @@ ggf. weiteren KI-Agenten. Jede Sitzung muss diese Datei lesen und aktualisieren.
 ## Sitzungs-Protokoll
 
 <!-- Kurzes Protokoll jeder Agenten-Sitzung — chronologisch, neueste oben -->
+
+### 2026-04-12 (9. Sitzung) — Copilot Cloud Agent
+
+**Auftrag:** Evaluation der Moeglichkeit, Voice Prompts zusaetzlich zur Morse-Ausgabe
+zu implementieren. Analyse der Hardware-Voraussetzungen und Erstellung eines
+Entscheidungsdokuments.
+
+**Durchgefuehrt:**
+- Komplette Analyse der Audio-Hardware:
+  - Externer Voice-ROM-Chip (JQ8400-artig): 76 englische + 58 chinesische vorprogrammierte Clips
+  - GPIO Bit-Banging Protokoll (GPIOA Pin 12/13) — nur Wiedergabe, kein Schreibzugriff
+  - BK4819: Nur Tone-Generator, kein PCM/Sample-Playback
+  - DP32G030: Kein DAC-Ausgang, kein Pfad fuer Software-generiertes Audio zum Lautsprecher
+- Speicher-Analyse: ~15 KB Flash frei, EEPROM nicht nutzbar fuer Audio
+- 5 Optionen evaluiert (A–E) mit Machbarkeit, Speicherbedarf und Empfehlung
+- `VOICE_PROMPT_EVALUATION.md` erstellt mit:
+  - Detaillierte Hardware-Dokumentation
+  - Optionen A–E mit Bewertungen
+  - Kommentierbare Entscheidungsbloecke fuer kuenftige Sitzungen
+  - Technische Referenz mit Datei- und Funktionsliste
+- `firmware-source/utils/generate_voice_prompts.sh` erstellt:
+  - eSpeak + FFmpeg basierter Voice-Prompt-Generator
+  - MSYS2/Linux/macOS kompatibel
+  - Erzeugt WAV, Raw PCM, ADPCM und C-Header
+  - 3 Modi: full (alle Worte), letters (Buchstaben), test (3 Beispiele)
+- HANDOVER.md aktualisiert
+
+**Ergebnis:**
+- Voice-ROM ist nicht erweiterbar (Hardware-Limitation)
+- PCM-Playback unmoeglich ohne Hardware-Mod (kein DAC, kein Audio-Pfad)
+- **Empfehlung:** Morse-System weiter ausbauen (Option D) — einziger rein
+  firmware-basierter Ansatz
+- Sekundaer: Akustische Ton-Icons (Option E) als Ergaenzung
+
+**Keine Aenderungen an:**
+- Firmware-Quellcode (nur Analyse und Dokumentation)
+- Makefile oder Build-Konfiguration
 
 ### 2026-04-12 (8. Sitzung) — Copilot Cloud Agent
 

@@ -37,6 +37,7 @@ ggf. weiteren KI-Agenten. Jede Sitzung muss diese Datei lesen und aktualisieren.
 
 | Datum (UTC)  | Agent / Sitzung         | Aenderung                                              |
 | ------------ | ----------------------- | ------------------------------------------------------ |
+| 2026-04-12   | Copilot Cloud Agent     | ARDF: Kompass alle Modi, ARDF-Morse OFF/ARDF/DF, AM/FM alle Mods, Display-vor-Morse, kein Titel-Morse bei Submenu-Eintritt |
 | 2026-04-12   | Copilot Cloud Agent     | Build/Flash-Scripts: `make clean` statt manuelle Suche, k5flash.py nur build-output/, Quellverzeichnis-Aufraeumung |
 | 2026-04-12   | Copilot Cloud Agent     | Morse-Bugs behoben, Voice/Morse getrennt, Kompass-Modus, Batterie-Morse, Makefile-Flags |
 | 2026-04-12   | Copilot Cloud Agent     | Menue: PTT=Bestaetigen, SIDE1/2=Hoch/Runter; Morse auto-advance; Squelch Level 1 Fix; Flash V3 Warnung; Build Cleanup; README Tastatur; V2 Evaluation |
@@ -131,6 +132,50 @@ ggf. weiteren KI-Agenten. Jede Sitzung muss diese Datei lesen und aktualisieren.
 ## Sitzungs-Protokoll
 
 <!-- Kurzes Protokoll jeder Agenten-Sitzung — chronologisch, neueste oben -->
+
+### 2026-04-12 (13. Sitzung) — Copilot Cloud Agent
+
+**Auftrag:** ARDF-Kompass-Modus fuer alle Modi, Morse-Unterscheidung ARDF-Submenu,
+AM/FM-Morse-Feedback, Display-vor-Morse, kein Titel-Morse bei Submenu-Eintritt.
+
+**Durchgefuehrt:**
+
+1. **ARDF Kompass-Modus fuer alle ARDF-Modi:**
+   - `gARDFDFSimpleMode`-Guard entfernt: PTT-Hold startet Kompass in ARDF und DF Simple
+   - Snapshot (PTT-Short) bleibt nur in DF Simple verfuegbar
+   - In `app/app.c`: PTT-Hold und PTT-Release Logik angepasst
+
+2. **ARDF-Menu Morse-Unterscheidung:**
+   - ARDF-Submenu morst jetzt "OFF", "ARDF" oder "DF" statt generisches ON/OFF
+   - In `MENU_PlayValueVoice()`: eigener `case MENU_ARDF` mit drei Strings
+
+3. **AM/FM-Morse fuer alle Modulationsarten:**
+   - Ternary-Kette (`AM/FM/USB`) ersetzt durch `gModulationStr[value]`
+   - Deckt automatisch auch BYP und RAW ab (wenn `ENABLE_BYP_RAW_DEMODULATORS`)
+   - Bounds-Check hinzugefuegt
+
+4. **Kein Titel-Morse bei Submenu-Eintritt:**
+   - `MENU_PlayCurrentMenuVoice()` beim Betreten des Submenues entfernt
+   - Stattdessen: `MENU_ShowCurrentSetting()` + `MENU_PlayValueVoice()` fuer den
+     aktuell selektierten Wert — spart Zeit, User kennt den Titel bereits
+
+5. **Display-vor-Morse (visueller Fokus springt sofort):**
+   - `MENU_ForceDisplayUpdate()` Hilfsfunktion: ruft `UI_DisplayMenu()` direkt auf
+   - Vor jedem blockierenden `MENU_PlayMorseString`/`MENU_PlayValueVoice` aufgerufen
+   - Display wird sofort aktualisiert, bevor die Morse-Ausgabe blockiert
+   - In Menu-Navigation (UP/DOWN) und Submenu-Navigation (Wertaenderung)
+
+**Ergebnis:**
+- Blinder User kann sich in jedem ARDF-Modus mit PTT-Hold im Kreis drehen
+- ARDF-Menu-Eintraege sind per Morse klar unterscheidbar
+- AM/FM/USB/BYP/RAW werden alle korrekt gemorst
+- Visueller Fokus springt sofort, dann wird gemorst
+- Beim Betreten eines Submenues wird der aktuelle Wert angesagt, nicht der Titel
+
+**Keine Aenderungen an:**
+- EEPROM-Layout
+- Makefile
+- Flash-Protokoll
 
 ### 2026-04-12 (12. Sitzung) — Copilot Cloud Agent
 

@@ -899,10 +899,9 @@ static void CheckKeys(void)
 
 #ifdef ENABLE_ARDF
 				if (!SerialConfigInProgress() &&
-				    gSetting_ARDFEnable &&
-				    gARDFDFSimpleMode)
+				    gSetting_ARDFEnable)
 				{
-					if (!gPttHoldEventSent)
+					if (!gPttHoldEventSent && gARDFDFSimpleMode)
 						ARDF_PlaySnapshot();
 					// hold+release: compass mode already finished, nothing to do
 
@@ -935,7 +934,6 @@ static void CheckKeys(void)
 
 #ifdef ENABLE_ARDF
 					if (gSetting_ARDFEnable &&
-					    gARDFDFSimpleMode &&
 					    gScreenToDisplay != DISPLAY_MENU)
 					{
 						// PTT held in ARDF mode: start compass mode

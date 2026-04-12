@@ -118,6 +118,14 @@ static void MENU_StopVoicePlayback(void)
 	gAnotherVoiceID          = VOICE_ID_INVALID;
 }
 
+// Force immediate display update before blocking Morse playback
+static void MENU_ForceDisplayUpdate(void)
+{
+	gFlagRefreshSetting   = true;
+	gRequestDisplayScreen = DISPLAY_INVALID;
+	UI_DisplayMenu();
+}
+
 static KEY_Code_t gMorseAbortKey = KEY_INVALID;
 
 static bool MENU_IsAbortKeyPressed(void)
@@ -426,10 +434,20 @@ static void MENU_PlayValueVoice(const uint8_t menu_id, const int32_t value)
 			break;
 
 		case MENU_AM:
-			MENU_PlayMorseString((value == MODULATION_AM) ? "AM" : (value == MODULATION_FM) ? "FM" : "USB");
+			if (value >= 0 && value < ARRAY_SIZE(gModulationStr))
+				MENU_PlayMorseString(gModulationStr[value]);
 			break;
 
 		case MENU_ARDF:
+			// Distinguish OFF / ARDF / DF Simple via Morse
+			if (value <= 0)
+				MENU_PlayMorseString("OFF");
+			else if (value == 1)
+				MENU_PlayMorseString("ARDF");
+			else
+				MENU_PlayMorseString("DF");
+			break;
+
 		case MENU_BEEP:
 			gAnotherVoiceID = (value <= 0) ? VOICE_ID_OFF : VOICE_ID_ON;
 			break;
@@ -2003,9 +2021,6 @@ static void MENU_Key_MENU(const bool bKeyPressed, const bool bKeyHeld)
 
 	if (!gIsInSubMenu)
 	{
-		#ifdef ENABLE_VOICE
-			MENU_PlayCurrentMenuVoice();
-		#endif
 #ifdef ENABLE_DTMF_CALLING
         if (UI_MENU_GetCurrentMenuId() == MENU_ANI_ID)
             return;
@@ -2024,6 +2039,13 @@ static void MENU_Key_MENU(const bool bKeyPressed, const bool bKeyHeld)
 			gInputBoxIndex      = 0;
 			edit_index          = -1;
 		}
+
+		// Play the current value directly (skip menu title — user already heard it)
+		#ifdef ENABLE_VOICE
+			MENU_ShowCurrentSetting();
+			MENU_ForceDisplayUpdate();
+			MENU_PlayValueVoice(UI_MENU_GetCurrentMenuId(), gSubMenuSelection);
+		#endif
 
 		return;
 	}
@@ -2226,6 +2248,7 @@ static void MENU_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
 		gRequestDisplayScreen = DISPLAY_MENU;
 
 		#ifdef ENABLE_VOICE
+			MENU_ForceDisplayUpdate();
 			MENU_PlayCurrentMenuVoice();
 
 			// if morse was interrupted by a navigation key, advance and re-announce
@@ -2242,6 +2265,7 @@ static void MENU_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
 				gMenuCursor = NUMBER_AddWithWraparound(gMenuCursor, -Direction, 0, gMenuListCount - 1);
 				gFlagRefreshSetting   = true;
 				gRequestDisplayScreen = DISPLAY_MENU;
+				MENU_ForceDisplayUpdate();
 				MENU_PlayCurrentMenuVoice();
 			}
 		#endif
@@ -2269,6 +2293,7 @@ static void MENU_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
 		gRequestDisplayScreen = DISPLAY_MENU;
 #ifdef ENABLE_VOICE
 		MENU_StopVoicePlayback();
+		MENU_ForceDisplayUpdate();
 		MENU_PlayValueVoice(UI_MENU_GetCurrentMenuId(), gSubMenuSelection);
 #endif
 		return;
@@ -2293,6 +2318,7 @@ static void MENU_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
 		gSubMenuSelection     = duration;
 		gRequestDisplayScreen = DISPLAY_MENU;
 #ifdef ENABLE_VOICE
+		MENU_ForceDisplayUpdate();
 		MENU_PlayValueVoice(UI_MENU_GetCurrentMenuId(), gSubMenuSelection);
 #endif
 		return;
@@ -2314,6 +2340,7 @@ static void MENU_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
 		gSubMenuSelection     = correction;
 		gRequestDisplayScreen = DISPLAY_MENU;
 #ifdef ENABLE_VOICE
+		MENU_ForceDisplayUpdate();
 		MENU_PlayValueVoice(UI_MENU_GetCurrentMenuId(), gSubMenuSelection);
 #endif
 		return;
@@ -2341,6 +2368,7 @@ static void MENU_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
 			MENU_ClampSelection(Direction);
 			gRequestDisplayScreen = DISPLAY_MENU;
 #ifdef ENABLE_VOICE
+			MENU_ForceDisplayUpdate();
 			MENU_PlayValueVoice(UI_MENU_GetCurrentMenuId(), gSubMenuSelection);
 #endif
 			return;
@@ -2352,6 +2380,7 @@ static void MENU_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
 
 	gRequestDisplayScreen = DISPLAY_MENU;
 #ifdef ENABLE_VOICE
+	MENU_ForceDisplayUpdate();
 	MENU_PlayValueVoice(UI_MENU_GetCurrentMenuId(), gSubMenuSelection);
 #endif
 }

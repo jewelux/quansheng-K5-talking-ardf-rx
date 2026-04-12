@@ -434,7 +434,7 @@ static void MENU_PlayValueVoice(const uint8_t menu_id, const int32_t value)
 			break;
 
 		case MENU_AM:
-			if (value >= 0 && value < ARRAY_SIZE(gModulationStr))
+			if (value >= 0 && (unsigned int)value < ARRAY_SIZE(gModulationStr))
 				MENU_PlayMorseString(gModulationStr[value]);
 			break;
 

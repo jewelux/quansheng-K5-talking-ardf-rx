@@ -15,3 +15,4 @@ k5_eeprom.raw
 __pycache__/
 firmware-source/nul
 firmware-source/.venv_build
+firmware-source/.venv_flash

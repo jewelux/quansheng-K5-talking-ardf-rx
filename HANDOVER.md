@@ -37,6 +37,7 @@ ggf. weiteren KI-Agenten. Jede Sitzung muss diese Datei lesen und aktualisieren.
 
 | Datum (UTC)  | Agent / Sitzung         | Aenderung                                              |
 | ------------ | ----------------------- | ------------------------------------------------------ |
+| 2026-04-12   | Copilot Cloud Agent     | MSYS2 Flash-Tool erstellt: `k5flash.py` + `msys2_flash.sh` |
 | 2026-04-11   | Copilot Cloud Agent     | Unterbrochene Arbeit fortgesetzt: Compile-Error behoben, TX-Menues/Dead-Code entfernt (48468->45184 bytes) |
 | 2026-04-11   | Copilot Cloud Agent     | Scrambler/Descrambler komplett entfernt (48856->48468 bytes) |
 | 2026-04-11   | Copilot Cloud Agent     | Codebase-Audit erstellt (`AUDIT_REMAINING_FEATURES.md`) |
@@ -91,6 +92,19 @@ ggf. weiteren KI-Agenten. Jede Sitzung muss diese Datei lesen und aktualisieren.
 - `compile-with-docker.sh` / `compile-with-docker.bat`
 - Baut im Container, Ausgabe in `compiled-firmware/`
 
+### Firmware flashen (MSYS2)
+
+- `msys2_flash.sh` — interaktives Wrapper-Skript
+  - Prueft Python3 und pyserial, bietet Installation an
+  - Startet `k5flash.py` im interaktiven Modus
+- `k5flash.py` — Python-Flasher (auch standalone nutzbar)
+  - Interaktiver Modus: `python3 k5flash.py` (Port und Datei werden abgefragt)
+  - Kommandozeile: `python3 k5flash.py COM3 firmware_uvk5_v1.packed.bin`
+  - Unterstuetzt `.packed.bin` (gepackt) und `.bin` (roh) Dateien
+  - Sucht automatisch in `build-output/` nach Firmware-Dateien
+  - Benoetigt `pyserial` (`pip install pyserial` oder `pacman -S mingw-w64-x86_64-python-pyserial`)
+  - Radio muss im Flash-Modus sein: PTT + Einschalten (Display dunkel, LED weiss)
+
 ---
 
 ## Notizen zwischen Sitzungen
@@ -107,6 +121,34 @@ ggf. weiteren KI-Agenten. Jede Sitzung muss diese Datei lesen und aktualisieren.
 ## Sitzungs-Protokoll
 
 <!-- Kurzes Protokoll jeder Agenten-Sitzung — chronologisch, neueste oben -->
+
+### 2026-04-12 (8. Sitzung) — Copilot Cloud Agent
+
+**Auftrag:** MSYS2-basiertes Flash-Tool erstellen, da Browser-Flasher (Firefox/Chrome)
+nicht funktioniert.
+
+**Durchgefuehrt:**
+- Bootloader-Protokoll analysiert (Quellen: amnemonic/Quansheng_UV-K5_Firmware docs,
+  egzumer/uvtools JavaScript-Quellcode)
+- `k5flash.py` erstellt: vollstaendiger Python-Flasher fuer UV-K5/K6/5R Plus
+  - Implementiert das komplette Bootloader-Protokoll (38400 baud, XOR, CRC16-CCITT)
+  - Unterstuetzt `.packed.bin` und rohe `.bin` Dateien
+  - Interaktiver Modus mit Port-Erkennung und Dateisuche
+  - Kommandozeilen-Modus fuer Automatisierung
+  - Fortschrittsbalken beim Flashen
+  - Sicherheitsabfragen und ausfuehrliche Fehlermeldungen (deutsch)
+- `msys2_flash.sh` erstellt: interaktives MSYS2-Wrapper-Skript
+  - Prueft MINGW64-Umgebung, Python3, pyserial
+  - Bietet automatische Installation fehlender Pakete
+  - Treiber-Hinweise fuer CH340/CP2102 Kabel
+  - Anleitung fuer Flash-Modus
+- `.gitignore`: `.venv_flash` hinzugefuegt
+- HANDOVER.md aktualisiert
+
+**Keine Aenderungen an:**
+- Firmware-Quellcode
+- Makefile
+- Bestehenden Build-Skripten
 
 ### 2026-04-11 (7. Sitzung) — Copilot Cloud Agent
 

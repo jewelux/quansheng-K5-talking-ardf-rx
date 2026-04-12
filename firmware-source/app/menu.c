@@ -945,7 +945,9 @@ void MENU_AcceptSetting(void)
 		
 		case MENU_ARDF:
 		{
-			// Direct mapping: 0=OFF, 1=ARDF, 2=DF Simple
+			// Direct mapping avoids the former gSubMenuSelection=3 hack which
+			// caused an out-of-bounds read on the 3-element gSubMenu_ARDF array.
+			// 0=OFF, 1=ARDF, 2=DF Simple
 			const bool new_enable   = (gSubMenuSelection != 0);
 			const bool new_dfSimple = (gSubMenuSelection == 2);
 

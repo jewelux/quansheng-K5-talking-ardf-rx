@@ -24,7 +24,7 @@
 #   output/raw/          — Rohdaten (8-bit unsigned, 8000 Hz mono)
 #   output/adpcm/        — IMA-ADPCM komprimiert (4-bit, 8000 Hz mono)
 #   output/headers/      — C-Header-Dateien mit const uint8_t Arrays
-#   output/summary.txt   — Groessenübersicht
+#   output/summary.txt   — Groessenuebersicht
 #
 # ==============================================================================
 
@@ -33,7 +33,7 @@ set -euo pipefail
 # --- Konfiguration ---
 
 ESPEAK_VOICE="en"          # Sprache: en = Englisch
-ESPEAK_SPEED=130           # Sprechgeschwindigkeit (Standard: 175, langsamer = deutlicher)
+ESPEAK_SPEED=130           # Sprechgeschwindigkeit (eSpeak-Standard: 175, hier 130 fuer deutlichere Aussprache)
 ESPEAK_PITCH=50            # Tonhoehe (Standard: 50)
 ESPEAK_AMPLITUDE=100       # Lautstaerke (0-200)
 
@@ -67,16 +67,20 @@ check_dependencies() {
         missing+=("ffmpeg")
     fi
 
+    if ! command -v bc &>/dev/null; then
+        missing+=("bc")
+    fi
+
     if [[ ${#missing[@]} -gt 0 ]]; then
         echo "FEHLER: Fehlende Abhaengigkeiten: ${missing[*]}"
         echo ""
         echo "Installation:"
         if [[ "${MSYSTEM:-}" == "MINGW64" ]]; then
-            echo "  pacman -S mingw-w64-x86_64-espeak-ng mingw-w64-x86_64-ffmpeg"
+            echo "  pacman -S mingw-w64-x86_64-espeak-ng mingw-w64-x86_64-ffmpeg bc"
         elif [[ "$(uname)" == "Linux" ]]; then
-            echo "  sudo apt install espeak-ng ffmpeg"
+            echo "  sudo apt install espeak-ng ffmpeg bc"
         elif [[ "$(uname)" == "Darwin" ]]; then
-            echo "  brew install espeak ffmpeg"
+            echo "  brew install espeak ffmpeg"  # bc is included in macOS
         fi
         exit 1
     fi

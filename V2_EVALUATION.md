@@ -202,51 +202,51 @@ Jede Option kann durch Einkommentieren der gewuenschten Zeile gewaehlt werden.
 ### 6.2 Audio-Spektrum-Ansatz
 
 ```
-<!-- ENTSCHEIDUNG: Welcher Audio-Spektrum-Ansatz soll implementiert werden? -->
+ENTSCHEIDUNG: Welcher Audio-Spektrum-Ansatz soll implementiert werden?
 <!-- OPTION_A: Ton-Frequenz-Mapping (Sonifikation) — akustische Spektrum-Landschaft -->
 <!-- OPTION_B: Peak-Morse-Ansage — staerkste Frequenz nach Scan per Morse ansagen -->
 <!-- OPTION_C: Sweep-Beep — langsamer Sweep mit Lautstaerke-Feedback pro Bin -->
-<!-- OPTION_D: Kompass-Modus — kontinuierlicher RSSI-zu-Ton fuer Peilung -->
+OPTION_D: Kompass-Modus — kontinuierlicher RSSI-zu-Ton fuer Peilung
 <!-- OPTION_E: Keines — Audio-Spektrum vorerst nicht implementieren -->
 ```
 
 ### 6.3 AM-Fix aktivieren?
 
 ```
-<!-- ENTSCHEIDUNG: AM-Fix (AGC-Korrektur) fuer besseren AM-Empfang? -->
-<!-- OPTION_A: Ja, ENABLE_AM_FIX=1 (verbessert AM-Empfang, braucht etwas Flash) -->
+ENTSCHEIDUNG: AM-Fix (AGC-Korrektur) fuer besseren AM-Empfang?
+OPTION_A: Ja, ENABLE_AM_FIX=1 (verbessert AM-Empfang, braucht etwas Flash)
 <!-- OPTION_B: Nein, bleibt deaktiviert -->
 ```
 
 ### 6.4 Erweiterter Empfangsbereich?
 
 ```
-<!-- ENTSCHEIDUNG: ENABLE_WIDE_RX fuer erweiterten Empfangsbereich? -->
-<!-- OPTION_A: Ja, alle Frequenzen empfangbar (18 MHz bis 1300 MHz) -->
+ENTSCHEIDUNG: ENABLE_WIDE_RX fuer erweiterten Empfangsbereich?
+OPTION_A: Ja, alle Frequenzen empfangbar (18 MHz bis 1300 MHz)
 <!-- OPTION_B: Nein, Standard-Amateurfunk-Baender -->
 ```
 
 ### 6.5 UKW-Radio beibehalten?
 
 ```
-<!-- ENTSCHEIDUNG: UKW-Broadcast-Empfaenger (ENABLE_FMRADIO)? -->
+ENTSCHEIDUNG: UKW-Broadcast-Empfaenger (ENABLE_FMRADIO)?
 <!-- OPTION_A: Ja, kann als Feldunterhaltung oder Empfangstest nuetzlich sein -->
-<!-- OPTION_B: Nein, spart Flash-Speicher -->
+OPTION_B: Nein, spart Flash-Speicher
 ```
 
 ### 6.6 RSSI-Balkenanzeige?
 
 ```
-<!-- ENTSCHEIDUNG: RSSI-Balken im Display (ENABLE_RSSI_BAR)? -->
+ENTSCHEIDUNG: RSSI-Balken im Display (ENABLE_RSSI_BAR)?
 <!-- OPTION_A: Ja, nuetzlich fuer sehende Begleiter -->
-<!-- OPTION_B: Nein, spart Flash und Display-Platz -->
+OPTION_B: Nein, spart Flash und Display-Platz
 ```
 
 ### 6.7 Taschenlampe?
 
 ```
-<!-- ENTSCHEIDUNG: Taschenlampen-LED (ENABLE_FLASHLIGHT)? -->
-<!-- OPTION_A: Ja, praktisch im Feld bei Dunkelheit -->
+ENTSCHEIDUNG: Taschenlampen-LED (ENABLE_FLASHLIGHT)?
+OPTION_A: Ja, praktisch im Feld bei Dunkelheit
 <!-- OPTION_B: Nein, nicht ARDF-relevant -->
 ```
 
@@ -256,23 +256,24 @@ Jede Option kann durch Einkommentieren der gewuenschten Zeile gewaehlt werden.
 
 Unabhaengig von den Optionen oben gibt es Verbesserungen, die die
 Blind-Accessibility weiter staerken koennten:
+**DO9RE**: ich mache Sterne * vor die gewünschten Änderungen, bitte implementieren.
 
 ### 7.1 Morse-Erweiterungen
 
-- Alle Menueeintraege mit Morse-Labels versehen (aktuell nur ca. 13 von 40+)
+* - Alle Menueeintraege mit Morse-Labels versehen (aktuell nur ca. 13 von 40+) -> Nur wo kein Voice Prompt dazu vorhanden ist. 
 - Submenu-Werte per Morse ansagen (z.B. Squelch-Level als Zahl morsen)
 - Frequenz-Ansage per Morse auf Hauptbildschirm
 
 ### 7.2 Audio-Feedback
 
-- Unterschiedliche Beep-Toene fuer verschiedene Aktionen
+* - Unterschiedliche Beep-Toene fuer verschiedene Aktionen -> Auf und absteigende Tolnfolge für ein und ausschalten von Optionen.
   (aktuell: 500 Hz / 1 kHz, koennte differenzierter sein)
-- Batterie-Warn-Beep als unterscheidbare Tonfolge
-- Tastensperr-Feedback als eigener Ton
+* - Batterie-Warn-Beep als unterscheidbare Tonfolge
+* - Tastensperr-Feedback als eigener Ton
 
 ### 7.3 ARDF-spezifisch
 
-- Kontinuierlicher RSSI-Ton (Peil-Modus) statt nur PTT-Snapshot
+* - Kontinuierlicher RSSI-Ton (Peil-Modus) statt nur PTT-Snapshot -> Geht das parallel zum empfangenen Signal hörbar? Kann der Tongenerator sweeps erzeugen oder muss immer neu gepulst werden?
 - Akustisches Signal beim Fuchswechsel im Zyklus
 - Gain-Index per Morse ansagen (aktuell nur Voice-Clip Nummer)
 

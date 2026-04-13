@@ -325,13 +325,14 @@ void ACTION_Handle(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 	if ( gSetting_ARDFEnable
 	     && gEeprom.KEY_LOCK
 	     && !( (funcShort==ACTION_OPT_A_B) ||
+	           (funcShort==ACTION_OPT_ARDF_ON_OFF) ||
 	           (funcShort==ACTION_OPT_ARDF_GAIN_MIDDLE) ||
 	           (funcShort==ACTION_OPT_ARDF_SNAPSHOT_SPEED_UP) ||
 	           (funcShort==ACTION_OPT_ARDF_SNAPSHOT_SPEED_DOWN) )
 	   )
 	{
 		// ARDF mode is on and keys are locked:
-		// allow only A/B switch and gain middle setting on the function keys, nothing else
+		// allow A/B switch, ARDF on/off toggle, and gain middle setting on the function keys, nothing else
 		return;
 	}
 

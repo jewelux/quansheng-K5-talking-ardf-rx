@@ -438,17 +438,25 @@ static void MENU_PlayValueVoice(const uint8_t menu_id, const int32_t value)
 {
 	const bool voice_off = (gEeprom.VOICE_PROMPT == VOICE_PROMPT_OFF);
 
+	MENU_StopVoicePlayback();
+	gMorseAbortKey = KEY_INVALID;
+
 	switch (menu_id)
 	{
 		// --- Morse-based announcements (work regardless of voice setting) ---
 
 		case MENU_AM:
 			if (value >= 0 && (unsigned int)value < ARRAY_SIZE(gModulationStr))
+			{
+				MENU_WaitForKeyReleaseBeforeMorse();
+				gMorseAbortKey = KEY_INVALID;
 				MENU_PlayMorseString(gModulationStr[value]);
+			}
 			break;
 
 		case MENU_ARDF:
-			// Distinguish OFF / ARDF / DF Simple via Morse
+			MENU_WaitForKeyReleaseBeforeMorse();
+			gMorseAbortKey = KEY_INVALID;
 			if (value <= 0)
 				MENU_PlayMorseString("OFF");
 			else if (value == 1)
@@ -457,7 +465,7 @@ static void MENU_PlayValueVoice(const uint8_t menu_id, const int32_t value)
 				MENU_PlayMorseString("DF");
 			break;
 
-		// --- Voice-based announcements (skipped when voice is off) ---
+		// --- Voice with Morse number fallback ---
 
 		case MENU_STEP:
 			if (!voice_off)
@@ -497,13 +505,30 @@ static void MENU_PlayValueVoice(const uint8_t menu_id, const int32_t value)
 		case MENU_ABR_MIN:
 		case MENU_ABR_MAX:
 		case MENU_SAVE:
+			if (!voice_off)
+				MENU_PlayNumberVoice((uint16_t)value);
+			else
+				MENU_PlayMorseNumber((uint16_t)value);
+			break;
+
 		case MENU_ARDF_NUMFOXES:
 		case MENU_ARDF_SETFOX:
 		case MENU_ARDF_GAIN_REMEMBER:
 		case MENU_ARDF_CYCLE_END_BEEP:
 		case MENU_ARDF_SNAPSHOT_SPEED:
+		case MENU_ARDF_MIST_GAIN_ADD_STEPS:
 			if (!voice_off)
 				MENU_PlayNumberVoice((uint16_t)value);
+			else
+				MENU_PlayMorseNumber((uint16_t)value);
+			break;
+
+		case MENU_ARDF_CLOCK_CORR:
+		case MENU_ARDF_MIST_FREQ:
+			if (!voice_off)
+				MENU_PlayNumberVoice((uint16_t)(value >= 0 ? value : -value));
+			else
+				MENU_PlayMorseNumber((uint16_t)(value >= 0 ? value : -value));
 			break;
 
 		case MENU_VOICE:
@@ -524,16 +549,26 @@ static void MENU_PlayValueVoice(const uint8_t menu_id, const int32_t value)
 		case MENU_MORSE_SPEED:
 			if (!voice_off)
 				MENU_QueueFixedDigitsVoice((uint16_t)value, 2);
+			else
+				MENU_PlayMorseNumber((uint16_t)value);
 			break;
 
 		case MENU_ARDF_FOXDURATION:
 			if (!voice_off)
 				MENU_PlayNumberVoice((uint16_t)((value + 50) / 100));
+			else
+				MENU_PlayMorseNumber((uint16_t)((value + 50) / 100));
 			break;
 
 		case MENU_ARDF_TIME_RESET:
 			if (!voice_off)
 				gAnotherVoiceID = VOICE_ID_CONFIRM;
+			else
+			{
+				MENU_WaitForKeyReleaseBeforeMorse();
+				gMorseAbortKey = KEY_INVALID;
+				MENU_PlayMorseString("RESET");
+			}
 			break;
 
 		default:
@@ -1467,6 +1502,64 @@ static void MENU_ClampSelection(int8_t Direction)
 	}
 }
 
+#ifdef ENABLE_VOICE
+// Advance submenu selection by Direction, respecting menu-specific step sizes
+static void MENU_AdvanceSubMenu(int8_t Direction)
+{
+	switch (UI_MENU_GetCurrentMenuId())
+	{
+		case MENU_MORSE_SPEED:
+		{
+			int32_t next = gSubMenuSelection + (Direction * 5);
+			if (next > 70) next = 15;
+			else if (next < 15) next = 70;
+			gSubMenuSelection = next;
+			break;
+		}
+#ifdef ENABLE_ARDF
+		case MENU_ARDF_FOXDURATION:
+		{
+			int32_t duration = (Direction * 10) + gSubMenuSelection;
+			if (duration > 99999) duration = 100;
+			else if (duration < 100) duration = 99999;
+			gSubMenuSelection = duration;
+			break;
+		}
+		case MENU_ARDF_CLOCK_CORR:
+		{
+			int16_t correction = Direction + gSubMenuSelection;
+			if (correction > 500) correction = 500;
+			else if (correction < -500) correction = -500;
+			gSubMenuSelection = correction;
+			break;
+		}
+#endif
+		default:
+			MENU_ClampSelection(Direction);
+			break;
+	}
+}
+
+// Re-announcement loop for submenu navigation (mirrors main menu behavior)
+static void MENU_SubMenuReannounce(void)
+{
+	while (gMorseAbortKey == KEY_UP || gMorseAbortKey == KEY_DOWN
+	       || gMorseAbortKey == KEY_SIDE1 || gMorseAbortKey == KEY_SIDE2)
+	{
+		int8_t dir = (gMorseAbortKey == KEY_UP || gMorseAbortKey == KEY_SIDE1) ? 1 : -1;
+		gMorseAbortKey = KEY_INVALID;
+
+		while (KEYBOARD_Poll() != KEY_INVALID)
+			SYSTEM_DelayMs(10);
+
+		MENU_AdvanceSubMenu(dir);
+		gRequestDisplayScreen = DISPLAY_MENU;
+		MENU_ForceDisplayUpdate();
+		MENU_PlayValueVoice(UI_MENU_GetCurrentMenuId(), gSubMenuSelection);
+	}
+}
+#endif
+
 void MENU_ShowCurrentSetting(void)
 {
 	switch (UI_MENU_GetCurrentMenuId())
@@ -2056,6 +2149,7 @@ static void MENU_Key_MENU(const bool bKeyPressed, const bool bKeyHeld)
 			MENU_ShowCurrentSetting();
 			MENU_ForceDisplayUpdate();
 			MENU_PlayValueVoice(UI_MENU_GetCurrentMenuId(), gSubMenuSelection);
+			MENU_SubMenuReannounce();
 		#endif
 
 		return;
@@ -2306,6 +2400,7 @@ static void MENU_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
 		MENU_StopVoicePlayback();
 		MENU_ForceDisplayUpdate();
 		MENU_PlayValueVoice(UI_MENU_GetCurrentMenuId(), gSubMenuSelection);
+		MENU_SubMenuReannounce();
 #endif
 		return;
 	}
@@ -2331,6 +2426,7 @@ static void MENU_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
 #ifdef ENABLE_VOICE
 		MENU_ForceDisplayUpdate();
 		MENU_PlayValueVoice(UI_MENU_GetCurrentMenuId(), gSubMenuSelection);
+		MENU_SubMenuReannounce();
 #endif
 		return;
 	}
@@ -2353,6 +2449,7 @@ static void MENU_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
 #ifdef ENABLE_VOICE
 		MENU_ForceDisplayUpdate();
 		MENU_PlayValueVoice(UI_MENU_GetCurrentMenuId(), gSubMenuSelection);
+		MENU_SubMenuReannounce();
 #endif
 		return;
 	}
@@ -2381,6 +2478,7 @@ static void MENU_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
 #ifdef ENABLE_VOICE
 			MENU_ForceDisplayUpdate();
 			MENU_PlayValueVoice(UI_MENU_GetCurrentMenuId(), gSubMenuSelection);
+			MENU_SubMenuReannounce();
 #endif
 			return;
 	}
@@ -2393,6 +2491,7 @@ static void MENU_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
 #ifdef ENABLE_VOICE
 	MENU_ForceDisplayUpdate();
 	MENU_PlayValueVoice(UI_MENU_GetCurrentMenuId(), gSubMenuSelection);
+	MENU_SubMenuReannounce();
 #endif
 }
 

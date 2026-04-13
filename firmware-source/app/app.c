@@ -1571,9 +1571,9 @@ static void ProcessKey(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 		gBeepToPlay = BEEP_1KHZ_60MS_OPTIONAL;
 #ifdef ENABLE_VOICE
 		if (gARDFSquelchMode)
-			MENU_PlayMorseString("SQL");
+			MENU_PlayMorseString("S");
 		else
-			MENU_PlayMorseString("GAIN");
+			MENU_PlayMorseString("G");
 #endif
 		goto Skip;
 	}

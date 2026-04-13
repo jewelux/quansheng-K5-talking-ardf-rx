@@ -21,11 +21,11 @@ ggf. weiteren KI-Agenten. Jede Sitzung muss diese Datei lesen und aktualisieren.
 | Eigenschaft         | Wert                                         |
 | ------------------- | -------------------------------------------- |
 | Hauptbranch         | `main`                                       |
-| Firmware-Quellcode  | `firmware-source/`                           |
+| Firmware-Quellcode  | `firmware-v1/`                           |
 | Build-Ausgabe       | `build-output/` (wird automatisch erstellt)  |
-| Build (Windows CMD) | `firmware-source/win_make.bat`               |
-| Build (MSYS2)       | `firmware-source/msys2_build.sh`             |
-| Build (Docker)      | `firmware-source/compile-with-docker.sh`     |
+| Build (Windows CMD) | `firmware-v1/win_make.bat`               |
+| Build (MSYS2)       | `firmware-v1/msys2_build.sh`             |
+| Build (Docker)      | `firmware-v1/compile-with-docker.sh`     |
 | Firmware-Varianten  | `V1` (talking ARDF), `V2_0` (+ Spectrum)     |
 | Lizenz              | Apache-2.0                                   |
 
@@ -122,7 +122,7 @@ ggf. weiteren KI-Agenten. Jede Sitzung muss diese Datei lesen und aktualisieren.
 
 <!-- Freitext-Bereich fuer Hinweise, die die naechste Sitzung wissen muss -->
 
-- Das Repository verwendet einen sauberen Root mit `firmware-source/` als Firmware-Unterordner.
+- Das Repository verwendet einen sauberen Root mit `firmware-v1/` als Firmware-Unterordner.
 - `.gitignore` schliesst Build-Artefakte aus: `build-output/`, `firmware_uvk5_v1*` u.a.
 - Die `CHANGELOG.md` dokumentiert Varianten (`V1`, `V2_0`).
 - Aenderungen an der Build-Infrastruktur sollten auch in der `README.md` Sektion "Building" reflektiert werden.
@@ -210,7 +210,7 @@ build-output. Aufraeumfunktion soll auch Quellverzeichnis sauber halten.
    - `os.listdir('.')` (aktuelles Verzeichnis) komplett entfernt
    - Nur noch `build-output/` wird durchsucht
    - Anzeige zeigt Quelle: "Firmware-Dateien in build-output/"
-   - Keine Ghost-Dateien mehr aus firmware-source/
+   - Keine Ghost-Dateien mehr aus firmware-v1/
 
 **Ergebnis:**
 - Build-Output: nur in build-output/, Quellverzeichnis bleibt sauber
@@ -374,7 +374,7 @@ Entscheidungsdokuments.
   - Optionen A–E mit Bewertungen
   - Kommentierbare Entscheidungsbloecke fuer kuenftige Sitzungen
   - Technische Referenz mit Datei- und Funktionsliste
-- `firmware-source/utils/generate_voice_prompts.sh` erstellt:
+- `firmware-v1/utils/generate_voice_prompts.sh` erstellt:
   - eSpeak + FFmpeg basierter Voice-Prompt-Generator
   - MSYS2/Linux/macOS kompatibel
   - Erzeugt WAV, Raw PCM, ADPCM und C-Header
@@ -479,7 +479,7 @@ Erstellung einer Dokumentation mit Entscheidungsbloecken fuer systematische TX-C
 **Auftrag:** Build-Output in separaten Ordner `build-output/` verschieben.
 
 **Durchgefuehrt:**
-- `msys2_build.sh` `do_build()`: Binaries werden nach `../build-output/` verschoben statt in `firmware-source/` zu verbleiben
+- `msys2_build.sh` `do_build()`: Binaries werden nach `../build-output/` verschoben statt in `firmware-v1/` zu verbleiben
 - `win_make.bat`: gleiche Aenderung (Binaries nach `..\build-output\`)
 - `.gitignore`: `build-output/` hinzugefuegt
 - `HANDOVER.md` aktualisiert
@@ -497,7 +497,7 @@ Erstellung einer Dokumentation mit Entscheidungsbloecken fuer systematische TX-C
 - `pip_install` ersetzt durch `pip_install_crcmod`: versucht pacman (`mingw-w64-x86_64-python-crcmod`), Fallback auf lokales venv
 - `check_pip_crcmod` vereinfacht (kein separater pip-Check mehr)
 - Alle `case`-Bloecke fuer MSYSTEM entfernt (MINGW64 ist jetzt Pflicht)
-- `.gitignore`: `firmware-source/.venv_build` hinzugefuegt
+- `.gitignore`: `firmware-v1/.venv_build` hinzugefuegt
 - `HANDOVER.md` aktualisiert
 
 **Keine Aenderungen an:**
@@ -509,7 +509,7 @@ Erstellung einer Dokumentation mit Entscheidungsbloecken fuer systematische TX-C
 
 **Durchgefuehrt:**
 - `win_make_bat_starten.txt` und alle Build-Skripte analysiert
-- `firmware-source/msys2_build.sh` erstellt:
+- `firmware-v1/msys2_build.sh` erstellt:
   - Abhaengigkeitspruefung (make, ARM toolchain, newlib, Python 3, pip, crcmod, git)
   - Interaktive Nachinstallation ueber pacman/pip
   - Farbige Terminalausgabe

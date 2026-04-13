@@ -451,7 +451,7 @@ Das folgende Script ist vorbereitet fuer den Fall, dass Option B oder C
 umgesetzt wird. Es erzeugt mit eSpeak und FFmpeg Rohdaten, die als
 C-Header-Array in die Firmware eingebunden werden koennten.
 
-**Datei:** `firmware-source/utils/generate_voice_prompts.sh`
+**Datei:** `firmware-v1/utils/generate_voice_prompts.sh`
 
 Siehe die separate Script-Datei im Repository.
 

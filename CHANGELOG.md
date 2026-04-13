@@ -33,7 +33,7 @@ Current documented development step for the talking ARDF branch with spectrum wo
 ### Repository Layout
 
 - GitHub root cleaned up for readability
-- firmware tree moved into `firmware-source`
+- firmware tree moved into `firmware-v1`
 - third-party notices integrated into the main README
 
 ## V1

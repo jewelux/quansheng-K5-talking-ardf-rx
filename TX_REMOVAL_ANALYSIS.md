@@ -81,7 +81,7 @@ als Dead Code Speicherplatz belegen und die Codebasis unnoetig komplex machen.
 
 ### 1.1 RADIO_PrepareTX() — Haupt-TX-Initialisierung
 
-**Datei:** `firmware-source/radio.c`, Zeilen 930-1035  
+**Datei:** `firmware-v1/radio.c`, Zeilen 930-1035  
 **Aufgerufen von:** `app/app.c:803`, `app/app.c:1990`  
 **Status:** Wird aufgerufen, kehrt aber sofort zurueck (TX_freq_check blockiert)
 
@@ -111,7 +111,7 @@ als Dead Code Speicherplatz belegen und die Codebasis unnoetig komplex machen.
 
 ### 1.2 RADIO_SetTxParameters() — TX-Hardware-Konfiguration
 
-**Datei:** `firmware-source/radio.c`, Zeilen 768-832  
+**Datei:** `firmware-v1/radio.c`, Zeilen 768-832  
 **Aufgerufen von:** `functions.c:185` (aus FUNCTION_Select bei FUNCTION_TRANSMIT)  
 **Status:** Dead Code — FUNCTION_TRANSMIT wird nie erreicht
 
@@ -129,7 +129,7 @@ als Dead Code Speicherplatz belegen und die Codebasis unnoetig komplex machen.
 
 ### 1.3 RADIO_SendCssTail() und RADIO_SendEndOfTransmission()
 
-**Datei:** `firmware-source/radio.c`, Zeilen 1037-1080  
+**Datei:** `firmware-v1/radio.c`, Zeilen 1037-1080  
 **Aufgerufen von:**
 - `RADIO_SendEndOfTransmission()` wird aufgerufen von `APP_EndTransmission()` (app/app.c:726)
 - `RADIO_SendCssTail()` wird aufgerufen von `RADIO_SendEndOfTransmission()` und `app/app.c:1236`
@@ -152,7 +152,7 @@ als Dead Code Speicherplatz belegen und die Codebasis unnoetig komplex machen.
 
 ### 1.4 APP_EndTransmission()
 
-**Datei:** `firmware-source/app/app.c`, Zeilen 723-734  
+**Datei:** `firmware-v1/app/app.c`, Zeilen 723-734  
 **Aufgerufen von:** `app/generic.c` (PTT-Release), `app/app.c:1559`  
 **Status:** Dead Code
 
@@ -173,7 +173,7 @@ als Dead Code Speicherplatz belegen und die Codebasis unnoetig komplex machen.
 
 ### 2.1 Power Amplifier Setup
 
-**Datei:** `firmware-source/driver/bk4819.c`, Zeile 695  
+**Datei:** `firmware-v1/driver/bk4819.c`, Zeile 695  
 **Funktion:** `BK4819_SetupPowerAmplifier(bias, frequency)`  
 **Aufgerufen von:** `radio.c:812` (in RADIO_SetTxParameters — Dead Code)
 
@@ -188,7 +188,7 @@ als Dead Code Speicherplatz belegen und die Codebasis unnoetig komplex machen.
 
 ### 2.2 BK4819_PrepareTransmit()
 
-**Datei:** `firmware-source/driver/bk4819.c`, Zeile 1157  
+**Datei:** `firmware-v1/driver/bk4819.c`, Zeile 1157  
 **Aufgerufen von:** `radio.c:802` (in RADIO_SetTxParameters — Dead Code)
 
 ```
@@ -202,7 +202,7 @@ als Dead Code Speicherplatz belegen und die Codebasis unnoetig komplex machen.
 
 ### 2.3 BK4819_EnableTXLink()
 
-**Datei:** `firmware-source/driver/bk4819.c`, Zeile 1249  
+**Datei:** `firmware-v1/driver/bk4819.c`, Zeile 1249  
 **Aufgerufen von:** `bk4819.c:1036` (PlayTone), `bk4819.c:1235` (DTMF), `bk4819.c:1361` (TransmitTone), `bk4819.c:1735,1841` (Roger/MDC)
 
 ```
@@ -214,7 +214,7 @@ als Dead Code Speicherplatz belegen und die Codebasis unnoetig komplex machen.
 
 ### 2.4 DTMF TX-Funktionen
 
-**Datei:** `firmware-source/driver/bk4819.c`
+**Datei:** `firmware-v1/driver/bk4819.c`
 - `BK4819_EnterDTMF_TX()` — Zeile 1223
 - `BK4819_ExitDTMF_TX()` — Zeile 1238
 - `BK4819_PlayDTMF()` — Zeile 1264
@@ -234,7 +234,7 @@ als Dead Code Speicherplatz belegen und die Codebasis unnoetig komplex machen.
 
 ### 2.5 BK4819_TransmitTone()
 
-**Datei:** `firmware-source/driver/bk4819.c`, Zeile 1333  
+**Datei:** `firmware-v1/driver/bk4819.c`, Zeile 1333  
 **Aufgerufen von:**
 - `functions.c:199` — 1750Hz Ton (ALARM_STATE_TX1750 — disabled)
 - `functions.c:204` — 500Hz Ton (ALARM_STATE_TXALARM — disabled)
@@ -254,7 +254,7 @@ als Dead Code Speicherplatz belegen und die Codebasis unnoetig komplex machen.
 
 ### 2.6 Roger-Beep-Funktionen
 
-**Datei:** `firmware-source/driver/bk4819.c`
+**Datei:** `firmware-v1/driver/bk4819.c`
 - `BK4819_PlayRogerNormal()` — Zeile 1718
 - `BK4819_PlayRogerMDC()` — Zeile 1755
 - `BK4819_PlayRoger()` — Zeile 1803
@@ -283,7 +283,7 @@ als Dead Code Speicherplatz belegen und die Codebasis unnoetig komplex machen.
 
 ### 3.1 GENERIC_Key_PTT() — PTT-Tasten-Handler
 
-**Datei:** `firmware-source/app/generic.c`, Zeilen 102-228  
+**Datei:** `firmware-v1/app/generic.c`, Zeilen 102-228  
 **Status:** Wird bei jedem PTT-Druck aufgerufen, leitet zu blockiertem RADIO_PrepareTX()
 
 **Inhalt:**
@@ -339,7 +339,7 @@ als Dead Code Speicherplatz belegen und die Codebasis unnoetig komplex machen.
 
 ### 4.1 TX-Felder in VFO_Info_t
 
-**Datei:** `firmware-source/radio.h`, Zeilen 83-135
+**Datei:** `firmware-v1/radio.h`, Zeilen 83-135
 
 Folgende Felder der VFO_Info_t Struktur betreffen ausschliesslich TX:
 
@@ -386,7 +386,7 @@ Folgende Felder der VFO_Info_t Struktur betreffen ausschliesslich TX:
 
 ### 4.2 FrequencyReverse Modus
 
-**Datei:** `firmware-source/radio.c`, Zeilen 368-377
+**Datei:** `firmware-v1/radio.c`, Zeilen 368-377
 
 ```c
 if (!pVfo->FrequencyReverse) {
@@ -429,7 +429,7 @@ Frequenz manuell einstellen.
 
 ### 4.3 TX-Einstellungen in EEPROM_Config_t
 
-**Datei:** `firmware-source/settings.h`
+**Datei:** `firmware-v1/settings.h`
 
 | Feld | Zeile | Beschreibung | RX-Nutzung? |
 |---|---|---|---|
@@ -467,8 +467,8 @@ Eine Umbenennung waere sinnvoll aber nicht zwingend noetig.
 
 ### 4.4 CROSS_BAND_RX_TX und DUAL_WATCH
 
-**Datei:** `firmware-source/radio.c`, Zeilen 516, 522  
-**Datei:** `firmware-source/settings.h`, Zeilen 55-63, 172-173
+**Datei:** `firmware-v1/radio.c`, Zeilen 516, 522  
+**Datei:** `firmware-v1/settings.h`, Zeilen 55-63, 172-173
 
 **CROSS_BAND_RX_TX** bestimmt ob auf einem VFO empfangen und auf dem anderen
 gesendet wird. Fuer reinen RX-Betrieb ist dies irrelevant.
@@ -506,7 +506,7 @@ gEeprom.RX_VFO = (gEeprom.CROSS_BAND_RX_TX == CROSS_BAND_OFF
 
 ### 5.1 Reine TX-Menue-Eintraege
 
-**Datei:** `firmware-source/ui/menu.c`, `firmware-source/ui/menu.h`
+**Datei:** `firmware-v1/ui/menu.c`, `firmware-v1/ui/menu.h`
 
 | Menue-Eintrag | Label | Zeile (menu.c) | Funktion | RX-relevant? |
 |---|---|---|---|---|
@@ -646,7 +646,7 @@ nur Register, und TX ist blockiert, also besteht kein Risiko.
 
 ### 7.1 FUNCTION_TRANSMIT Enum-Wert
 
-**Datei:** `firmware-source/functions.h`, Zeile 25
+**Datei:** `firmware-v1/functions.h`, Zeile 25
 
 ```c
 typedef enum {
@@ -695,7 +695,7 @@ evaluieren diese Guards immer zu `true` und sind funktional irrelevant.
 
 ### 7.2 VFO_STATE_TX_DISABLE
 
-**Datei:** `firmware-source/radio.h`
+**Datei:** `firmware-v1/radio.h`
 
 ```c
 typedef enum {
@@ -726,7 +726,7 @@ Wird auch in UI-Code fuer Anzeige benutzt.
 
 ### 8.1 BK4819 Register-Lesen/Schreiben ueber UART
 
-**Datei:** `firmware-source/app/uart.c`, Zeilen 437-472  
+**Datei:** `firmware-v1/app/uart.c`, Zeilen 437-472  
 **Makefile-Flag:** `ENABLE_UART_RW_BK_REGS = 0` (Zeile 48 — **DEAKTIVIERT**)
 
 **Status:** Diese Funktion ist durch Compile-Flag deaktiviert und nicht im Binary.
@@ -748,7 +748,7 @@ direkt auf BK4819-Register geschrieben werden, einschliesslich:
 
 ### 8.2 UART CMD_052D (EEPROM Write)
 
-**Datei:** `firmware-source/app/uart.c`, Zeile 357  
+**Datei:** `firmware-v1/app/uart.c`, Zeile 357  
 **Status:** Aktiv wenn ENABLE_UART=0 (UART ist deaktiviert in Makefile:6)
 
 ```
@@ -832,7 +832,7 @@ automatisch antworten (TX). Da TX blockiert ist, ist dies Dead Code.
 
 ### 11.1 TX-bezogene UI-Elemente in ui/main.c
 
-**Datei:** `firmware-source/ui/main.c`
+**Datei:** `firmware-v1/ui/main.c`
 
 | Element | Zeilen | Beschreibung |
 |---|---|---|
@@ -847,7 +847,7 @@ automatisch antworten (TX). Da TX blockiert ist, ist dies Dead Code.
 
 ### 11.2 TX-Status-Anzeige in ui/status.c
 
-**Datei:** `firmware-source/ui/status.c`, Zeile 51
+**Datei:** `firmware-v1/ui/status.c`, Zeile 51
 
 ```c
 if (gCurrentFunction == FUNCTION_TRANSMIT) {

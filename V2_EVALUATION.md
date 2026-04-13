@@ -130,7 +130,7 @@ Speziell fuer ARDF DF-Modus:
 
 ## 5. Makefile-Konfigurationsoptionen — Vollstaendige Uebersicht
 
-Die folgenden Optionen koennen in `firmware-source/Makefile` per `?= 0` (aus) oder
+Die folgenden Optionen koennen in `firmware-v1/Makefile` per `?= 0` (aus) oder
 `?= 1` (ein) gesteuert werden. Flags ohne Relevanz fuer dieses Projekt sind
 mit "Stock/Legacy" markiert.
 

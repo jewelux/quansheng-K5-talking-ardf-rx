@@ -12,14 +12,14 @@ This repository is for a blind-friendly "talking peiler" direction:
 - Morse fallback where speech clips are missing
 - ongoing work toward blind-accessible spectrum support
 
-The GitHub root is intentionally kept clean for humans. The actual firmware code now lives in [firmware-source](./firmware-source).
+The GitHub root is intentionally kept clean for humans. The actual firmware code now lives in [firmware-v1](./firmware-v1).
 
 ## Repository Layout
 
 - [README.md](./README.md): project overview and operator-facing documentation
 - [CHANGELOG.md](./CHANGELOG.md): variant and release history
 - [LICENSE](./LICENSE): project license
-- [firmware-source](./firmware-source): full firmware tree, build scripts, and source code
+- [firmware-v1](./firmware-v1): full firmware tree, build scripts, and source code
 
 ## Firmware Variants
 
@@ -113,7 +113,7 @@ Spectrum controls currently documented for `V2_0`:
 On Windows:
 
 ```bat
-cd /d C:\Users\User\Documents\__CodexFiles\GitHub\quansheng-talking-ardf-rx\firmware-source
+cd /d C:\Users\User\Documents\__CodexFiles\GitHub\quansheng-talking-ardf-rx\firmware-v1
 win_make.bat
 ```
 
@@ -121,7 +121,7 @@ If Python dependencies for packed firmware are missing:
 
 ```bat
 py -m pip install crcmod
-cd /d C:\Users\User\Documents\__CodexFiles\GitHub\quansheng-talking-ardf-rx\firmware-source
+cd /d C:\Users\User\Documents\__CodexFiles\GitHub\quansheng-talking-ardf-rx\firmware-v1
 win_make.bat
 ```
 
@@ -133,7 +133,7 @@ Check the version label under the battery compartment before flashing.
 
 ### MSYS2 Flash Tool (included)
 
-The repository includes a Python flash script in `firmware-source/`:
+The repository includes a Python flash script in `firmware-v1/`:
 
 ```
 python3 k5flash.py              (interactive mode with device version check)

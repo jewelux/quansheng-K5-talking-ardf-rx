@@ -114,9 +114,11 @@ static const t_ardf_neg_gain_entry ardf_neg_gain_table[ARDF_NEG_GAIN_LEVELS] =
    { ( 0u << 12) | (3u << 10) | ( 3u << 4) | (0u << 0), 0 },     // N6: bits15:12=0, Gain1=-18dB, Gain2~mute, DAC=0
 
    // --- Near-deaf: combine minimum AF with narrow IF bandwidth ---
+   // 0x0058 = IF BW 1.7kHz both strong+weak, BW mode 6.25k, bit3 set
    { ( 0u << 12) | (3u << 10) | ( 2u << 4) | (0u << 0), 0x0058 },// N7: + IF BW 1.7kHz
    { ( 0u << 12) | (3u << 10) | ( 1u << 4) | (0u << 0), 0x0058 },// N8: Gain2 absolute minimum + narrow IF
-   { ( 0u << 12) | (3u << 10) | ( 1u << 4) | (0u << 0), 0x0018 },// N9: narrowest IF 1.7kHz + BW 6.25k mode + weakest AF
+   // 0x0018 = IF BW 1.7kHz both strong+weak, BW mode 12.5k (tighter), bit3 set
+   { ( 0u << 12) | (3u << 10) | ( 1u << 4) | (0u << 0), 0x0018 },// N9: tightest IF + weakest AF
 };
 
 

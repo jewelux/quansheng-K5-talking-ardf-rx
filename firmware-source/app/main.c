@@ -250,7 +250,7 @@ static void MAIN_PlayArdfGainVoice(void)
 	{
 		// negative gain: play Morse "N", then voice-chip digit
 		MENU_PlayMorseString("N");
-		SYSTEM_DelayMs(80);
+		SYSTEM_DelayMs(80);  // gap between Morse and voice chip
 
 		// queue the digit via the voice chip (spoken number)
 		gVoiceID[0] = (VOICE_ID_t)(VOICE_ID_0 + neg_level);

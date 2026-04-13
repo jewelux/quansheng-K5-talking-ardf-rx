@@ -327,28 +327,19 @@ static void LoadVoiceSamples()
 void AUDIO_PlaySingleVoice(bool bFlag)
 {
     uint8_t VoiceID;
-    uint8_t Delay;
+    uint32_t Delay;
 
     VoiceID = gVoiceID[0];
 
     if (gEeprom.VOICE_PROMPT != VOICE_PROMPT_OFF && gVoiceWriteIndex > 0)
     {
-        if (gEeprom.VOICE_PROMPT == VOICE_PROMPT_CHINESE)
-        {   // Chinese
-            if (VoiceID >= ARRAY_SIZE(VoiceClipLengthChinese))
-                goto Bailout;
+        if (!LoadVoiceClip(VoiceID))
+            goto Bailout;
 
-            Delay    = VoiceClipLengthChinese[VoiceID];
-            VoiceID += VOICE_ID_CHI_BASE;
-        }
-        else
-        {   // English
-            if (VoiceID >= ARRAY_SIZE(VoiceClipLengthEnglish))
-                goto Bailout;
-
-            Delay    = VoiceClipLengthEnglish[VoiceID];
-            VoiceID += VOICE_ID_ENG_BASE;
-        }
+        // Delay in 10ms units: clip size in samples at 8kHz
+        Delay = VoiceClipState.Size / 80;
+        if (Delay < 5)
+            Delay = 5;
 
         if (FUNCTION_IsRx())   // 1of11
             BK4819_SetAF(BK4819_AF_MUTE);
@@ -365,7 +356,8 @@ void AUDIO_PlaySingleVoice(bool bFlag)
         #endif
 
         SYSTEM_DelayMs(5);
-        AUDIO_PlayVoice(VoiceID);
+        LoadVoiceSamples();
+        VOICE_Start();
 
         if (gVoiceWriteIndex == 1)
             Delay += 3;
@@ -373,6 +365,8 @@ void AUDIO_PlaySingleVoice(bool bFlag)
         if (bFlag)
         {
             SYSTEM_DelayMs(Delay * 10);
+
+            VOICE_Stop();
 
             if (FUNCTION_IsRx())    // 1of11
                 RADIO_SetModulation(gRxVfo->Modulation);
@@ -463,34 +457,24 @@ Skip:
 
 void AUDIO_PlayQueuedVoice(void)
 {
-    uint8_t VoiceID;
-    uint8_t Delay;
+    uint32_t Delay;
     bool    Skip;
 
     Skip = false;
 
     if (gVoiceReadIndex != gVoiceWriteIndex && gEeprom.VOICE_PROMPT != VOICE_PROMPT_OFF)
     {
-        VoiceID = gVoiceID[gVoiceReadIndex];
-        if (gEeprom.VOICE_PROMPT == VOICE_PROMPT_CHINESE)
+        uint8_t VoiceID = gVoiceID[gVoiceReadIndex];
+
+        if (LoadVoiceClip(VoiceID))
         {
-            if (VoiceID < ARRAY_SIZE(VoiceClipLengthChinese))
-            {
-                Delay = VoiceClipLengthChinese[VoiceID];
-                VoiceID += VOICE_ID_CHI_BASE;
-            }
-            else
-                Skip = true;
+            Delay = VoiceClipState.Size / 80;
+            if (Delay < 5)
+                Delay = 5;
         }
         else
         {
-            if (VoiceID < ARRAY_SIZE(VoiceClipLengthEnglish))
-            {
-                Delay = VoiceClipLengthEnglish[VoiceID];
-                VoiceID += VOICE_ID_ENG_BASE;
-            }
-            else
-                Skip = true;
+            Skip = true;
         }
 
         gVoiceReadIndex++;
@@ -500,7 +484,8 @@ void AUDIO_PlayQueuedVoice(void)
             if (gVoiceReadIndex == gVoiceWriteIndex)
                 Delay += 3;
 
-            AUDIO_PlayVoice(VoiceID);
+            LoadVoiceSamples();
+            VOICE_Start();
 
             gCountdownToPlayNextVoice_10ms = Delay;
             gFlagPlayQueuedVoice           = false;
@@ -512,6 +497,8 @@ void AUDIO_PlayQueuedVoice(void)
             return;
         }
     }
+
+    VOICE_Stop();
 
     if (FUNCTION_IsRx())
     {

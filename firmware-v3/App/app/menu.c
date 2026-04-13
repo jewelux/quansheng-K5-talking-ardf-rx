@@ -52,6 +52,7 @@ uint8_t gUnlockAllTxConfCnt;
 // ---- Morse code accessibility system (ported from V1) ----
 #ifdef ENABLE_VOICE
 
+#include <stdio.h>
 #include "driver/system.h"
 #include "functions.h"
 #include "radio.h"

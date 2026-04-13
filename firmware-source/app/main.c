@@ -249,6 +249,9 @@ static void MAIN_PlayArdfGainVoice(void)
 	if ( neg_level > 0 )
 	{
 		// negative gain: play Morse "N", then voice-chip digit
+		gMorseAbortKey = KEY_INVALID;
+		MENU_WaitForKeyReleaseBeforeMorse();
+		gMorseAbortKey = KEY_INVALID;
 		MENU_PlayMorseString("N");
 		SYSTEM_DelayMs(80);  // gap between Morse and voice chip
 

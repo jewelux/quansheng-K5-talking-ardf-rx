@@ -217,6 +217,32 @@
                 "EDITION_STRING": "Fusion",
                 "TARGET": "f4hwn.fusion"
             }
+        },
+        {
+            "name": "ARDF-Talking",
+            "inherits": "default",
+            "cacheVariables": {
+                "ENABLE_ARDF": true,
+                "ENABLE_PREVENT_TX": true,
+                "ENABLE_VOICE": true,
+                "ENABLE_CUSTOM_MENU_LAYOUT": false,
+                "ENABLE_SPECTRUM": false,
+                "ENABLE_FMRADIO": false,
+                "ENABLE_VOX": false,
+                "ENABLE_AIRCOPY": false,
+                "ENABLE_TX1750": false,
+                "ENABLE_ALARM": false,
+                "ENABLE_DTMF_CALLING": false,
+                "ENABLE_FEAT_F4HWN": true,
+                "ENABLE_FEAT_F4HWN_GAME": false,
+                "ENABLE_FEAT_F4HWN_SCREENSHOT": false,
+                "ENABLE_SWD": false,
+                "ENABLE_UART_RW_BK_REGS": false,
+                "EDITION_STRING": "ARDF-Talking",
+                "TARGET": "ardf_talking_k5v3_k1",
+                "AUTHOR_STRING_2": "DO9RE",
+                "VERSION_STRING_2": "v0.1"
+            }
         }
     ],
     "buildPresets": [
@@ -251,6 +277,10 @@
         {
             "name": "Fusion",
             "configurePreset": "Fusion"
+        },
+        {
+            "name": "ARDF-Talking",
+            "configurePreset": "ARDF-Talking"
         }
     ]
 }

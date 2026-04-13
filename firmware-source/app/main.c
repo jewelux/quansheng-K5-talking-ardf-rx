@@ -958,6 +958,9 @@ static void MAIN_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
 			BK4819_SetFrequency(frequency);
 			BK4819_RX_TurnOn();
 			gRequestSaveChannel = 1;
+#ifdef ENABLE_VOICE
+			COMMON_PlayChannelVoice(gEeprom.ScreenChannel[gEeprom.TX_VFO], frequency);
+#endif
 		}
 		else
 		{

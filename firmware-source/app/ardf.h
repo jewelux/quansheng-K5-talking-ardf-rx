@@ -34,6 +34,7 @@
 #define ARDF_GAIN_MISTUNE_HZ_DEFAULT (0)
 
 #define ARDF_NEG_GAIN_LEVELS 5 // number of negative gain levels beyond minimum RF gain
+_Static_assert(ARDF_NEG_GAIN_LEVELS <= 9, "ARDF_NEG_GAIN_LEVELS must fit single digit for Morse announcement");
 #define ARDF_MISTUNE_RES_HZ 200
 
 #define ARDF_MEM_MODE_FREQ_TOGGLE_S 3 // in frequency mode: toggle memory number and frequency every 3 s

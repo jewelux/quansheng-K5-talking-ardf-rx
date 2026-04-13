@@ -49,6 +49,284 @@
 
 uint8_t gUnlockAllTxConfCnt;
 
+// ---- Morse code accessibility system (ported from V1) ----
+#ifdef ENABLE_VOICE
+
+#include "driver/system.h"
+#include "functions.h"
+#include "radio.h"
+
+#ifndef ARRAY_SIZE
+    #define ARRAY_SIZE(x) (sizeof(x) / sizeof(x[0]))
+#endif
+
+static const char *MENU_GetMorsePattern(char ch)
+{
+    switch (ch)
+    {
+        case 'A': return ".-";
+        case 'B': return "-...";
+        case 'C': return "-.-.";
+        case 'D': return "-..";
+        case 'E': return ".";
+        case 'F': return "..-.";
+        case 'G': return "--.";
+        case 'H': return "....";
+        case 'I': return "..";
+        case 'J': return ".---";
+        case 'K': return "-.-";
+        case 'L': return ".-..";
+        case 'M': return "--";
+        case 'N': return "-.";
+        case 'O': return "---";
+        case 'P': return ".--.";
+        case 'Q': return "--.-";
+        case 'R': return ".-.";
+        case 'S': return "...";
+        case 'T': return "-";
+        case 'U': return "..-";
+        case 'V': return "...-";
+        case 'W': return ".--";
+        case 'X': return "-..-";
+        case 'Y': return "-.--";
+        case 'Z': return "--..";
+        case '0': return "-----";
+        case '1': return ".----";
+        case '2': return "..---";
+        case '3': return "...--";
+        case '4': return "....-";
+        case '5': return ".....";
+        case '6': return "-....";
+        case '7': return "--...";
+        case '8': return "---..";
+        case '9': return "----.";
+        default:  return NULL;
+    }
+}
+
+static uint16_t MENU_GetMorseUnitMs(void)
+{
+    const uint8_t wpm = (gMorseSpeedWpm >= 15U && gMorseSpeedWpm <= 70U) ? gMorseSpeedWpm : 20U;
+    uint16_t unit = 1200U / wpm;
+
+    if (unit < 40U)
+        unit = 40U;
+
+    return unit;
+}
+
+KEY_Code_t gMorseAbortKey = KEY_INVALID;
+
+static bool MENU_IsAbortKeyPressed(void)
+{
+    KEY_Code_t key = KEYBOARD_Poll();
+    if (key != KEY_INVALID)
+        gMorseAbortKey = key;
+    return key != KEY_INVALID;
+}
+
+static bool MENU_DelayInterruptible(uint16_t duration_ms)
+{
+    while (duration_ms > 0U)
+    {
+        const uint8_t chunk_ms = (duration_ms > 10U) ? 10U : (uint8_t)duration_ms;
+
+        if (MENU_IsAbortKeyPressed())
+            return false;
+
+        SYSTEM_DelayMs(chunk_ms);
+        duration_ms -= chunk_ms;
+    }
+
+    return true;
+}
+
+static uint16_t gMorseToneCfg;
+static uint16_t gMorseAfGainCfg;
+
+static void MENU_MorseAudioSetup(void)
+{
+    BK4819_EnterTxMute();
+    gMorseToneCfg  = BK4819_ReadRegister(BK4819_REG_71);
+    gMorseAfGainCfg = BK4819_ReadRegister(BK4819_REG_48);
+    // Set a fixed AF DAC gain for consistent Morse volume
+    BK4819_WriteRegister(BK4819_REG_48,
+        (11u << 12) |
+        ( 0u << 10) |
+        (58u <<  4) |
+        ( 8u <<  0));
+    BK4819_PlayTone(880, true);
+    SYSTEM_DelayMs(2);
+    AUDIO_AudioPathOn();
+    SYSTEM_DelayMs(60);
+}
+
+static void MENU_MorseAudioTeardown(void)
+{
+    BK4819_EnterTxMute();
+    SYSTEM_DelayMs(20);
+    AUDIO_AudioPathOff();
+    SYSTEM_DelayMs(5);
+    BK4819_TurnsOffTones_TurnsOnRX();
+    SYSTEM_DelayMs(5);
+    BK4819_WriteRegister(BK4819_REG_71, gMorseToneCfg);
+    BK4819_WriteRegister(BK4819_REG_48, gMorseAfGainCfg);
+}
+
+static bool MENU_PlayMorseElement(const uint16_t duration_ms)
+{
+    BK4819_ExitTxMute();
+    if (!MENU_DelayInterruptible(duration_ms))
+    {
+        BK4819_EnterTxMute();
+        return false;
+    }
+    BK4819_EnterTxMute();
+    return true;
+}
+
+static const char *MENU_GetMorseLabel(const uint8_t menu_id)
+{
+    switch (menu_id)
+    {
+        case MENU_SQL:                  return "SQUELCH";
+        case MENU_STEP:                 return "STEP";
+        case MENU_R_DCS:                return "DCS";
+        case MENU_R_CTCS:               return "CTCSS";
+        case MENU_W_N:                  return "BANDWIDTH";
+        case MENU_AM:                   return "AM FM";
+        case MENU_COMPAND:              return "COMPAND";
+        case MENU_MEM_CH:               return "MEMORY";
+        case MENU_DEL_CH:               return "DELETE";
+        case MENU_MEM_NAME:             return "NAME";
+        case MENU_S_LIST:               return "SCAN LIST";
+        case MENU_SC_REV:               return "SCAN RESUME";
+        case MENU_MDF:                  return "DISPLAY";
+        case MENU_SAVE:                 return "SAVE";
+        case MENU_ABR:                  return "BACKLIGHT";
+        case MENU_ABR_MIN:              return "BACKLIGHT MINIMUM";
+        case MENU_ABR_MAX:              return "BACKLIGHT MAXIMUM";
+        case MENU_ABR_ON_TX_RX:         return "BACKLIGHT TX RX";
+        case MENU_BEEP:                 return "BEEP";
+        case MENU_AUTOLK:               return "KEY LOCK";
+        case MENU_STE:                  return "TAIL";
+        case MENU_RP_STE:               return "TAIL RP";
+        case MENU_MIC:                  return "MIC";
+        case MENU_PONMSG:               return "POWER ON";
+        case MENU_VOL:                  return "BATTERY";
+        case MENU_BAT_TXT:              return "BATTERY TEXT";
+        case MENU_TDR:                  return "RX MODE";
+        case MENU_MORSE_SPEED:          return "MORSE SPEED";
+#ifdef ENABLE_VOICE
+        case MENU_VOICE:                return "VOICE";
+#endif
+        case MENU_F1SHRT:               return "F1 SHORT";
+        case MENU_F1LONG:               return "F1 LONG";
+        case MENU_F2SHRT:               return "F2 SHORT";
+        case MENU_F2LONG:               return "F2 LONG";
+        case MENU_MLONG:                return "M LONG";
+        case MENU_RESET:                return "RESET";
+#ifdef ENABLE_ARDF
+        case MENU_ARDF:                 return "ARDF";
+        case MENU_ARDF_NUMFOXES:        return "NUMBER FOX";
+        case MENU_ARDF_FOXDURATION:     return "FOX DURATION";
+        case MENU_ARDF_SETFOX:          return "ACTIVE FOX";
+        case MENU_ARDF_TIME_RESET:      return "TIME RESET";
+        case MENU_ARDF_GAIN_REMEMBER:   return "GAIN REMEMBER";
+        case MENU_ARDF_CYCLE_END_BEEP:  return "END SIGNAL";
+        case MENU_ARDF_SNAPSHOT_SPEED:  return "SNAPSHOT SPEED";
+        case MENU_ARDF_CLOCK_CORR:      return "CLOCK CORRECT";
+        case MENU_ARDF_MIST_FREQ:       return "MISTUNE FREQ";
+        case MENU_ARDF_MIST_GAIN_ADD_STEPS: return "MISTUNE GAIN";
+#endif
+#ifdef ENABLE_AM_FIX
+        case MENU_AM_FIX:               return "AM FIX";
+#endif
+        default:                        return NULL;
+    }
+}
+
+void MENU_PlayMorseString(const char *text)
+{
+    const uint16_t unit_ms = MENU_GetMorseUnitMs();
+    const uint16_t dash_ms = unit_ms * 3U;
+
+    if (text == NULL)
+        return;
+
+    MENU_MorseAudioSetup();
+
+    for (size_t i = 0; text[i] != '\0'; i++)
+    {
+        char ch = text[i];
+        const char *pattern;
+
+        if (MENU_IsAbortKeyPressed())
+            goto done;
+
+        if (ch >= 'a' && ch <= 'z')
+            ch -= ('a' - 'A');
+
+        if (ch == ' ')
+        {
+            if (!MENU_DelayInterruptible(unit_ms * 7U))
+                goto done;
+            continue;
+        }
+
+        pattern = MENU_GetMorsePattern(ch);
+        if (pattern == NULL)
+            continue;
+
+        for (size_t j = 0; pattern[j] != '\0'; j++)
+        {
+            if (MENU_IsAbortKeyPressed())
+                goto done;
+
+            if (!MENU_PlayMorseElement((pattern[j] == '-') ? dash_ms : unit_ms))
+                goto done;
+
+            // intra-character gap: 1 unit
+            if (pattern[j + 1] != '\0')
+            {
+                if (!MENU_DelayInterruptible(unit_ms))
+                    goto done;
+            }
+        }
+
+        // inter-character gap: 3 units
+        if (text[i + 1] != '\0' && text[i + 1] != ' ')
+        {
+            if (!MENU_DelayInterruptible(unit_ms * 3U))
+                goto done;
+        }
+    }
+
+done:
+    MENU_MorseAudioTeardown();
+}
+
+void MENU_PlayMorseForCurrentItem(void)
+{
+    const uint8_t menu_id = UI_MENU_GetCurrentMenuId();
+    const char *label = MENU_GetMorseLabel(menu_id);
+    char buf[24];
+
+    if (label != NULL)
+    {
+        MENU_PlayMorseString(label);
+        return;
+    }
+
+    // Fallback: morse the numeric menu index
+    const uint8_t idx = gMenuCursor;
+    snprintf(buf, sizeof(buf), "%u", (unsigned)idx);
+    MENU_PlayMorseString(buf);
+}
+
+#endif // ENABLE_VOICE
+// ---- End Morse code system ----
+
 #ifdef ENABLE_F_CAL_MENU
     void writeXtalFreqCal(const int32_t value, const bool update_eeprom)
     {

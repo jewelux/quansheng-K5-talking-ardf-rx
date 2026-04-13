@@ -61,6 +61,20 @@ inline static void ACTION_1750() { ACTION_AlarmOr1750(true); };
 
 inline static void ACTION_ScanRestart() { ACTION_Scan(true); };
 
+#ifdef ENABLE_ARDF
+static void ACTION_ARDFSnapshotSpeedUp(void)
+{
+    if (gSetting_ARDFEnable && gARDFDFSimpleMode)
+        ARDF_SnapshotSpeedIncr();
+}
+
+static void ACTION_ARDFSnapshotSpeedDown(void)
+{
+    if (gSetting_ARDFEnable && gARDFDFSimpleMode)
+        ARDF_SnapshotSpeedDecr();
+}
+#endif
+
 void (*action_opt_table[])(void) = {
     [ACTION_OPT_NONE] = &FUNCTION_NOP,
     [ACTION_OPT_POWER] = &ACTION_Power,
@@ -139,9 +153,13 @@ void (*action_opt_table[])(void) = {
 #ifdef ENABLE_ARDF
     [ACTION_OPT_ARDF_ON_OFF] = &ACTION_ARDFOnOff,
     [ACTION_OPT_ARDF_GAIN_MIDDLE] = &ACTION_ARDFGainMiddle,
+    [ACTION_OPT_ARDF_SNAPSHOT_SPEED_UP] = &ACTION_ARDFSnapshotSpeedUp,
+    [ACTION_OPT_ARDF_SNAPSHOT_SPEED_DOWN] = &ACTION_ARDFSnapshotSpeedDown,
 #else
     [ACTION_OPT_ARDF_ON_OFF] = &FUNCTION_NOP,
     [ACTION_OPT_ARDF_GAIN_MIDDLE] = &FUNCTION_NOP,
+    [ACTION_OPT_ARDF_SNAPSHOT_SPEED_UP] = &FUNCTION_NOP,
+    [ACTION_OPT_ARDF_SNAPSHOT_SPEED_DOWN] = &FUNCTION_NOP,
 #endif
 };
 

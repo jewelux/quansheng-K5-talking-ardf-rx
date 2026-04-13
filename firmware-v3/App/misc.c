@@ -107,6 +107,7 @@ bool              gSetting_ScrambleEnable;
 
 #ifdef ENABLE_ARDF
 bool              gSetting_ARDFEnable = false;
+uint8_t           gMorseSpeedWpm = 20;
 #endif
 
 enum BacklightOnRxTx_t gSetting_backlight_on_tx_rx;

@@ -169,6 +169,7 @@ extern bool                  gSetting_ScrambleEnable;
 
 #ifdef ENABLE_ARDF
 extern bool                  gSetting_ARDFEnable;
+extern uint8_t               gMorseSpeedWpm;
 #endif
 
 extern enum BacklightOnRxTx_t gSetting_backlight_on_tx_rx;

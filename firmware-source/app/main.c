@@ -959,7 +959,12 @@ static void MAIN_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
 			BK4819_RX_TurnOn();
 			gRequestSaveChannel = 1;
 #ifdef ENABLE_VOICE
-			COMMON_PlayChannelVoice(gEeprom.ScreenChannel[gEeprom.TX_VFO], frequency);
+			if (gEeprom.VOICE_PROMPT != VOICE_PROMPT_OFF)
+			{
+				AUDIO_SetDigitVoice(0, (uint16_t)(frequency / 100000U));
+				AUDIO_SetDigitVoice(1, (uint16_t)((frequency / 100U) % 1000U));
+				gAnotherVoiceID = (VOICE_ID_t)0xFE;
+			}
 #endif
 		}
 		else

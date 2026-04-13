@@ -248,12 +248,14 @@ static void MAIN_PlayArdfGainVoice(void)
 
 	if ( neg_level > 0 )
 	{
-		// negative gain: play Morse "N" followed by the level digit
-		char buf[4];
-		buf[0] = 'N';
-		buf[1] = '0' + neg_level;
-		buf[2] = '\0';
-		MENU_PlayMorseString(buf);
+		// negative gain: play Morse "N", then voice-chip digit
+		MENU_PlayMorseString("N");
+		SYSTEM_DelayMs(80);
+
+		// queue the digit via the voice chip (spoken number)
+		gVoiceID[0] = (VOICE_ID_t)(VOICE_ID_0 + neg_level);
+		gVoiceWriteIndex = 1;
+		AUDIO_PlaySingleVoice(true);
 	}
 	else
 	{

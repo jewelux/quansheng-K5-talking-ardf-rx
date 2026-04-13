@@ -33,7 +33,7 @@
 #define ARDF_GAIN_INDEX_ADD_STEPS_MISTUNE_DEFAULT 0 // additional gain index steps for mistuning
 #define ARDF_GAIN_MISTUNE_HZ_DEFAULT (0)
 
-#define ARDF_NEG_GAIN_LEVELS 5 // number of negative gain levels beyond minimum RF gain
+#define ARDF_NEG_GAIN_LEVELS 9 // number of negative gain levels beyond minimum RF gain
 _Static_assert(ARDF_NEG_GAIN_LEVELS <= 9, "ARDF_NEG_GAIN_LEVELS must fit single digit for Morse announcement");
 #define ARDF_MISTUNE_RES_HZ 200
 

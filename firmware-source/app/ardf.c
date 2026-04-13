@@ -88,16 +88,35 @@ t_ardf_gain_table ardf_gain_table[] =
 // Negative gain: AF attenuation beyond minimum RF gain (REG_48 values)
 // REG_48 format: (bits15:12 ??? | bits11:10 AF_Gain1 | bits9:4 AF_Gain2 | bits3:0 DAC_Gain)
 // AF_Gain1: 0=0dB, 1=-6dB, 2=-12dB, 3=-18dB
-// AF_Gain2: 0-63, -26dB to +5.5dB in 0.5dB steps
-// DAC_Gain: 0-15
+// AF_Gain2: 0-63, 0=MUTE, 1=-25.5dB ... 63=+5.5dB, 0.5dB/step
+// DAC_Gain: 0-15, approx 2dB/step
 // Normal default: (11<<12)|(0<<10)|(58<<4)|(8<<0) = 0xB3A8
-static const uint16_t ardf_neg_gain_af_table[ARDF_NEG_GAIN_LEVELS] =
+//
+// For the deepest levels we also narrow the IF bandwidth (REG_43)
+// to reject more noise energy and reduce effective sensitivity.
+// reg43_override: 0 = don't touch REG_43, nonzero = write this value to REG_43
+
+typedef struct {
+   uint16_t reg48;           // AF gain register value
+   uint16_t reg43_override;  // IF bandwidth override (0 = no change)
+} t_ardf_neg_gain_entry;
+
+static const t_ardf_neg_gain_entry ardf_neg_gain_table[ARDF_NEG_GAIN_LEVELS] =
 {
-   (11u << 12) | (0u << 10) | (40u << 4) | (6u << 0),  // N1: moderate AF reduction
-   (11u << 12) | (0u << 10) | (24u << 4) | (4u << 0),  // N2: significant AF reduction
-   (11u << 12) | (1u << 10) | (16u << 4) | (3u << 0),  // N3: strong AF reduction, Gain1=-6dB
-   (11u << 12) | (2u << 10) | ( 8u << 4) | (2u << 0),  // N4: very strong, Gain1=-12dB
-   (11u << 12) | (3u << 10) | ( 0u << 4) | (1u << 0),  // N5: near-deaf, Gain1=-18dB, min Gain2, min DAC
+   // --- Moderate AF reduction (RF gain already at minimum -79dB) ---
+   { (11u << 12) | (0u << 10) | (32u << 4) | (6u << 0), 0 },     // N1: Gain2 roughly -13dB from default, DAC=6
+   { (11u << 12) | (1u << 10) | (20u << 4) | (4u << 0), 0 },     // N2: Gain1=-6dB, Gain2 reduced, DAC=4
+   { (11u << 12) | (2u << 10) | (12u << 4) | (3u << 0), 0 },     // N3: Gain1=-12dB, Gain2 low, DAC=3
+
+   // --- Strong AF reduction ---
+   { (11u << 12) | (3u << 10) | ( 8u << 4) | (2u << 0), 0 },     // N4: Gain1=-18dB, Gain2 very low, DAC=2
+   { (11u << 12) | (3u << 10) | ( 4u << 4) | (1u << 0), 0 },     // N5: Gain1=-18dB, Gain2 near-mute, DAC=1
+   { ( 0u << 12) | (3u << 10) | ( 3u << 4) | (0u << 0), 0 },     // N6: bits15:12=0, Gain1=-18dB, Gain2~mute, DAC=0
+
+   // --- Near-deaf: combine minimum AF with narrow IF bandwidth ---
+   { ( 0u << 12) | (3u << 10) | ( 2u << 4) | (0u << 0), 0x0058 },// N7: + IF BW 1.7kHz
+   { ( 0u << 12) | (3u << 10) | ( 1u << 4) | (0u << 0), 0x0058 },// N8: Gain2 absolute minimum + narrow IF
+   { ( 0u << 12) | (3u << 10) | ( 1u << 4) | (0u << 0), 0x0018 },// N9: narrowest IF 1.7kHz + BW 6.25k mode + weakest AF
 };
 
 
@@ -720,8 +739,16 @@ void ARDF_ActivateGainIndex(void)
    uint8_t neg_level = ARDF_Get_NegGainLevel(vfo);
    if ( neg_level > 0 && neg_level <= ARDF_NEG_GAIN_LEVELS )
    {
+      const t_ardf_neg_gain_entry *entry = &ardf_neg_gain_table[neg_level - 1];
+
       // apply additional AF attenuation for negative gain
-      BK4819_WriteRegister( BK4819_REG_48, ardf_neg_gain_af_table[neg_level - 1] );
+      BK4819_WriteRegister( BK4819_REG_48, entry->reg48 );
+
+      // apply IF bandwidth override if specified
+      if ( entry->reg43_override != 0 )
+      {
+         BK4819_WriteRegister( BK4819_REG_43, entry->reg43_override );
+      }
    }
    else
    {
@@ -731,6 +758,9 @@ void ARDF_ActivateGainIndex(void)
          ( 0u << 10) |
          (gEeprom.VOLUME_GAIN << 4) |
          (gEeprom.DAC_GAIN    << 0));
+
+      // restore normal IF bandwidth
+      BK4819_SetFilterBandwidth(gRxVfo->CHANNEL_BANDWIDTH, true);
    }
 
    gARDFRssiMax = 0;

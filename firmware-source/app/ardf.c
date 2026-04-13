@@ -36,6 +36,7 @@
 uint8_t ardf_gain_index[2][ARDF_NUM_FOX_MAX];
 uint8_t ardf_gain_index_steps_mistune[2][ARDF_NUM_FOX_MAX];
 bool    ardf_mistune_active[2][ARDF_NUM_FOX_MAX];
+uint8_t ardf_neg_gain_level[2][ARDF_NUM_FOX_MAX];
 
 // {0x03BE, -7},   //  0 .. 3 5 3 6 ..   0dB  -4dB  0dB  -3dB ..  -7dB original
 #define ARDF_ORIG_GAIN_DB -7
@@ -82,6 +83,21 @@ t_ardf_gain_table ardf_gain_table[] =
    {0x03FC, -9.0}, // 14: 1020, -9dB
    {0x03FE, -4.0}, // 15: 1022, -4dB
    {0x03FF, 0.0}, // 16: 1023, 0dB
+};
+
+// Negative gain: AF attenuation beyond minimum RF gain (REG_48 values)
+// REG_48 format: (bits15:12 ??? | bits11:10 AF_Gain1 | bits9:4 AF_Gain2 | bits3:0 DAC_Gain)
+// AF_Gain1: 0=0dB, 1=-6dB, 2=-12dB, 3=-18dB
+// AF_Gain2: 0-63, -26dB to +5.5dB in 0.5dB steps
+// DAC_Gain: 0-15
+// Normal default: (11<<12)|(0<<10)|(58<<4)|(8<<0) = 0xB3A8
+static const uint16_t ardf_neg_gain_af_table[ARDF_NEG_GAIN_LEVELS] =
+{
+   (11u << 12) | (0u << 10) | (40u << 4) | (6u << 0),  // N1: moderate AF reduction
+   (11u << 12) | (0u << 10) | (24u << 4) | (4u << 0),  // N2: significant AF reduction
+   (11u << 12) | (1u << 10) | (16u << 4) | (3u << 0),  // N3: strong AF reduction, Gain1=-6dB
+   (11u << 12) | (2u << 10) | ( 8u << 4) | (2u << 0),  // N4: very strong, Gain1=-12dB
+   (11u << 12) | (3u << 10) | ( 0u << 4) | (1u << 0),  // N5: near-deaf, Gain1=-18dB, min Gain2, min DAC
 };
 
 
@@ -550,6 +566,8 @@ void ARDF_init(void)
       ardf_gain_index_steps_mistune[1][i] = 0;
       ardf_mistune_active[0][i] = false;
       ardf_mistune_active[1][i] = false;
+      ardf_neg_gain_level[0][i] = 0;
+      ardf_neg_gain_level[1][i] = 0;
    }
 
 }
@@ -568,7 +586,12 @@ void ARDF_GainIncr(void)
    }
 
 
-   if ( (ardf_mistune_active[vfo][activefox] != false)
+   if ( ardf_neg_gain_level[vfo][activefox] > 0 )
+   {
+      // exit negative gain territory first
+      ardf_neg_gain_level[vfo][activefox]--;
+   }
+   else if ( (ardf_mistune_active[vfo][activefox] != false)
         && (ardf_gain_index[vfo][activefox] == ardf_gain_index_steps_mistune[vfo][activefox])
       )
    {
@@ -600,11 +623,18 @@ void ARDF_GainDecr(void)
    }
 
 
-   if ( ardf_gain_index[vfo][activefox] > 0 )
+   if ( ardf_neg_gain_level[vfo][activefox] > 0
+        && ardf_neg_gain_level[vfo][activefox] < ARDF_NEG_GAIN_LEVELS )
+   {
+      // already in negative gain territory, go deeper
+      ardf_neg_gain_level[vfo][activefox]++;
+   }
+   else if ( ardf_gain_index[vfo][activefox] > 0 )
    {
       ardf_gain_index[vfo][activefox]--;
    }
    else if ( (ardf_gain_index[vfo][activefox] == 0)
+             && (ardf_neg_gain_level[vfo][activefox] == 0)
              && (gARDFMistuneFreqRaw != 0)
              && (ardf_mistune_active[vfo][activefox] == false) 
            )
@@ -616,6 +646,12 @@ void ARDF_GainDecr(void)
 
       // mistune frequency
       ARDF_DoMistuneFreq();
+   }
+   else if ( ardf_gain_index[vfo][activefox] == 0
+             && ardf_neg_gain_level[vfo][activefox] == 0 )
+   {
+      // at minimum RF gain, enter negative gain territory
+      ardf_neg_gain_level[vfo][activefox] = 1;
    }
    else
    {
@@ -642,6 +678,20 @@ uint8_t ARDF_Get_GainIndex(uint8_t vfo)
 
 
 
+uint8_t ARDF_Get_NegGainLevel(uint8_t vfo)
+{
+   if ( ARDF_ActVfoHasGainRemember(vfo) == false )
+   {
+      return ardf_neg_gain_level[vfo][0];
+   }
+   else
+   {
+      return ardf_neg_gain_level[vfo][gARDFActiveFox];
+   }
+}
+
+
+
 bool ARDF_ActVfoHasGainRemember(uint8_t vfo)
 {
    /* "OFF", 0
@@ -664,7 +714,25 @@ bool ARDF_ActVfoHasGainRemember(uint8_t vfo)
 
 void ARDF_ActivateGainIndex(void)
 {
-   BK4819_WriteRegister( BK4819_REG_13, ardf_gain_table[ ARDF_Get_GainIndex(gEeprom.RX_VFO) ].reg_val );
+   uint8_t vfo = gEeprom.RX_VFO;
+   BK4819_WriteRegister( BK4819_REG_13, ardf_gain_table[ ARDF_Get_GainIndex(vfo) ].reg_val );
+
+   uint8_t neg_level = ARDF_Get_NegGainLevel(vfo);
+   if ( neg_level > 0 && neg_level <= ARDF_NEG_GAIN_LEVELS )
+   {
+      // apply additional AF attenuation for negative gain
+      BK4819_WriteRegister( BK4819_REG_48, ardf_neg_gain_af_table[neg_level - 1] );
+   }
+   else
+   {
+      // restore normal AF gain
+      BK4819_WriteRegister(BK4819_REG_48,
+         (11u << 12) |
+         ( 0u << 10) |
+         (gEeprom.VOLUME_GAIN << 4) |
+         (gEeprom.DAC_GAIN    << 0));
+   }
+
    gARDFRssiMax = 0;
    gUpdateDisplay = true;
 }
@@ -755,6 +823,7 @@ void ARDF_StopFreqMistune(void)
       ardf_mistune_active[vfo][activefox] = false;
       ardf_gain_index[vfo][activefox] = 0;
       ardf_gain_index_steps_mistune[vfo][activefox] = 0;
+      ardf_neg_gain_level[vfo][activefox] = 0;
    }
 
 

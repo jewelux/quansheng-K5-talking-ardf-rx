@@ -1100,6 +1100,7 @@ void MENU_AcceptSetting(void)
 					ardf_mistune_active[vfo][0] = ardf_mistune_active[vfo][gARDFActiveFox];
 					ardf_gain_index[vfo][0] = ardf_gain_index[vfo][gARDFActiveFox];
 					ardf_gain_index_steps_mistune[vfo][0] = ardf_gain_index_steps_mistune[vfo][gARDFActiveFox];
+					ardf_neg_gain_level[vfo][0] = ardf_neg_gain_level[vfo][gARDFActiveFox];
 				}
 
 				gARDFRequestSaveEEPROM = true;
@@ -1207,6 +1208,7 @@ void MENU_AcceptSetting(void)
 						ardf_mistune_active[0][i] = false;
 						ardf_gain_index_steps_mistune[0][i] = 0;
 						ardf_gain_index[0][i] = 0;
+						ardf_neg_gain_level[0][i] = 0;
 
 					}
 
@@ -1215,6 +1217,7 @@ void MENU_AcceptSetting(void)
 						ardf_mistune_active[1][i] = false;
 						ardf_gain_index_steps_mistune[1][i] = 0;
 						ardf_gain_index[1][i] = 0;
+						ardf_neg_gain_level[1][i] = 0;
 					}
 				}
 

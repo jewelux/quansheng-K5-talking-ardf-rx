@@ -32,6 +32,8 @@
 
 #define ARDF_GAIN_INDEX_ADD_STEPS_MISTUNE_DEFAULT 0 // additional gain index steps for mistuning
 #define ARDF_GAIN_MISTUNE_HZ_DEFAULT (0)
+
+#define ARDF_NEG_GAIN_LEVELS 5 // number of negative gain levels beyond minimum RF gain
 #define ARDF_MISTUNE_RES_HZ 200
 
 #define ARDF_MEM_MODE_FREQ_TOGGLE_S 3 // in frequency mode: toggle memory number and frequency every 3 s
@@ -61,6 +63,7 @@ extern t_ardf_gain_table     ardf_gain_table[];
 extern uint8_t               ardf_gain_index[2][ARDF_NUM_FOX_MAX];
 extern uint8_t               ardf_gain_index_steps_mistune[2][ARDF_NUM_FOX_MAX];
 extern bool                  ardf_mistune_active[2][ARDF_NUM_FOX_MAX];
+extern uint8_t               ardf_neg_gain_level[2][ARDF_NUM_FOX_MAX];
 
 extern uint32_t              gARDFTime10ms;
 extern uint32_t              gARDFFoxDuration10ms;
@@ -97,6 +100,7 @@ extern void ARDF_init(void);
 extern void ARDF_GainIncr(void);
 extern void ARDF_GainDecr(void);
 extern uint8_t ARDF_Get_GainIndex(uint8_t vfo);
+extern uint8_t ARDF_Get_NegGainLevel(uint8_t vfo);
 extern bool ARDF_ActVfoHasGainRemember(uint8_t vfo);
 extern void ARDF_ActivateGainIndex(void);
 extern int32_t ARDF_GetRestTime_s(void);

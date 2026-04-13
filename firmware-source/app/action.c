@@ -494,6 +494,7 @@ void ACTION_ARDFGainMiddle(void)
       {
          ardf_gain_index[vfo][activefox] = ARDF_GAIN_INDEX_MIDDLE;
       }
+      ardf_neg_gain_level[vfo][activefox] = 0;
       ARDF_ActivateGainIndex();
 
    }

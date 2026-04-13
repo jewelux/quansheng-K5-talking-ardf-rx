@@ -243,7 +243,22 @@ static void MAIN_PlayCompactMainStatusVoice(void)
 #if defined(ENABLE_ARDF) && defined(ENABLE_VOICE)
 static void MAIN_PlayArdfGainVoice(void)
 {
-	MAIN_QueueFixedDigitsVoice(ARDF_Get_GainIndex(gEeprom.RX_VFO), 2);
+	const uint8_t vfo = gEeprom.RX_VFO;
+	const uint8_t neg_level = ARDF_Get_NegGainLevel(vfo);
+
+	if ( neg_level > 0 )
+	{
+		// negative gain: play Morse "N" followed by the level digit
+		char buf[4];
+		buf[0] = 'N';
+		buf[1] = '0' + neg_level;
+		buf[2] = '\0';
+		MENU_PlayMorseString(buf);
+	}
+	else
+	{
+		MAIN_QueueFixedDigitsVoice(ARDF_Get_GainIndex(vfo), 2);
+	}
 }
 
 static void MAIN_PlayArdfStatusVoice(void)

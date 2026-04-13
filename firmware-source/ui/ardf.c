@@ -347,7 +347,12 @@ void UI_DisplayARDF(void)
       xpos = 57;
    }
 
-   if ( (ARDF_ActVfoHasGainRemember(vfo) != false) && ardf_mistune_active[vfo][gARDFActiveFox] != false )
+   if ( ARDF_Get_NegGainLevel(vfo) > 0 )
+   {
+      // negative gain active: show N1-N5
+      sprintf(buffer, "N%d", ARDF_Get_NegGainLevel(vfo) );
+   }
+   else if ( (ARDF_ActVfoHasGainRemember(vfo) != false) && ardf_mistune_active[vfo][gARDFActiveFox] != false )
    {
       // mistuning and gain remember active
       sprintf(buffer, "%d", ARDF_Get_GainIndex(vfo) - ardf_gain_index_steps_mistune[vfo][gARDFActiveFox] - 1 );
@@ -420,7 +425,12 @@ void UI_DisplayARDF(void)
          }
 
 
-         if ( ardf_mistune_active[vfo][idx] != false )
+         if ( ardf_neg_gain_level[vfo][idx] > 0 )
+         {
+            // negative gain active
+            sprintf(buffer, "N%d", ardf_neg_gain_level[vfo][idx] );
+         }
+         else if ( ardf_mistune_active[vfo][idx] != false )
          {
             // mistuning active
             sprintf(buffer, "%d", ardf_gain_index[vfo][idx] - ardf_gain_index_steps_mistune[vfo][idx] - 1 );

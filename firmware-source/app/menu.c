@@ -129,7 +129,7 @@ static void MENU_ForceDisplayUpdate(void)
 	UI_DisplayMenu();
 }
 
-static KEY_Code_t gMorseAbortKey = KEY_INVALID;
+KEY_Code_t gMorseAbortKey = KEY_INVALID;
 
 static bool MENU_IsAbortKeyPressed(void)
 {
@@ -139,7 +139,7 @@ static bool MENU_IsAbortKeyPressed(void)
 	return key != KEY_INVALID;
 }
 
-static void MENU_WaitForKeyReleaseBeforeMorse(void)
+void MENU_WaitForKeyReleaseBeforeMorse(void)
 {
 	for (uint8_t i = 0; i < 25U; i++)
 	{

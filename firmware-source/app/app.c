@@ -1568,12 +1568,15 @@ static void ProcessKey(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 	    (gScreenToDisplay == DISPLAY_MAIN || gScreenToDisplay == DISPLAY_ARDF))
 	{
 		gARDFSquelchMode = !gARDFSquelchMode;
-		gBeepToPlay = BEEP_1KHZ_60MS_OPTIONAL;
 #ifdef ENABLE_VOICE
+		MENU_WaitForKeyReleaseBeforeMorse();
+		gMorseAbortKey = KEY_INVALID;
 		if (gARDFSquelchMode)
 			MENU_PlayMorseString("S");
 		else
 			MENU_PlayMorseString("G");
+#else
+		gBeepToPlay = BEEP_1KHZ_60MS_OPTIONAL;
 #endif
 		goto Skip;
 	}

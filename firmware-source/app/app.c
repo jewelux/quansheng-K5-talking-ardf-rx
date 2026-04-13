@@ -1560,8 +1560,8 @@ static void ProcessKey(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 	}
 
 #ifdef ENABLE_ARDF
-	// In ARDF mode, SIDE1 (key directly below PTT) short-press toggles
-	// between squelch and gain adjustment mode for UP/DOWN keys.
+	// In ARDF mode, SIDE1 (key directly below PTT) short-press cycles
+	// between gain, squelch, and frequency adjustment mode for UP/DOWN keys.
 	// React on release (!bKeyPressed) of a short press (!bKeyHeld) so
 	// the key is no longer held when Morse starts — avoids immediate
 	// abort by MENU_IsAbortKeyPressed().
@@ -1570,11 +1570,13 @@ static void ProcessKey(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 	    !bKeyHeld && !bKeyPressed &&
 	    (gScreenToDisplay == DISPLAY_MAIN || gScreenToDisplay == DISPLAY_ARDF))
 	{
-		gARDFSquelchMode = !gARDFSquelchMode;
+		gARDFUpDownMode = (gARDFUpDownMode + 1) % ARDF_UPDOWN_MODE_COUNT;
 #ifdef ENABLE_VOICE
 		gMorseAbortKey = KEY_INVALID;
-		if (gARDFSquelchMode)
+		if (gARDFUpDownMode == ARDF_UPDOWN_SQUELCH)
 			MENU_PlayMorseString("S");
+		else if (gARDFUpDownMode == ARDF_UPDOWN_FREQ)
+			MENU_PlayMorseString("F");
 		else
 			MENU_PlayMorseString("G");
 #else

@@ -932,7 +932,7 @@ static void MAIN_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
 		MAIN_StopVoicePlayback();
 #endif
 
-		if ( gARDFSquelchMode )
+		if ( gARDFUpDownMode == ARDF_UPDOWN_SQUELCH )
 		{
 			// Squelch adjustment mode: UP/DOWN changes squelch level
 			int16_t sql = (int16_t)gEeprom.SQUELCH_LEVEL + Direction;
@@ -944,6 +944,20 @@ static void MAIN_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
 #ifdef ENABLE_VOICE
 			MENU_PlayMorseNumber(gEeprom.SQUELCH_LEVEL);
 #endif
+		}
+		else if ( gARDFUpDownMode == ARDF_UPDOWN_FREQ )
+		{
+			// Frequency adjustment mode: UP/DOWN steps frequency
+			const uint32_t frequency = APP_SetFrequencyByStep(gTxVfo, Direction);
+
+			if (RX_freq_check(frequency) < 0) {
+				gBeepToPlay = BEEP_500HZ_60MS_DOUBLE_BEEP_OPTIONAL;
+				return;
+			}
+			gTxVfo->freq_config_RX.Frequency = frequency;
+			BK4819_SetFrequency(frequency);
+			BK4819_RX_TurnOn();
+			gRequestSaveChannel = 1;
 		}
 		else
 		{

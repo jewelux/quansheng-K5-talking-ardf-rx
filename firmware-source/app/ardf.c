@@ -102,7 +102,7 @@ int16_t           gARDFClockCorrAddTicksPerMin = ARDF_CLOCK_CORR_TICKS_PER_MIN;
 int8_t            gARDFMistuneFreqRaw = ARDF_GAIN_MISTUNE_HZ_DEFAULT/ARDF_MISTUNE_RES_HZ;
 uint8_t           gARDFMistuneAddGainIdxSteps = ARDF_GAIN_INDEX_ADD_STEPS_MISTUNE_DEFAULT;
 uint8_t           gARDFSnapshotSpeed = ARDF_SNAPSHOT_SPEED_DEFAULT;
-bool              gARDFSquelchMode = false;  // UP/DOWN mode: false = gain, true = squelch
+uint8_t           gARDFUpDownMode = ARDF_UPDOWN_GAIN;  // UP/DOWN mode: 0=gain, 1=squelch, 2=frequency
 #ifdef ARDF_ENABLE_SHOW_DEBUG_DATA
 int16_t           gARDFdebug = 0;
 int16_t           gARDFdebug2 = 0;

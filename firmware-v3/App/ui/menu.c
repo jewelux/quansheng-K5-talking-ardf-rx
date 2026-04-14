@@ -1178,6 +1178,12 @@ void UI_DisplayMenu(void)
 #endif
             break;
 
+#ifdef ENABLE_VOICE_PROMPTS
+        case MENU_ACCESS:
+            strcpy(String, gSubMenu_ACCESS[gSubMenuSelection]);
+            break;
+#endif
+
         case MENU_RESET:
             strcpy(String, gSubMenu_RESET[gSubMenuSelection]);
             break;

@@ -76,7 +76,9 @@ enum
 #ifdef ENABLE_VOICE
     MENU_VOICE,
 #endif
+#if defined(ENABLE_VOICE) || defined(ENABLE_MORSE)
     MENU_MORSE_SPEED,
+#endif
     MENU_SC_REV,
     MENU_AUTOLK,
     MENU_LIST_CH,

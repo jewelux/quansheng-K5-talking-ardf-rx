@@ -50,9 +50,9 @@
 uint8_t gUnlockAllTxConfCnt;
 
 // ---- Morse code accessibility system (ported from V1) ----
-#ifdef ENABLE_VOICE
+#if defined(ENABLE_VOICE) || defined(ENABLE_MORSE)
 
-#include <stdio.h>
+#include "external/printf/printf.h"
 #include "driver/system.h"
 #include "functions.h"
 #include "radio.h"
@@ -325,7 +325,7 @@ void MENU_PlayMorseForCurrentItem(void)
     MENU_PlayMorseString(buf);
 }
 
-#endif // ENABLE_VOICE
+#endif // ENABLE_VOICE || ENABLE_MORSE
 // ---- End Morse code system ----
 
 #ifdef ENABLE_F_CAL_MENU
@@ -451,6 +451,13 @@ int MENU_GetLimits(uint8_t menu_id, int32_t *pMin, int32_t *pMax)
             case MENU_VOICE:
                 //*pMin = 0;
                 *pMax = ARRAY_SIZE(gSubMenu_VOICE) - 1;
+                break;
+        #endif
+
+        #if defined(ENABLE_VOICE) || defined(ENABLE_MORSE)
+            case MENU_MORSE_SPEED:
+                *pMin = 15;
+                *pMax = 70;
                 break;
         #endif
 
@@ -1097,6 +1104,12 @@ void MENU_AcceptSetting(void)
                 break;
         #endif
 
+        #if defined(ENABLE_VOICE) || defined(ENABLE_MORSE)
+            case MENU_MORSE_SPEED:
+                gMorseSpeedWpm = gSubMenuSelection;
+                break;
+        #endif
+
         case MENU_SC_REV:
             gEeprom.SCAN_RESUME_MODE = gSubMenuSelection;
             break;
@@ -1648,6 +1661,12 @@ void MENU_ShowCurrentSetting(void)
 #ifdef ENABLE_VOICE
         case MENU_VOICE:
             gSubMenuSelection = gEeprom.VOICE_PROMPT;
+            break;
+#endif
+
+#if defined(ENABLE_VOICE) || defined(ENABLE_MORSE)
+        case MENU_MORSE_SPEED:
+            gSubMenuSelection = gMorseSpeedWpm;
             break;
 #endif
 
@@ -2441,6 +2460,10 @@ static void MENU_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
         gFlagRefreshSetting = true;
 
         gRequestDisplayScreen = DISPLAY_MENU;
+
+        #ifdef ENABLE_MORSE
+            MENU_PlayMorseForCurrentItem();
+        #endif
 
         if (UI_MENU_GetCurrentMenuId() != MENU_ABR
             && UI_MENU_GetCurrentMenuId() != MENU_ABR_MIN

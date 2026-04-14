@@ -210,6 +210,9 @@ enable_feature(ENABLE_ARDF
 )
 enable_feature(ENABLE_PREVENT_TX)
 
+# ---- ACCESSIBILITY ----
+enable_feature(ENABLE_MORSE)
+
 # ---- DEBUGGING ----
 
 enable_feature(ENABLE_AGC_SHOW_DATA)

@@ -112,6 +112,9 @@ const t_menu_item MenuList[] =
 #ifdef ENABLE_VOICE
     {"Voice",       MENU_VOICE         },
 #endif
+#ifdef ENABLE_MORSE
+    {"MrsSpd",      MENU_MORSE_SPEED   },
+#endif
     {"Roger",       MENU_ROGER         },
     {"STE",         MENU_STE           },
     {"RP STE",      MENU_RP_STE        },
@@ -1020,6 +1023,12 @@ void UI_DisplayMenu(void)
         #ifdef ENABLE_VOICE
             case MENU_VOICE:
                 strcpy(String, gSubMenu_VOICE[gSubMenuSelection]);
+                break;
+        #endif
+
+        #if defined(ENABLE_VOICE) || defined(ENABLE_MORSE)
+            case MENU_MORSE_SPEED:
+                sprintf(String, "%u WPM", gSubMenuSelection);
                 break;
         #endif
 

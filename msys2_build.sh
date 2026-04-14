@@ -252,7 +252,7 @@ build_v3() {
     echo ""
     info "Verfuegbare CMake-Presets:"
     echo ""
-    echo "  ${BOLD}1${RESET}) ARDF-Talking  — Blindenfreundlicher ARDF-Empfaenger (empfohlen)"
+    echo "  ${BOLD}1${RESET}) ARDF-Morse    — ARDF-Empfaenger mit Morse-Accessibility (empfohlen)"
     echo "  ${BOLD}2${RESET}) ARDF          — Standard-ARDF (Dennis Real / DL9CAT)"
     echo "  ${BOLD}3${RESET}) Custom        — Benutzerdefiniert"
     echo "  ${BOLD}4${RESET}) Bandscope     — Mit Spektrumanzeige"
@@ -263,7 +263,7 @@ build_v3() {
     while true; do
         read -rp "${BOLD}Preset waehlen [1-5, Standard=1]: ${RESET}" choice
         case "${choice:-1}" in
-            1) preset="ARDF-Talking"; break ;;
+            1) preset="ARDF-Morse"; break ;;
             2) preset="ARDF"; break ;;
             3) preset="Custom"; break ;;
             4) preset="Bandscope"; break ;;

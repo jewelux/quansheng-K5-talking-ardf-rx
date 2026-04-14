@@ -107,6 +107,8 @@ bool              gSetting_ScrambleEnable;
 
 #ifdef ENABLE_ARDF
 bool              gSetting_ARDFEnable = false;
+#endif
+#if defined(ENABLE_ARDF) || defined(ENABLE_MORSE)
 uint8_t           gMorseSpeedWpm = 20;
 #endif
 

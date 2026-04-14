@@ -28,6 +28,7 @@
 #include "driver/systick.h"
 #include "driver/voice.h"
 #include "driver/py25q16.h"
+#include "driver/st7565.h"
 #include "functions.h"
 #include "misc.h"
 #include "settings.h"
@@ -310,7 +311,10 @@ static void LoadVoiceSamples()
         return;
     }
 
-    extern uint8_t **gFrameBuffer;
+    /* Use gFrameBuffer (uint8_t [FRAME_LINES][LCD_WIDTH] = 896 bytes)
+       as a temporary read buffer.  Only VOICE_BUF_LEN (160) bytes are
+       needed, which fits easily.  The correct extern declaration comes
+       from driver/st7565.h — do NOT redeclare as uint8_t** here. */
     uint8_t *Buf = (uint8_t *)gFrameBuffer;
     PY25Q16_ReadBuffer(VoiceClipState.Addr, Buf, VOICE_BUF_LEN);
     VoiceClipState.Addr += VOICE_BUF_LEN;

@@ -23,6 +23,10 @@
 #include "py32f071_ll_system.h"
 #include <string.h>
 
+/* VOICE_BUF_SIZE (320 bytes) coincidentally equals DAC_Buf's element count
+   (uint16_t[320]), causing a false-positive -Wmemset-elt-size warning.       */
+#pragma GCC diagnostic ignored "-Wmemset-elt-size"
+
 #define TIMx TIM6
 #define DAC_CHANNEL LL_DAC_CHANNEL_1
 #define DMA_CHANNEL LL_DMA_CHANNEL_3
@@ -102,7 +106,7 @@ void VOICE_Start()
     }
     else
     {
-        memset((void *)DAC_Buf, 0, VOICE_BUF_SIZE);
+        memset(DAC_Buf, 0, VOICE_BUF_SIZE);
     }
     if (gVoiceBufLen > 0)
     {
@@ -146,7 +150,7 @@ void DMA1_Channel2_3_IRQHandler()
         }
         else
         {
-            memset((void *)DAC_Buf, 0, VOICE_BUF_SIZE);
+            memset(DAC_Buf, 0, VOICE_BUF_SIZE);
         }
     }
     if (LL_DMA_IsActiveFlag_TC3(DMA1))

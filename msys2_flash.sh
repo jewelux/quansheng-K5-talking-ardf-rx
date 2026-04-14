@@ -219,47 +219,169 @@ flash_v1() {
 # ---------------------------------------------------------------------------
 # K5TOOL automatic installation
 # ---------------------------------------------------------------------------
+# K5TOOL is a C# / Mono project (NOT C).
+#   - On Windows/MSYS2: download pre-built K5TOOL.exe from GitHub Releases
+#   - On Linux/macOS:   build from source using cmake + mono-mcs
+# ---------------------------------------------------------------------------
+
+# Version of K5TOOL release to download
+K5TOOL_RELEASE_TAG="v1.8"
+K5TOOL_RELEASE_ZIP="K5TOOL-v1.8.zip"
+K5TOOL_DOWNLOAD_URL="https://github.com/qrp73/K5TOOL/releases/download/${K5TOOL_RELEASE_TAG}/${K5TOOL_RELEASE_ZIP}"
+
 install_k5tool() {
     local k5tool_dir="$REPO_ROOT/tools/K5TOOL"
+    mkdir -p "$REPO_ROOT/tools"
 
-    # Check prerequisites: git and a C compiler (gcc or cc)
+    # -----------------------------------------------------------------------
+    # Strategy 1 (Windows/MSYS2): Download pre-built K5TOOL.exe from release
+    # -----------------------------------------------------------------------
+    if [[ -n "${MSYSTEM:-}" ]] || [[ "$(uname -s)" == *MINGW* ]] || [[ "$(uname -s)" == *MSYS* ]] || [[ "$(uname -s)" == *CYGWIN* ]]; then
+        install_k5tool_download "$k5tool_dir"
+        return
+    fi
+
+    # -----------------------------------------------------------------------
+    # Strategy 2 (Linux/macOS): Build from source with cmake + mono-mcs
+    # -----------------------------------------------------------------------
+    install_k5tool_build "$k5tool_dir"
+}
+
+# Download pre-built K5TOOL.exe from GitHub Releases (Windows)
+install_k5tool_download() {
+    local k5tool_dir="$1"
+    local zip_path="$REPO_ROOT/tools/${K5TOOL_RELEASE_ZIP}"
+
+    info "Lade K5TOOL ${K5TOOL_RELEASE_TAG} herunter (vorkompilierte Windows-Version)..."
+    echo "  ${CYAN}${K5TOOL_DOWNLOAD_URL}${RESET}"
+    echo ""
+
+    # Need curl or wget
+    local dl_cmd=""
+    if command -v curl &>/dev/null; then
+        dl_cmd="curl"
+    elif command -v wget &>/dev/null; then
+        dl_cmd="wget"
+    else
+        warn "Weder curl noch wget gefunden."
+        if ask_yes_no "curl jetzt installieren?"; then
+            pacman -S --noconfirm curl 2>/dev/null || {
+                fail "curl konnte nicht installiert werden."
+                exit 1
+            }
+            dl_cmd="curl"
+        else
+            fail "Ohne curl/wget kann K5TOOL nicht heruntergeladen werden."
+            exit 1
+        fi
+    fi
+
+    # Need unzip
+    if ! command -v unzip &>/dev/null; then
+        warn "unzip nicht gefunden."
+        if ask_yes_no "unzip jetzt installieren?"; then
+            pacman -S --noconfirm unzip 2>/dev/null || {
+                fail "unzip konnte nicht installiert werden."
+                exit 1
+            }
+        else
+            fail "Ohne unzip kann K5TOOL nicht entpackt werden."
+            exit 1
+        fi
+    fi
+
+    # Download
+    rm -f "$zip_path"
+    if [[ "$dl_cmd" == "curl" ]]; then
+        curl -fSL --progress-bar -o "$zip_path" "$K5TOOL_DOWNLOAD_URL" || {
+            fail "Download fehlgeschlagen."
+            fail "Pruefe die Internetverbindung und versuche es erneut."
+            rm -f "$zip_path"
+            exit 1
+        }
+    else
+        wget -q --show-progress -O "$zip_path" "$K5TOOL_DOWNLOAD_URL" || {
+            fail "Download fehlgeschlagen."
+            fail "Pruefe die Internetverbindung und versuche es erneut."
+            rm -f "$zip_path"
+            exit 1
+        }
+    fi
+
+    ok "Download abgeschlossen: $(wc -c < "$zip_path") Bytes"
+
+    # Extract
+    mkdir -p "$k5tool_dir"
+    info "Entpacke ${K5TOOL_RELEASE_ZIP}..."
+    unzip -o "$zip_path" -d "$k5tool_dir" || {
+        fail "Entpacken fehlgeschlagen."
+        exit 1
+    }
+    rm -f "$zip_path"
+
+    # Find K5TOOL.exe — it may be at top level or in a subfolder
+    local exe_path
+    exe_path=$(find "$k5tool_dir" -maxdepth 2 -iname 'K5TOOL.exe' -print -quit 2>/dev/null)
+
+    if [[ -z "$exe_path" ]]; then
+        fail "K5TOOL.exe wurde im Archiv nicht gefunden."
+        fail "Bitte pruefe: $k5tool_dir"
+        ls -laR "$k5tool_dir"/ 2>/dev/null || true
+        exit 1
+    fi
+
+    # If exe is in a subfolder, move contents up
+    local exe_dir
+    exe_dir=$(dirname "$exe_path")
+    if [[ "$exe_dir" != "$k5tool_dir" ]]; then
+        mv "$exe_dir"/* "$k5tool_dir"/ 2>/dev/null || true
+    fi
+
+    K5TOOL_PATH="$k5tool_dir/K5TOOL.exe"
+    ok "K5TOOL ${K5TOOL_RELEASE_TAG} bereit: $K5TOOL_PATH"
+    echo ""
+}
+
+# Build K5TOOL from source (Linux/macOS) — requires mono-mcs + cmake
+install_k5tool_build() {
+    local k5tool_dir="$1"
+
+    # Check prerequisites
     if ! command -v git &>/dev/null; then
         fail "git nicht gefunden — wird zum Klonen von K5TOOL benoetigt."
         exit 1
     fi
 
-    if ! command -v gcc &>/dev/null && ! command -v cc &>/dev/null; then
-        warn "C-Compiler (gcc) nicht gefunden."
-        if [[ -n "${MSYSTEM:-}" ]] && ask_yes_no "gcc jetzt installieren?"; then
-            pacman -S --noconfirm mingw-w64-x86_64-gcc 2>/dev/null || \
-            pacman -S --noconfirm $MINGW_PACKAGE_PREFIX-gcc || {
-                fail "gcc konnte nicht installiert werden."
-                exit 1
-            }
-            ok "gcc installiert."
-        else
-            fail "Ohne C-Compiler kann K5TOOL nicht gebaut werden."
-            exit 1
-        fi
+    # mono-mcs (C# compiler) is required
+    if ! command -v mcs &>/dev/null && ! command -v csc &>/dev/null; then
+        warn "Mono C#-Compiler (mcs) nicht gefunden."
+        echo ""
+        echo "  K5TOOL ist ein C#-Projekt und benoetigt den Mono-Compiler."
+        echo ""
+        echo "  Installation:"
+        echo "    Ubuntu/Debian:  sudo apt install mono-runtime mono-mcs"
+        echo "    Fedora:         sudo dnf install mono-devel"
+        echo "    macOS:          brew install mono"
+        echo ""
+        fail "Bitte mono-mcs installieren und erneut versuchen."
+        exit 1
+    fi
+
+    if ! command -v cmake &>/dev/null; then
+        warn "cmake nicht gefunden."
+        echo "  Installation: sudo apt install cmake"
+        fail "Bitte cmake installieren und erneut versuchen."
+        exit 1
     fi
 
     if ! command -v make &>/dev/null; then
         warn "make nicht gefunden."
-        if [[ -n "${MSYSTEM:-}" ]] && ask_yes_no "make jetzt installieren?"; then
-            pacman -S --noconfirm make || {
-                fail "make konnte nicht installiert werden."
-                exit 1
-            }
-            ok "make installiert."
-        else
-            fail "Ohne make kann K5TOOL nicht gebaut werden."
-            exit 1
-        fi
+        echo "  Installation: sudo apt install make"
+        fail "Bitte make installieren und erneut versuchen."
+        exit 1
     fi
 
     # Clone or update
-    mkdir -p "$REPO_ROOT/tools"
-
     if [[ -d "$k5tool_dir/.git" ]]; then
         info "K5TOOL-Verzeichnis existiert bereits, aktualisiere..."
         (cd "$k5tool_dir" && git pull --ff-only) || {
@@ -276,35 +398,26 @@ install_k5tool() {
         ok "K5TOOL geklont nach: tools/K5TOOL/"
     fi
 
-    # Build
-    info "Baue K5TOOL..."
-    (cd "$k5tool_dir" && make clean 2>/dev/null || true; make) || {
+    # Build with cmake (the K5TOOL CMakeLists.txt compiles C# via mcs)
+    info "Baue K5TOOL (cmake + mcs)..."
+    local build_dir="$k5tool_dir/build"
+    mkdir -p "$build_dir"
+    (cd "$build_dir" && cmake .. && make) || {
         fail "K5TOOL konnte nicht gebaut werden."
         fail "Pruefe die Build-Ausgabe oben fuer Details."
         exit 1
     }
 
-    # Find the built binary
-    if [[ -x "$k5tool_dir/K5TOOL" ]]; then
-        K5TOOL_PATH="$k5tool_dir/K5TOOL"
-    elif [[ -x "$k5tool_dir/k5tool" ]]; then
-        K5TOOL_PATH="$k5tool_dir/k5tool"
-    elif [[ -x "$k5tool_dir/K5TOOL.exe" ]]; then
-        K5TOOL_PATH="$k5tool_dir/K5TOOL.exe"
-    elif [[ -x "$k5tool_dir/k5tool.exe" ]]; then
-        K5TOOL_PATH="$k5tool_dir/k5tool.exe"
+    # The cmake build puts k5tool.exe + k5tool launcher in build/
+    if [[ -x "$build_dir/k5tool" ]]; then
+        K5TOOL_PATH="$build_dir/k5tool"
+    elif [[ -f "$build_dir/k5tool.exe" ]]; then
+        K5TOOL_PATH="$build_dir/k5tool.exe"
     else
-        # Search for any executable produced by make
-        local found_bin
-        found_bin=$(find "$k5tool_dir" -maxdepth 1 -type f \( -name 'K5TOOL*' -o -name 'k5tool*' \) -executable 2>/dev/null | head -1)
-        if [[ -n "$found_bin" ]]; then
-            K5TOOL_PATH="$found_bin"
-        else
-            fail "K5TOOL wurde gebaut, aber die ausfuehrbare Datei wurde nicht gefunden."
-            fail "Bitte pruefe: $k5tool_dir"
-            ls -la "$k5tool_dir"/ 2>/dev/null || true
-            exit 1
-        fi
+        fail "K5TOOL wurde gebaut, aber die ausfuehrbare Datei wurde nicht gefunden."
+        fail "Bitte pruefe: $build_dir"
+        ls -la "$build_dir"/ 2>/dev/null || true
+        exit 1
     fi
 
     ok "K5TOOL erfolgreich gebaut: $K5TOOL_PATH"

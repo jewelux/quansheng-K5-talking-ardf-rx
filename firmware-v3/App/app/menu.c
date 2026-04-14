@@ -186,67 +186,6 @@ static bool MENU_PlayMorseElement(const uint16_t duration_ms)
     return true;
 }
 
-static const char *MENU_GetMorseLabel(const uint8_t menu_id)
-{
-    switch (menu_id)
-    {
-        case MENU_SQL:                  return "SQUELCH";
-        case MENU_STEP:                 return "STEP";
-        case MENU_R_DCS:                return "DCS";
-        case MENU_R_CTCS:               return "CTCSS";
-        case MENU_W_N:                  return "BANDWIDTH";
-        case MENU_AM:                   return "AM FM";
-        case MENU_COMPAND:              return "COMPAND";
-        case MENU_MEM_CH:               return "MEMORY";
-        case MENU_DEL_CH:               return "DELETE";
-        case MENU_MEM_NAME:             return "NAME";
-        case MENU_S_LIST:               return "SCAN LIST";
-        case MENU_SC_REV:               return "SCAN RESUME";
-        case MENU_MDF:                  return "DISPLAY";
-        case MENU_SAVE:                 return "SAVE";
-        case MENU_ABR:                  return "BACKLIGHT";
-        case MENU_ABR_MIN:              return "BACKLIGHT MINIMUM";
-        case MENU_ABR_MAX:              return "BACKLIGHT MAXIMUM";
-        case MENU_ABR_ON_TX_RX:         return "BACKLIGHT TX RX";
-        case MENU_BEEP:                 return "BEEP";
-        case MENU_AUTOLK:               return "KEY LOCK";
-        case MENU_STE:                  return "TAIL";
-        case MENU_RP_STE:               return "TAIL RP";
-        case MENU_MIC:                  return "MIC";
-        case MENU_PONMSG:               return "POWER ON";
-        case MENU_VOL:                  return "BATTERY";
-        case MENU_BAT_TXT:              return "BATTERY TEXT";
-        case MENU_TDR:                  return "RX MODE";
-        case MENU_MORSE_SPEED:          return "MORSE SPEED";
-#ifdef ENABLE_VOICE
-        case MENU_VOICE:                return "VOICE";
-#endif
-        case MENU_F1SHRT:               return "F1 SHORT";
-        case MENU_F1LONG:               return "F1 LONG";
-        case MENU_F2SHRT:               return "F2 SHORT";
-        case MENU_F2LONG:               return "F2 LONG";
-        case MENU_MLONG:                return "M LONG";
-        case MENU_RESET:                return "RESET";
-#ifdef ENABLE_ARDF
-        case MENU_ARDF:                 return "ARDF";
-        case MENU_ARDF_NUMFOXES:        return "NUMBER FOX";
-        case MENU_ARDF_FOXDURATION:     return "FOX DURATION";
-        case MENU_ARDF_SETFOX:          return "ACTIVE FOX";
-        case MENU_ARDF_TIME_RESET:      return "TIME RESET";
-        case MENU_ARDF_GAIN_REMEMBER:   return "GAIN REMEMBER";
-        case MENU_ARDF_CYCLE_END_BEEP:  return "END SIGNAL";
-        case MENU_ARDF_SNAPSHOT_SPEED:  return "SNAPSHOT SPEED";
-        case MENU_ARDF_CLOCK_CORR:      return "CLOCK CORRECT";
-        case MENU_ARDF_MIST_FREQ:       return "MISTUNE FREQ";
-        case MENU_ARDF_MIST_GAIN_ADD_STEPS: return "MISTUNE GAIN";
-#endif
-#ifdef ENABLE_AM_FIX
-        case MENU_AM_FIX:               return "AM FIX";
-#endif
-        default:                        return NULL;
-    }
-}
-
 void MENU_PlayMorseString(const char *text)
 {
     const uint16_t unit_ms = MENU_GetMorseUnitMs();
@@ -309,10 +248,6 @@ done:
 
 void MENU_PlayMorseForCurrentItem(void)
 {
-    const uint8_t menu_id = UI_MENU_GetCurrentMenuId();
-    const char *label = MENU_GetMorseLabel(menu_id);
-    char buf[24];
-
     // Wait for the triggering key (UP/DOWN) to be released,
     // otherwise MENU_IsAbortKeyPressed() immediately aborts the Morse output.
     {
@@ -328,16 +263,8 @@ void MENU_PlayMorseForCurrentItem(void)
 
     gMorseAbortKey = KEY_INVALID;
 
-    if (label != NULL)
-    {
-        MENU_PlayMorseString(label);
-        return;
-    }
-
-    // Fallback: morse the numeric menu index
-    const uint8_t idx = gMenuCursor;
-    snprintf(buf, sizeof(buf), "%u", (unsigned)idx);
-    MENU_PlayMorseString(buf);
+    // Use the menu item's display name directly from MenuList
+    MENU_PlayMorseString(MenuList[gMenuCursor].name);
 }
 
 #endif // ENABLE_VOICE || ENABLE_MORSE

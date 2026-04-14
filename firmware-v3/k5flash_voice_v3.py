@@ -62,6 +62,8 @@ MSG_WRITE_SPI_RESP = 0x0604 # Write SPI response
 VOICE_INDEX_CHI = 0x14c000  # Chinese voice index table
 VOICE_INDEX_ENG = 0x14c800  # English voice index table
 VOICE_DATA_BASE = 0x14d000  # Voice data starts here
+VOICE_FLASH_END = 0x200000  # End of PY25Q16 flash
+MAX_VOICE_DATA  = VOICE_FLASH_END - VOICE_DATA_BASE  # 733,184 bytes (716 KB)
 
 # Max chunk size per write (limited by UART buffer)
 SPI_WRITE_CHUNK = 128
@@ -388,6 +390,16 @@ def flash_voice_pack(port_name, vpk_path):
     print(f"    Index-Tabelle: 0x{index_addr:06X} ({len(index_data)} Bytes)")
     print(f"    Voice-Daten:   0x{data_addr:06X} ({len(voice_data)} Bytes)")
     print(f"    Gesamt:        {total_size} Bytes ({total_size/1024:.1f} KB)")
+    print(f"    Verfuegbar:    {MAX_VOICE_DATA} Bytes ({MAX_VOICE_DATA/1024:.1f} KB)")
+
+    # Validate voice data fits in flash
+    if len(voice_data) > MAX_VOICE_DATA:
+        excess = len(voice_data) - MAX_VOICE_DATA
+        print(f"\n  FEHLER: Voice-Daten ({len(voice_data)} Bytes) ueberschreiten")
+        print(f"  die Flash-Kapazitaet ({MAX_VOICE_DATA} Bytes) um {excess} Bytes!")
+        print(f"  Bitte Voice-Pack mit kuerzeren Clips oder weniger Eintraegen neu erzeugen.")
+        return False
+    print(f"    Auslastung:    {len(voice_data)*100/MAX_VOICE_DATA:.1f}%")
     print()
 
     # Open serial connection

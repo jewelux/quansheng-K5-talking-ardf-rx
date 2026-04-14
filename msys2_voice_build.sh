@@ -506,19 +506,25 @@ generate_voice_prompts() {
 
         count=$((count + 1))
 
-        # Generate WAV with eSpeak
+        # Generate WAV with eSpeak (faster speech rate to keep clips short)
         local wav_file="$wav_dir/voice_${id_str}.wav"
-        $espeak_cmd -v "$espeak_voice" -s 140 -p 50 -a 180 \
+        $espeak_cmd -v "$espeak_voice" -s 170 -p 50 -a 200 \
             --stdout "$text" > "$wav_file" 2>/dev/null
 
         # Convert to 8kHz 8-bit unsigned mono PCM with FFmpeg
+        # - silenceremove: strip leading/trailing silence (threshold -40dB)
+        # - highpass/lowpass: bandpass for radio speaker (200-3500 Hz)
+        # - volume: normalize level
         local raw_file="$raw_dir/voice_${id_str}.raw"
         ffmpeg -y -i "$wav_file" \
+            -af "silenceremove=start_periods=1:start_threshold=-40dB:start_silence=0.02,areverse,silenceremove=start_periods=1:start_threshold=-40dB:start_silence=0.02,areverse,highpass=f=200,lowpass=f=3500,volume=1.5" \
             -ar 8000 -ac 1 -acodec pcm_u8 \
-            -af "volume=1.5,highpass=f=200,lowpass=f=3500" \
             -f u8 "$raw_file" 2>/dev/null
 
-        printf "\r  [%3d/%3d] 0x%s: %s" "$count" "$total" "$id_str" "$text"
+        local clip_size
+        clip_size=$(stat -c%s "$raw_file" 2>/dev/null || stat -f%z "$raw_file" 2>/dev/null || echo 0)
+        printf "\r  [%3d/%3d] 0x%s: %-30s (%d Bytes, %.2fs)" \
+            "$count" "$total" "$id_str" "$text" "$clip_size" "$(echo "scale=2; $clip_size / 8000" | bc 2>/dev/null || echo '?')"
     done
 
     echo ""
@@ -567,6 +573,14 @@ lang_code = sys.argv[3]
 
 MAX_VOICE_ID = 0x82  # Maximum voice ID (inclusive)
 
+# PY25Q16 flash layout constraints
+# Index table: 0x14c000 or 0x14c800 (2 KB each, up to 256 entries × 8 bytes)
+# Voice data:  0x14d000 – 0x200000 = 733,184 bytes (716 KB)
+FLASH_INDEX_SIZE = 0x1000          # 4 KB for index tables (Chinese + English)
+FLASH_DATA_START = 0x14d000
+FLASH_DATA_END   = 0x200000
+MAX_VOICE_DATA   = FLASH_DATA_END - FLASH_DATA_START  # 733,184 bytes
+
 # Collect all raw files
 voice_data = {}
 for raw_file in sorted(glob.glob(os.path.join(raw_dir, "voice_*.raw"))):
@@ -580,6 +594,15 @@ for raw_file in sorted(glob.glob(os.path.join(raw_dir, "voice_*.raw"))):
         voice_data[voice_id] = data
 
 print(f"  {len(voice_data)} Voice-Clips geladen")
+
+# Show per-clip statistics
+clip_sizes = [(vid, len(d)) for vid, d in sorted(voice_data.items())]
+if clip_sizes:
+    sizes_only = [s for _, s in clip_sizes]
+    print(f"  Clip-Groessen: min={min(sizes_only)} B, max={max(sizes_only)} B, "
+          f"avg={sum(sizes_only)//len(sizes_only)} B")
+    print(f"  Clip-Dauer:    min={min(sizes_only)/8000:.2f}s, max={max(sizes_only)/8000:.2f}s, "
+          f"avg={sum(sizes_only)/len(sizes_only)/8000:.2f}s")
 
 # Build index table and concatenated data
 index_entries = []
@@ -621,9 +644,23 @@ with open(output_file, "wb") as f:
 
 total_size = len(header) + len(index_data) + len(data_blob)
 print(f"  Gesamtgroesse: {total_size} Bytes ({total_size/1024:.1f} KB)")
-print(f"  Voice-Daten: {len(data_blob)} Bytes ({len(data_blob)/1024:.1f} KB)")
+print(f"  Voice-Daten:   {len(data_blob)} Bytes ({len(data_blob)/1024:.1f} KB)")
+print(f"  Index-Tabelle: {len(index_data)} Bytes")
 print(f"  Index-Eintraege: {MAX_VOICE_ID + 1}")
 print(f"  Dauer geschaetzt: {len(data_blob)/8000:.1f} Sekunden")
+print(f"  Flash-Kapazitaet: {MAX_VOICE_DATA} Bytes ({MAX_VOICE_DATA/1024:.1f} KB)")
+
+if len(data_blob) > MAX_VOICE_DATA:
+    excess = len(data_blob) - MAX_VOICE_DATA
+    print(f"\n  *** WARNUNG: Voice-Daten ueberschreiten Flash-Kapazitaet um "
+          f"{excess} Bytes ({excess/1024:.1f} KB)! ***")
+    print(f"  *** Maximal {MAX_VOICE_DATA} Bytes ({MAX_VOICE_DATA/1024:.1f} KB) "
+          f"passen in den Flash-Bereich 0x{FLASH_DATA_START:06X}-0x{FLASH_DATA_END:06X}. ***")
+    sys.exit(1)
+else:
+    used_pct = len(data_blob) * 100 / MAX_VOICE_DATA
+    remaining = MAX_VOICE_DATA - len(data_blob)
+    print(f"  Flash-Nutzung:  {used_pct:.1f}% ({remaining/1024:.1f} KB frei)")
 
 PYTHON_SCRIPT
 

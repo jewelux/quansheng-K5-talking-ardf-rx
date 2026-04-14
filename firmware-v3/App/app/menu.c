@@ -67,6 +67,8 @@ uint8_t gUnlockAllTxConfCnt;
     static VOICE_ID_t MENU_GetVoiceIDForCurrentItem(void);
 #endif
 
+static void MENU_ClampSelection(int8_t Direction);
+
 static const char *MENU_GetMorsePattern(char ch)
 {
     switch (ch)
@@ -618,10 +620,17 @@ void MENU_PlayMorseForCurrentItem(void)
     gMorseAbortKey = KEY_INVALID;
 
 #ifdef ENABLE_VOICE_PROMPTS
-    // If voice mode is active, try to play a voice prompt instead of Morse
-    if (gAccessibilityMode == ACCESS_MODE_VOICE
-        && gEeprom.VOICE_PROMPT != VOICE_PROMPT_OFF)
+    // If voice mode is active, try to play a voice prompt instead of Morse.
+    // When the user selects Voice in the Access menu, we use the English voice
+    // index table regardless of the separate VOICE_PROMPT setting.  This avoids
+    // the confusing requirement of having to configure two different settings.
+    if (gAccessibilityMode == ACCESS_MODE_VOICE)
     {
+        // Ensure voice prompt is not OFF so AUDIO_PlaySingleVoice
+        // will actually play.  If it was OFF, default to English.
+        if (gEeprom.VOICE_PROMPT == VOICE_PROMPT_OFF)
+            gEeprom.VOICE_PROMPT = VOICE_PROMPT_ENGLISH;
+
         VOICE_ID_t vid = MENU_GetVoiceIDForCurrentItem();
         if (vid != VOICE_ID_INVALID)
         {
@@ -633,15 +642,58 @@ void MENU_PlayMorseForCurrentItem(void)
     }
 #endif
 
-    if (gIsInSubMenu)
+    // ---------- Morse playback with interrupt-and-restart ----------
+    // When the user presses UP/DOWN during Morse output, the playback
+    // is aborted and gMorseAbortKey is set.  We then navigate to the
+    // next/previous menu item and immediately re-announce it, so the
+    // user doesn't have to press the key twice.
+    for (;;)
     {
-        MENU_GetSubMenuValueText(buf, sizeof(buf));
-        MENU_PlayMorseString(buf);
-    }
-    else
-    {
-        // Use the menu item's display name directly from MenuList
-        MENU_PlayMorseString(MenuList[gMenuCursor].name);
+        if (gIsInSubMenu)
+        {
+            MENU_GetSubMenuValueText(buf, sizeof(buf));
+            MENU_PlayMorseString(buf);
+        }
+        else
+        {
+            MENU_PlayMorseString(MenuList[gMenuCursor].name);
+        }
+
+        // Check whether Morse was interrupted by UP or DOWN
+        if (gMorseAbortKey != KEY_UP && gMorseAbortKey != KEY_DOWN)
+            break;   // completed normally or aborted by a non-nav key
+
+        // Navigate in the direction of the pressed key
+        {
+            const int8_t dir = (gMorseAbortKey == KEY_UP) ? 1 : -1;
+
+            if (!gIsInSubMenu)
+            {
+                gMenuCursor = NUMBER_AddWithWraparound(
+                    gMenuCursor, -dir, 0, gMenuListCount - 1);
+                gFlagRefreshSetting   = true;
+            }
+            else
+            {
+                MENU_ClampSelection(dir);
+            }
+            gRequestDisplayScreen = DISPLAY_MENU;
+        }
+
+        // Wait for the navigation key to be released before re-announcing,
+        // same pattern as the initial key-release wait above.
+        {
+            uint16_t wait = 500U;
+            while (wait > 0U)
+            {
+                if (KEYBOARD_Poll() == KEY_INVALID)
+                    break;
+                SYSTEM_DelayMs(10);
+                wait -= 10U;
+            }
+        }
+
+        gMorseAbortKey = KEY_INVALID;
     }
 }
 

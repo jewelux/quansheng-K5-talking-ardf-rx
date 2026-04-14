@@ -90,6 +90,10 @@ void VOICE_Init()
     LL_DAC_SetTriggerSource(DAC1, DAC_CHANNEL, LL_DAC_TRIG_EXT_TIM6_TRGO);
     LL_DAC_SetOutputBuffer(DAC1, DAC_CHANNEL, LL_DAC_OUTPUT_BUFFER_ENABLE);
 
+    /* Zero DAC buffer before enabling anything to prevent crackling at
+       startup from undefined memory content being pushed to the DAC. */
+    memset(DAC_Buf, 0, sizeof(DAC_Buf));
+
     /* Enable trigger BEFORE enabling the DAC so the DAC never enters
        auto-conversion mode (TEN=0).  In auto-mode the DAC could
        generate spurious DMA requests that interfere with boot. */

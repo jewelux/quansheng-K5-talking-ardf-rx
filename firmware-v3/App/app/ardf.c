@@ -25,6 +25,7 @@
 #include "settings.h"
 #include "radio.h"
 #include "functions.h"
+#include "app/app.h"
 #include "frequencies.h"
 #include "ui/main.h"
 #include "ui/ui.h"
@@ -390,7 +391,7 @@ typedef struct {
     uint16_t reg43_override;  // IF bandwidth override (0 = no change)
 } t_ardf_neg_gain_entry;
 
-static const t_ardf_neg_gain_entry ardf_neg_gain_table[ARDF_NEG_GAIN_LEVELS] =
+static const t_ardf_neg_gain_entry __attribute__((unused)) ardf_neg_gain_table[ARDF_NEG_GAIN_LEVELS] =
 {
     // --- Moderate AF reduction (RF gain already at minimum -60dB) ---
     { (11u << 12) | (0u << 10) | (32u << 4) | (6u << 0), 0 },     // N1

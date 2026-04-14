@@ -57,9 +57,14 @@ uint8_t gUnlockAllTxConfCnt;
 #include "functions.h"
 #include "radio.h"
 #include "dcs.h"
+#include "audio.h"
 
 #ifndef ARRAY_SIZE
     #define ARRAY_SIZE(x) (sizeof(x) / sizeof(x[0]))
+#endif
+
+#ifdef ENABLE_VOICE_PROMPTS
+    static VOICE_ID_t MENU_GetVoiceIDForCurrentItem(void);
 #endif
 
 static const char *MENU_GetMorsePattern(char ch)

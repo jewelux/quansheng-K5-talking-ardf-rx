@@ -286,6 +286,21 @@ const uint8_t BITMAP_NOAA[12] =
 };
 #endif
 
+#ifdef ENABLE_VOICE
+const uint8_t BITMAP_VoicePrompt[9] =
+{
+    0b00000000,
+    0b00011000,
+    0b00011000,
+    0b00100100,
+    0b00100100,
+    0b01000010,
+    0b01000010,
+    0b11111111,
+    0b00011000
+};
+#endif
+
 #ifndef ENABLE_CUSTOM_MENU_LAYOUT
 const uint8_t BITMAP_CurrentIndicator[8] = {
     0xFF,

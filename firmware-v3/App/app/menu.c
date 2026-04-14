@@ -313,6 +313,21 @@ void MENU_PlayMorseForCurrentItem(void)
     const char *label = MENU_GetMorseLabel(menu_id);
     char buf[24];
 
+    // Wait for the triggering key (UP/DOWN) to be released,
+    // otherwise MENU_IsAbortKeyPressed() immediately aborts the Morse output.
+    {
+        uint16_t wait = 500U;   // max ~500 ms
+        while (wait > 0U)
+        {
+            if (KEYBOARD_Poll() == KEY_INVALID)
+                break;
+            SYSTEM_DelayMs(10);
+            wait -= 10U;
+        }
+    }
+
+    gMorseAbortKey = KEY_INVALID;
+
     if (label != NULL)
     {
         MENU_PlayMorseString(label);

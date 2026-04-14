@@ -56,6 +56,10 @@ void UI_DisplayLock(void)
 
     memset(gInputBox, 10, sizeof(gInputBox));
 
+    // Safety counter: allow SIDE2 held for ~3 seconds (300 × 10 ms)
+    // to bypass a forgotten or garbage password.
+    uint16_t sideKeyHoldCounter = 0;
+
     while (1)
     {
         while (!gNextTimeslice) {}
@@ -65,6 +69,24 @@ void UI_DisplayLock(void)
         gNextTimeslice = false;
 
         Key = KEYBOARD_Poll();
+
+        // Escape hatch: hold SIDE2 for ~3 s to skip the password lock.
+        // This protects against garbage POWER_ON_PASSWORD values from
+        // corrupted SPI flash after a firmware upgrade.
+        if (Key == KEY_SIDE2)
+        {
+            if (++sideKeyHoldCounter >= 300)
+            {
+                // Disable the password so it doesn't block again
+                gEeprom.POWER_ON_PASSWORD = UINT32_MAX;
+                AUDIO_PlayBeep(BEEP_880HZ_60MS_DOUBLE_BEEP);
+                return;
+            }
+        }
+        else
+        {
+            sideKeyHoldCounter = 0;
+        }
 
         if (gKeyReading0 == Key)
         {

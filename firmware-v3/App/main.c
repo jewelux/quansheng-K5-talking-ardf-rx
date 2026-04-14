@@ -227,6 +227,11 @@ void Main(void)
         {   // 2.55 second boot-up screen
             while (boot_counter_10ms > 0)
             {
+                #ifdef ENABLE_BOOT_BEEPS
+                    if ((boot_counter_10ms % 25) == 0)
+                        AUDIO_PlayBeep(BEEP_880HZ_40MS_OPTIONAL);
+                #endif
+
                 if (KEYBOARD_Poll() != KEY_INVALID)
                 {   // halt boot beeps
                     boot_counter_10ms = 0;

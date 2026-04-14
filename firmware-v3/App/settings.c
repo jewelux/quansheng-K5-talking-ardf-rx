@@ -108,6 +108,45 @@ void SETTINGS_InitEEPROM(void)
             for (uint8_t i = 0; i < 7; i++)
                 buf[i] = dBmCorrTable[i];  // values from misc.c
             PY25Q16_WriteBuffer(0x00A0B9, buf, 7, false);
+
+            // 6. Reset POWER_ON_PASSWORD to disabled (0xFFFFFFFF)
+            //    Leftover SPI flash data from a previous firmware can contain
+            //    a random value < 1000000, which triggers the blocking
+            //    UI_DisplayLock() password screen and locks the user out.
+            #ifdef ENABLE_PWRON_PASSWORD
+            {
+                uint8_t pwBuf[4] = {0xFF, 0xFF, 0xFF, 0xFF};
+                PY25Q16_WriteBuffer(0x00A0A8 + 0x8, pwBuf, 4, false);
+            }
+            #endif
+
+            // 7. Reset CURRENT_STATE to 0 (normal boot, no resume)
+            //    Garbage data could trigger scan mode or spectrum on startup.
+            #ifdef ENABLE_FEAT_F4HWN_RESUME_STATE
+            {
+                uint8_t resumeByte[8] = {0};
+                PY25Q16_ReadBuffer(0x00A008, resumeByte, sizeof(resumeByte));
+                resumeByte[7] &= (uint8_t)~0x07;  // Clear CURRENT_STATE bits 0..2
+                PY25Q16_WriteBuffer(0x00A008, resumeByte, sizeof(resumeByte), false);
+            }
+            #endif
+
+            // 8. Reset BEEP_CONTROL to enabled and VOICE_PROMPT to English
+            //    so the radio produces audible feedback after a firmware upgrade.
+            {
+                uint8_t beepByte[8] = {0};
+                PY25Q16_ReadBuffer(0x00A0A8, beepByte, sizeof(beepByte));
+                beepByte[0] |= 0x01;  // BEEP_CONTROL = 1 (enabled)
+                PY25Q16_WriteBuffer(0x00A0A8, beepByte, sizeof(beepByte), false);
+            }
+            #ifdef ENABLE_VOICE
+            {
+                uint8_t voiceByte[8] = {0};
+                PY25Q16_ReadBuffer(0x00A0A8 + 0x10, voiceByte, sizeof(voiceByte));
+                voiceByte[0] = VOICE_PROMPT_ENGLISH;
+                PY25Q16_WriteBuffer(0x00A0A8 + 0x10, voiceByte, sizeof(voiceByte), false);
+            }
+            #endif
         }
     }
 
@@ -243,6 +282,10 @@ gEeprom.FreqChannel[1]   = IS_FREQ_CHANNEL(Data16[5]) ? Data16[5] : (FREQ_CHANNE
     #ifdef ENABLE_PWRON_PASSWORD
         PY25Q16_ReadBuffer(0x00A0A8 + 0x8, Data, 8);
         memcpy(&gEeprom.POWER_ON_PASSWORD, Data, 4);
+        // A valid 6-digit password is 000000–999999.
+        // Anything outside that range is garbage from SPI flash.
+        if (gEeprom.POWER_ON_PASSWORD > 999999)
+            gEeprom.POWER_ON_PASSWORD = UINT32_MAX;  // disables lock screen
     #endif
 
     // 0EA0..0EA7

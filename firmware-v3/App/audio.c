@@ -38,6 +38,10 @@
 #include "app/ardf.h"
 #endif
 
+#ifdef ENABLE_SAM_TTS
+#include "driver/sam/sam.h"
+#endif
+
 
 BEEP_Type_t gBeepToPlay = BEEP_NONE;
 
@@ -523,6 +527,75 @@ void AUDIO_PlayQueuedVoice(void)
 
     gVoiceWriteIndex    = 0;
     gVoiceReadIndex     = 0;
+}
+
+#endif
+
+#ifdef ENABLE_SAM_TTS
+
+void AUDIO_PlaySAMText(const char *text)
+{
+    if (!text || !*text)
+        return;
+
+    uint16_t duration_10ms = SAM_StartSpeaking(text);
+    if (duration_10ms == 0)
+        return;
+
+    if (FUNCTION_IsRx())
+        BK4819_SetAF(BK4819_AF_MUTE);
+
+    #ifdef ENABLE_FMRADIO
+        if (gFmRadioMode)
+            BK1080_Mute(true);
+    #endif
+
+    AUDIO_AudioPathOn();
+
+    #ifdef ENABLE_VOX
+        gVoxResumeCountdown = 2000;
+    #endif
+
+    SYSTEM_DelayMs(5);
+
+    /* Pre-fill the voice ring buffer with initial samples */
+    while (SAM_IsSpeaking() && gVoiceBufLen < VOICE_BUF_CAP)
+        SAM_FillVoiceBuffer();
+
+    VOICE_Start();
+
+    /* Continue filling the buffer while the DMA ISR drains it */
+    while (SAM_IsSpeaking())
+    {
+        if (gVoiceBufLen < VOICE_BUF_CAP)
+            SAM_FillVoiceBuffer();
+        else
+            SYSTEM_DelayMs(5);
+    }
+
+    /* Wait for the remaining buffered samples to play out */
+    while (gVoiceBufLen > 0)
+        SYSTEM_DelayMs(5);
+
+    /* Short tail silence so the DAC settles */
+    SYSTEM_DelayMs(20);
+
+    VOICE_Stop();
+
+    if (FUNCTION_IsRx())
+        RADIO_SetModulation(gRxVfo->Modulation);
+
+    #ifdef ENABLE_FMRADIO
+        if (gFmRadioMode)
+            BK1080_Mute(false);
+    #endif
+
+    if (!gEnableSpeaker)
+        AUDIO_AudioPathOff();
+
+    #ifdef ENABLE_VOX
+        gVoxResumeCountdown = 80;
+    #endif
 }
 
 #endif

@@ -213,6 +213,9 @@ enable_feature(ENABLE_PREVENT_TX)
 # ---- ACCESSIBILITY ----
 enable_feature(ENABLE_MORSE)
 enable_feature(ENABLE_VOICE_PROMPTS)
+enable_feature(ENABLE_SAM_TTS
+    driver/sam/sam.c
+)
 
 # ---- DEBUGGING ----
 

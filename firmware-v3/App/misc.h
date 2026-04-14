@@ -175,10 +175,13 @@ extern uint8_t               gMorseSpeedWpm;
 #endif
 
 #ifdef ENABLE_VOICE_PROMPTS
-// Accessibility mode: 0 = Morse, 1 = Voice Prompts
+// Accessibility mode: 0 = Morse, 1 = Voice Prompts, 2 = SAM TTS
 extern uint8_t               gAccessibilityMode;
 #define ACCESS_MODE_MORSE  0
 #define ACCESS_MODE_VOICE  1
+#ifdef ENABLE_SAM_TTS
+#define ACCESS_MODE_SAM    2
+#endif
 #endif
 
 extern enum BacklightOnRxTx_t gSetting_backlight_on_tx_rx;

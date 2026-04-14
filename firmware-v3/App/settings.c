@@ -464,7 +464,7 @@ gEeprom.FreqChannel[1]   = IS_FREQ_CHANNEL(Data16[5]) ? Data16[5] : (FREQ_CHANNE
         uint8_t AccData[4];
         PY25Q16_ReadBuffer(0x00D000 + 0x0C, AccData, 4);
         if (AccData[0] != 0xFF)
-            gAccessibilityMode = AccData[0] & 0x01;
+            gAccessibilityMode = AccData[0] & 0x03;
         else
             gAccessibilityMode = ACCESS_MODE_MORSE;  // default: Morse
     }
@@ -865,7 +865,7 @@ void SETTINGS_SaveAccessibilityMode(void)
 {
     uint8_t AccData[4];
     memset(AccData, 0xFF, sizeof(AccData));
-    AccData[0] = gAccessibilityMode & 0x01;
+    AccData[0] = gAccessibilityMode & 0x03;
     PY25Q16_WriteBuffer(0x00D000 + 0x0C, AccData, sizeof(AccData), true);
 }
 #endif

@@ -647,6 +647,19 @@ void MENU_PlayMorseForCurrentItem(void)
         }
         // Fallback to Morse if no voice ID found
     }
+
+#ifdef ENABLE_SAM_TTS
+    if (gAccessibilityMode == ACCESS_MODE_SAM)
+    {
+        if (gIsInSubMenu)
+            MENU_GetSubMenuValueText(buf, sizeof(buf));
+        else
+            strncpy(buf, MenuList[gMenuCursor].name, sizeof(buf) - 1);
+        buf[sizeof(buf) - 1] = '\0';
+        AUDIO_PlaySAMText(buf);
+        return;
+    }
+#endif
 #endif
 
     // ---------- Morse playback with interrupt-and-restart ----------

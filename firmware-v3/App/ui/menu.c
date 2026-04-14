@@ -228,10 +228,13 @@ const char gSubMenu_ARDF_Remember_Gain[][6] =
 #endif
 
 #ifdef ENABLE_VOICE_PROMPTS
-const char gSubMenu_ACCESS[][7] =
+const char gSubMenu_ACCESS[ACCESS_MODE_COUNT][7] =
 {
     "Morse",
-    "Voice"
+    "Voice",
+#ifdef ENABLE_SAM_TTS
+    "SAM",
+#endif
 };
 #endif
 

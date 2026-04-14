@@ -26,6 +26,9 @@
 #include "py32f071_ll_rcc.h"
 #include "py32f071_ll_adc.h"
 #include "driver/voice.h"
+#ifdef ENABLE_SAM_TTS
+#include "driver/sam/sam.h"
+#endif
 #include "driver/backlight.h"
 #ifdef ENABLE_FMRADIO
     #include "driver/bk1080.h"
@@ -181,6 +184,9 @@ void BOARD_Init(void)
     BOARD_ADC_Init();
 #ifdef ENABLE_VOICE
     VOICE_Init();
+#endif
+#ifdef ENABLE_SAM_TTS
+    SAM_Init();
 #endif
     PY25Q16_Init();
     ST7565_Init();

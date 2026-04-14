@@ -241,6 +241,17 @@
                 "AUTHOR_STRING_2": "DO9RE",
                 "VERSION_STRING_2": "v0.1"
             }
+        },
+        {
+            "name": "ARDF-SAM",
+            "inherits": "ARDF-Voice",
+            "cacheVariables": {
+                "ENABLE_SAM_TTS": true,
+                "EDITION_STRING": "ARDF-SAM",
+                "TARGET": "f4hwn.ARDF_SAM_K5v3_K1",
+                "AUTHOR_STRING_2": "DO9RE",
+                "VERSION_STRING_2": "v0.1"
+            }
         }
     ],
     "buildPresets": [

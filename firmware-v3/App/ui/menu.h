@@ -240,7 +240,12 @@ extern const char        gSubMenu_BAT_TXT[3][8];
 extern const char        gSubMenu_BATTYP[5][12];
 
 #ifdef ENABLE_VOICE_PROMPTS
-    extern const char    gSubMenu_ACCESS[2][7];
+    #ifdef ENABLE_SAM_TTS
+        #define ACCESS_MODE_COUNT 3
+    #else
+        #define ACCESS_MODE_COUNT 2
+    #endif
+    extern const char    gSubMenu_ACCESS[ACCESS_MODE_COUNT][7];
 #endif
 
 #ifndef ENABLE_FEAT_F4HWN

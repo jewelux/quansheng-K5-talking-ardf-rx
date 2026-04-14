@@ -217,4 +217,8 @@ void AUDIO_PlayBeep(BEEP_Type_t Beep);
     void    AUDIO_PlayQueuedVoice(void);
 #endif
 
+#ifdef ENABLE_SAM_TTS
+    void    AUDIO_PlaySAMText(const char *text);
+#endif
+
 #endif

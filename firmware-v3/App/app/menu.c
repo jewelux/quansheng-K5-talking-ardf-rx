@@ -56,6 +56,7 @@ uint8_t gUnlockAllTxConfCnt;
 #include "driver/system.h"
 #include "functions.h"
 #include "radio.h"
+#include "dcs.h"
 
 #ifndef ARRAY_SIZE
     #define ARRAY_SIZE(x) (sizeof(x) / sizeof(x[0]))
@@ -246,8 +247,350 @@ done:
     MENU_MorseAudioTeardown();
 }
 
+static void MENU_GetSubMenuValueText(char *buf, size_t buf_size)
+{
+    const int32_t sel = gSubMenuSelection;
+
+    buf[0] = '\0';
+
+    switch (UI_MENU_GetCurrentMenuId())
+    {
+        case MENU_SQL:
+            snprintf(buf, buf_size, "%d", (int)sel);
+            break;
+
+        case MENU_MIC:
+        {
+            const uint8_t mic = gMicGain_dB2[sel];
+            snprintf(buf, buf_size, "%u.%u DB", mic / 2, (mic % 2) * 5);
+            break;
+        }
+
+        case MENU_STEP:
+        {
+            uint16_t step = gStepFrequencyTable[FREQUENCY_GetStepIdxFromSortedIdx(sel)];
+            snprintf(buf, buf_size, "%d.%02u KHZ", step / 100, step % 100);
+            break;
+        }
+
+        case MENU_TXP:
+            snprintf(buf, buf_size, "%s", gSubMenu_TXP[sel]);
+            break;
+
+        case MENU_R_DCS:
+        case MENU_T_DCS:
+            if (sel == 0)
+                snprintf(buf, buf_size, "OFF");
+            else if (sel < 105)
+                snprintf(buf, buf_size, "D%03oN", DCS_Options[sel - 1]);
+            else
+                snprintf(buf, buf_size, "D%03oI", DCS_Options[sel - 105]);
+            break;
+
+        case MENU_R_CTCS:
+        case MENU_T_CTCS:
+            if (sel == 0)
+                snprintf(buf, buf_size, "OFF");
+            else
+                snprintf(buf, buf_size, "%u.%u HZ", CTCSS_Options[sel - 1] / 10, CTCSS_Options[sel - 1] % 10);
+            break;
+
+        case MENU_SFT_D:
+            snprintf(buf, buf_size, "%s", gSubMenu_SFT_D[sel]);
+            break;
+
+        case MENU_OFFSET:
+            snprintf(buf, buf_size, "%d.%05u", (int)(sel / 100000), abs(sel) % 100000);
+            break;
+
+        case MENU_W_N:
+            snprintf(buf, buf_size, "%s", gSubMenu_W_N[sel]);
+            break;
+
+        case MENU_AM:
+            snprintf(buf, buf_size, "%s", gModulationStr[sel]);
+            break;
+
+        case MENU_ABR:
+            if (sel == 0)
+                snprintf(buf, buf_size, "OFF");
+            else if (sel < 61)
+                snprintf(buf, buf_size, "%02d %02d", (sel * 5) / 60, (sel * 5) % 60);
+            else
+                snprintf(buf, buf_size, "ON");
+            break;
+
+        case MENU_ABR_MIN:
+        case MENU_ABR_MAX:
+            snprintf(buf, buf_size, "%d", (int)sel);
+            break;
+
+        case MENU_TDR:
+            snprintf(buf, buf_size, "%s", gSubMenu_RXMode[sel]);
+            break;
+
+        case MENU_TOT:
+            snprintf(buf, buf_size, "%02d %02d", ((sel + 1) * 5) / 60, ((sel + 1) * 5) % 60);
+            break;
+
+        case MENU_COMPAND:
+        case MENU_ABR_ON_TX_RX:
+            snprintf(buf, buf_size, "%s", gSubMenu_RX_TX[sel]);
+            break;
+
+        case MENU_MIC_BAR:
+        case MENU_BCL:
+        case MENU_BEEP:
+        case MENU_STE:
+        case MENU_D_ST:
+#ifdef ENABLE_DTMF_CALLING
+        case MENU_D_DCD:
+#endif
+        case MENU_D_LIVE_DEC:
+#ifdef ENABLE_NOAA
+        case MENU_NOAA_S:
+#endif
+#ifndef ENABLE_FEAT_F4HWN
+        case MENU_350TX:
+        case MENU_200TX:
+        case MENU_500TX:
+#endif
+        case MENU_350EN:
+#ifndef ENABLE_FEAT_F4HWN
+        case MENU_SCREN:
+#endif
+#ifdef ENABLE_FEAT_F4HWN
+        case MENU_SET_TMR:
+        case MENU_S_PRI:
+#endif
+            snprintf(buf, buf_size, "%s", gSubMenu_OFF_ON[sel]);
+            break;
+
+#ifndef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_AM_FIX
+        case MENU_AM_FIX:
+            snprintf(buf, buf_size, "%s", gSubMenu_OFF_ON[sel]);
+            break;
+#endif
+#endif
+
+        case MENU_VOX:
+#ifdef ENABLE_VOX
+            if (sel == 0)
+                snprintf(buf, buf_size, "OFF");
+            else
+                snprintf(buf, buf_size, "%u", (unsigned)sel);
+#else
+            snprintf(buf, buf_size, "N A");
+#endif
+            break;
+
+        case MENU_SAVE:
+            if (sel == 0)
+                snprintf(buf, buf_size, "OFF");
+            else
+                snprintf(buf, buf_size, "1 %u", (unsigned)sel);
+            break;
+
+        case MENU_SC_REV:
+            if (sel == 0)
+                snprintf(buf, buf_size, "STOP");
+            else if (sel < 81)
+                snprintf(buf, buf_size, "CARRIER %02d %03d", (sel * 250) / 1000, (sel * 250) % 1000);
+            else
+                snprintf(buf, buf_size, "TIMEOUT %02d %02d", ((sel - 80) * 5) / 60, ((sel - 80) * 5) % 60);
+            break;
+
+        case MENU_MDF:
+            snprintf(buf, buf_size, "%s", gSubMenu_MDF[sel]);
+            break;
+
+        case MENU_RP_STE:
+            if (sel == 0)
+                snprintf(buf, buf_size, "OFF");
+            else
+                snprintf(buf, buf_size, "%u", (unsigned)sel);
+            break;
+
+        case MENU_AUTOLK:
+            if (sel == 0)
+                snprintf(buf, buf_size, "OFF");
+            else
+                snprintf(buf, buf_size, "%02d %02d", (sel * 15) / 60, (sel * 15) % 60);
+            break;
+
+        case MENU_PTT_ID:
+            snprintf(buf, buf_size, "%s", gSubMenu_PTT_ID[sel]);
+            break;
+
+        case MENU_BAT_TXT:
+            snprintf(buf, buf_size, "%s", gSubMenu_BAT_TXT[sel]);
+            break;
+
+        case MENU_PONMSG:
+            snprintf(buf, buf_size, "%s", gSubMenu_PONMSG[sel]);
+            break;
+
+        case MENU_ROGER:
+            snprintf(buf, buf_size, "%s", gSubMenu_ROGER[sel]);
+            break;
+
+        case MENU_RESET:
+            snprintf(buf, buf_size, "%s", gSubMenu_RESET[sel]);
+            break;
+
+        case MENU_BATTYP:
+            snprintf(buf, buf_size, "%s", gSubMenu_BATTYP[sel]);
+            break;
+
+        case MENU_F1SHRT:
+        case MENU_F1LONG:
+        case MENU_F2SHRT:
+        case MENU_F2LONG:
+        case MENU_MLONG:
+            snprintf(buf, buf_size, "%s", gSubMenu_SIDEFUNCTIONS[sel].name);
+            break;
+
+#ifdef ENABLE_VOICE
+        case MENU_VOICE:
+            snprintf(buf, buf_size, "%s", gSubMenu_VOICE[sel]);
+            break;
+#endif
+
+#if defined(ENABLE_VOICE) || defined(ENABLE_MORSE)
+        case MENU_MORSE_SPEED:
+            snprintf(buf, buf_size, "%u WPM", (unsigned)sel);
+            break;
+#endif
+
+#ifdef ENABLE_ARDF
+        case MENU_ARDF:
+            snprintf(buf, buf_size, "%s", gSubMenu_ARDF[sel]);
+            break;
+
+        case MENU_ARDF_NUMFOXES:
+            if (sel != 0)
+                snprintf(buf, buf_size, "%d", (int)sel);
+            else
+                snprintf(buf, buf_size, "NO TIMING");
+            break;
+
+        case MENU_ARDF_FOXDURATION:
+            snprintf(buf, buf_size, "%03d.%02u S", (int)(sel / 100), (unsigned)(sel % 100));
+            break;
+
+        case MENU_ARDF_SETFOX:
+            snprintf(buf, buf_size, "%d", (int)sel);
+            break;
+
+        case MENU_ARDF_TIME_RESET:
+            snprintf(buf, buf_size, "TIMER RESET");
+            break;
+
+        case MENU_ARDF_GAIN_REMEMBER:
+            snprintf(buf, buf_size, "%s", gSubMenu_ARDF_Remember_Gain[sel]);
+            break;
+
+        case MENU_ARDF_CYCLE_END_BEEP:
+            if (sel != 0)
+                snprintf(buf, buf_size, "%d S", (int)sel);
+            else
+                snprintf(buf, buf_size, "OFF");
+            break;
+
+        case MENU_ARDF_CLOCK_CORR:
+            snprintf(buf, buf_size, "%d", (int)sel);
+            break;
+#endif
+
+#ifdef ENABLE_FEAT_F4HWN
+        case MENU_SET_PWR:
+            snprintf(buf, buf_size, "%s %sW", gSubMenu_TXP[sel + 1], gSubMenu_SET_PWR[sel]);
+            break;
+
+        case MENU_SET_PTT:
+            snprintf(buf, buf_size, "%s", gSubMenu_SET_PTT[sel]);
+            break;
+
+        case MENU_SET_TOT:
+        case MENU_SET_EOT:
+            snprintf(buf, buf_size, "%s", gSubMenu_SET_TOT[sel]);
+            break;
+
+        case MENU_SET_CTR:
+            snprintf(buf, buf_size, "%d", (int)sel);
+            break;
+
+        case MENU_SET_INV:
+            snprintf(buf, buf_size, "%s", gSubMenu_OFF_ON[sel]);
+            break;
+
+        case MENU_TX_LOCK:
+            snprintf(buf, buf_size, "%s", gSubMenu_OFF_ON[sel]);
+            break;
+
+        case MENU_SET_LCK:
+            snprintf(buf, buf_size, "%s", gSubMenu_SET_LCK[sel]);
+            break;
+
+        case MENU_SET_MET:
+        case MENU_SET_GUI:
+            snprintf(buf, buf_size, "%s", gSubMenu_SET_MET[sel]);
+            break;
+
+#ifdef ENABLE_FEAT_F4HWN_AUDIO
+        case MENU_SET_AUD:
+            snprintf(buf, buf_size, "%s", gSubMenu_SET_AUD[sel]);
+            break;
+#endif
+
+#ifdef ENABLE_FEAT_F4HWN_NARROWER
+        case MENU_SET_NFM:
+            snprintf(buf, buf_size, "%s", gSubMenu_SET_NFM[sel]);
+            break;
+#endif
+
+#ifdef ENABLE_FEAT_F4HWN_VOL
+        case MENU_SET_VOL:
+            if (sel == 0)
+                snprintf(buf, buf_size, "OFF");
+            else
+                snprintf(buf, buf_size, "%02u", (unsigned)sel);
+            break;
+#endif
+
+#ifdef ENABLE_FEAT_F4HWN_RESCUE_OPS
+        case MENU_SET_KEY:
+            snprintf(buf, buf_size, "%s", gSubMenu_SET_KEY[sel]);
+            break;
+#endif
+
+#ifdef ENABLE_FEAT_F4HWN_SLEEP
+        case MENU_SET_OFF:
+            if (sel == 0)
+                snprintf(buf, buf_size, "OFF");
+            else
+                snprintf(buf, buf_size, "%dH %02dM", sel / 60, sel % 60);
+            break;
+#endif
+#endif
+
+#ifndef ENABLE_FEAT_F4HWN
+        case MENU_SCR:
+            snprintf(buf, buf_size, "%s", gSubMenu_SCRAMBLER[sel]);
+            break;
+#endif
+
+        default:
+            snprintf(buf, buf_size, "%d", (int)sel);
+            break;
+    }
+}
+
 void MENU_PlayMorseForCurrentItem(void)
 {
+    char buf[48];
+
     // Wait for the triggering key (UP/DOWN) to be released,
     // otherwise MENU_IsAbortKeyPressed() immediately aborts the Morse output.
     {
@@ -263,8 +606,16 @@ void MENU_PlayMorseForCurrentItem(void)
 
     gMorseAbortKey = KEY_INVALID;
 
-    // Use the menu item's display name directly from MenuList
-    MENU_PlayMorseString(MenuList[gMenuCursor].name);
+    if (gIsInSubMenu)
+    {
+        MENU_GetSubMenuValueText(buf, sizeof(buf));
+        MENU_PlayMorseString(buf);
+    }
+    else
+    {
+        // Use the menu item's display name directly from MenuList
+        MENU_PlayMorseString(MenuList[gMenuCursor].name);
+    }
 }
 
 #endif // ENABLE_VOICE || ENABLE_MORSE
@@ -2431,6 +2782,9 @@ static void MENU_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
 
         gSubMenuSelection     = FREQUENCY_RoundToStep(Offset, gTxVfo->StepFrequency);
         gRequestDisplayScreen = DISPLAY_MENU;
+        #ifdef ENABLE_MORSE
+            MENU_PlayMorseForCurrentItem();
+        #endif
         return;
     }
 
@@ -2452,6 +2806,9 @@ static void MENU_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
 
         gSubMenuSelection     = duration;
         gRequestDisplayScreen = DISPLAY_MENU;
+        #ifdef ENABLE_MORSE
+            MENU_PlayMorseForCurrentItem();
+        #endif
         return;
     }
 
@@ -2470,6 +2827,9 @@ static void MENU_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
 
         gSubMenuSelection     = correction;
         gRequestDisplayScreen = DISPLAY_MENU;
+        #ifdef ENABLE_MORSE
+            MENU_PlayMorseForCurrentItem();
+        #endif
         return;
     }
 
@@ -2490,6 +2850,9 @@ static void MENU_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
         default:
             MENU_ClampSelection(Direction);
             gRequestDisplayScreen = DISPLAY_MENU;
+            #ifdef ENABLE_MORSE
+                MENU_PlayMorseForCurrentItem();
+            #endif
             return;
     }
 
@@ -2526,6 +2889,9 @@ static void MENU_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
         }
 
         gRequestDisplayScreen = DISPLAY_MENU;
+        #ifdef ENABLE_MORSE
+            MENU_PlayMorseForCurrentItem();
+        #endif
     }
     else
     {
@@ -2534,6 +2900,9 @@ static void MENU_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
             gSubMenuSelection = Channel;
 
         gRequestDisplayScreen = DISPLAY_MENU;
+        #ifdef ENABLE_MORSE
+            MENU_PlayMorseForCurrentItem();
+        #endif
     }
 }
 

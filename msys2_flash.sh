@@ -217,6 +217,101 @@ flash_v1() {
 }
 
 # ---------------------------------------------------------------------------
+# K5TOOL automatic installation
+# ---------------------------------------------------------------------------
+install_k5tool() {
+    local k5tool_dir="$REPO_ROOT/tools/K5TOOL"
+
+    # Check prerequisites: git and a C compiler (gcc or cc)
+    if ! command -v git &>/dev/null; then
+        fail "git nicht gefunden — wird zum Klonen von K5TOOL benoetigt."
+        exit 1
+    fi
+
+    if ! command -v gcc &>/dev/null && ! command -v cc &>/dev/null; then
+        warn "C-Compiler (gcc) nicht gefunden."
+        if [[ -n "${MSYSTEM:-}" ]] && ask_yes_no "gcc jetzt installieren?"; then
+            pacman -S --noconfirm mingw-w64-x86_64-gcc 2>/dev/null || \
+            pacman -S --noconfirm $MINGW_PACKAGE_PREFIX-gcc || {
+                fail "gcc konnte nicht installiert werden."
+                exit 1
+            }
+            ok "gcc installiert."
+        else
+            fail "Ohne C-Compiler kann K5TOOL nicht gebaut werden."
+            exit 1
+        fi
+    fi
+
+    if ! command -v make &>/dev/null; then
+        warn "make nicht gefunden."
+        if [[ -n "${MSYSTEM:-}" ]] && ask_yes_no "make jetzt installieren?"; then
+            pacman -S --noconfirm make || {
+                fail "make konnte nicht installiert werden."
+                exit 1
+            }
+            ok "make installiert."
+        else
+            fail "Ohne make kann K5TOOL nicht gebaut werden."
+            exit 1
+        fi
+    fi
+
+    # Clone or update
+    mkdir -p "$REPO_ROOT/tools"
+
+    if [[ -d "$k5tool_dir/.git" ]]; then
+        info "K5TOOL-Verzeichnis existiert bereits, aktualisiere..."
+        (cd "$k5tool_dir" && git pull --ff-only) || {
+            warn "git pull fehlgeschlagen, versuche trotzdem zu bauen..."
+        }
+    else
+        info "Klone K5TOOL von GitHub..."
+        rm -rf "$k5tool_dir"
+        git clone https://github.com/qrp73/K5TOOL.git "$k5tool_dir" || {
+            fail "git clone fehlgeschlagen."
+            fail "Pruefe die Internetverbindung und versuche es erneut."
+            exit 1
+        }
+        ok "K5TOOL geklont nach: tools/K5TOOL/"
+    fi
+
+    # Build
+    info "Baue K5TOOL..."
+    (cd "$k5tool_dir" && make clean 2>/dev/null || true; make) || {
+        fail "K5TOOL konnte nicht gebaut werden."
+        fail "Pruefe die Build-Ausgabe oben fuer Details."
+        exit 1
+    }
+
+    # Find the built binary
+    if [[ -x "$k5tool_dir/K5TOOL" ]]; then
+        K5TOOL_PATH="$k5tool_dir/K5TOOL"
+    elif [[ -x "$k5tool_dir/k5tool" ]]; then
+        K5TOOL_PATH="$k5tool_dir/k5tool"
+    elif [[ -x "$k5tool_dir/K5TOOL.exe" ]]; then
+        K5TOOL_PATH="$k5tool_dir/K5TOOL.exe"
+    elif [[ -x "$k5tool_dir/k5tool.exe" ]]; then
+        K5TOOL_PATH="$k5tool_dir/k5tool.exe"
+    else
+        # Search for any executable produced by make
+        local found_bin
+        found_bin=$(find "$k5tool_dir" -maxdepth 1 -type f \( -name 'K5TOOL*' -o -name 'k5tool*' \) -executable 2>/dev/null | head -1)
+        if [[ -n "$found_bin" ]]; then
+            K5TOOL_PATH="$found_bin"
+        else
+            fail "K5TOOL wurde gebaut, aber die ausfuehrbare Datei wurde nicht gefunden."
+            fail "Bitte pruefe: $k5tool_dir"
+            ls -la "$k5tool_dir"/ 2>/dev/null || true
+            exit 1
+        fi
+    fi
+
+    ok "K5TOOL erfolgreich gebaut: $K5TOOL_PATH"
+    echo ""
+}
+
+# ---------------------------------------------------------------------------
 # V3 Flash (multiple methods)
 # ---------------------------------------------------------------------------
 flash_v3() {
@@ -245,31 +340,55 @@ flash_v3() {
 flash_v3_k5tool() {
     info "=== V3 Flash via K5TOOL ==="
 
-    # Check if K5TOOL is available
-    if ! command -v K5TOOL &>/dev/null && ! command -v k5tool &>/dev/null; then
+    local K5TOOL_PATH=""
+
+    # 1) Check PATH
+    if command -v K5TOOL &>/dev/null || command -v k5tool &>/dev/null; then
+        K5TOOL_PATH=$(command -v K5TOOL 2>/dev/null || command -v k5tool)
+        ok "K5TOOL gefunden: $K5TOOL_PATH"
+
+    # 2) Check local tools/ cache
+    elif [[ -x "$REPO_ROOT/tools/K5TOOL/K5TOOL" ]]; then
+        K5TOOL_PATH="$REPO_ROOT/tools/K5TOOL/K5TOOL"
+        ok "K5TOOL gefunden (lokal): $K5TOOL_PATH"
+    elif [[ -x "$REPO_ROOT/tools/K5TOOL/k5tool" ]]; then
+        K5TOOL_PATH="$REPO_ROOT/tools/K5TOOL/k5tool"
+        ok "K5TOOL gefunden (lokal): $K5TOOL_PATH"
+    elif [[ -x "$REPO_ROOT/tools/K5TOOL/K5TOOL.exe" ]]; then
+        K5TOOL_PATH="$REPO_ROOT/tools/K5TOOL/K5TOOL.exe"
+        ok "K5TOOL gefunden (lokal): $K5TOOL_PATH"
+    elif [[ -x "$REPO_ROOT/tools/K5TOOL/k5tool.exe" ]]; then
+        K5TOOL_PATH="$REPO_ROOT/tools/K5TOOL/k5tool.exe"
+        ok "K5TOOL gefunden (lokal): $K5TOOL_PATH"
+
+    # 3) Not found — offer automatic installation
+    else
         echo ""
         warn "K5TOOL nicht gefunden."
         echo ""
-        echo "  K5TOOL muss separat installiert werden:"
-        echo "  ${CYAN}https://github.com/qrp73/K5TOOL${RESET}"
-        echo ""
-        echo "  Installation:"
-        echo "  1. Repo klonen: git clone https://github.com/qrp73/K5TOOL.git"
-        echo "  2. Bauen: cd K5TOOL && make"
-        echo "  3. In den PATH kopieren oder direkt aufrufen"
-        echo ""
 
-        if ! ask_yes_no "Trotzdem fortfahren (K5TOOL-Pfad manuell angeben)?"; then
-            exit 0
-        fi
+        if ask_yes_no "K5TOOL jetzt automatisch herunterladen und bauen?"; then
+            install_k5tool
+        else
+            echo ""
+            echo "  Manuelle Installation:"
+            echo "  ${CYAN}https://github.com/qrp73/K5TOOL${RESET}"
+            echo ""
+            echo "  1. Repo klonen: git clone https://github.com/qrp73/K5TOOL.git"
+            echo "  2. Bauen: cd K5TOOL && make"
+            echo "  3. In den PATH kopieren oder direkt aufrufen"
+            echo ""
 
-        read -rp "${BOLD}Pfad zu K5TOOL: ${RESET}" K5TOOL_PATH
-        if [[ ! -x "$K5TOOL_PATH" ]]; then
-            fail "K5TOOL nicht gefunden unter: $K5TOOL_PATH"
-            exit 1
+            if ! ask_yes_no "Trotzdem fortfahren (K5TOOL-Pfad manuell angeben)?"; then
+                exit 0
+            fi
+
+            read -rp "${BOLD}Pfad zu K5TOOL: ${RESET}" K5TOOL_PATH
+            if [[ ! -x "$K5TOOL_PATH" ]]; then
+                fail "K5TOOL nicht gefunden unter: $K5TOOL_PATH"
+                exit 1
+            fi
         fi
-    else
-        K5TOOL_PATH=$(command -v K5TOOL 2>/dev/null || command -v k5tool)
     fi
 
     select_firmware_file "*.bin" "V3"

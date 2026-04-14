@@ -20,3 +20,4 @@ __pycache__/
 firmware-v1/nul
 firmware-v1/.venv_build
 firmware-v1/.venv_flash
+tools/

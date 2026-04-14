@@ -2209,8 +2209,7 @@ static void MENU_Key_MENU(const bool bKeyPressed, const bool bKeyHeld)
     if (!gIsInSubMenu)
     {
         #ifdef ENABLE_VOICE
-            if (UI_MENU_GetCurrentMenuId() != MENU_SCR)
-                gAnotherVoiceID = MenuList[gMenuCursor].voice_id;
+            gAnotherVoiceID = VOICE_ID_CONFIRM;
         #endif
         if (UI_MENU_GetCurrentMenuId() == MENU_UPCODE 
             || UI_MENU_GetCurrentMenuId() == MENU_DWCODE 
@@ -2326,9 +2325,11 @@ static void MENU_Key_MENU(const bool bKeyPressed, const bool bKeyHeld)
     SCANNER_Stop();
 
     #ifdef ENABLE_VOICE
-        if (UI_MENU_GetCurrentMenuId() == MENU_SCR)
-            gAnotherVoiceID = (gSubMenuSelection == 0) ? VOICE_ID_SCRAMBLER_OFF : VOICE_ID_SCRAMBLER_ON;
-        else
+        #ifndef ENABLE_FEAT_F4HWN
+            if (UI_MENU_GetCurrentMenuId() == MENU_SCR)
+                gAnotherVoiceID = (gSubMenuSelection == 0) ? VOICE_ID_SCRAMBLER_OFF : VOICE_ID_SCRAMBLER_ON;
+            else
+        #endif
             gAnotherVoiceID = VOICE_ID_CONFIRM;
     #endif
 

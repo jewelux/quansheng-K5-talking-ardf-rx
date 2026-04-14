@@ -512,9 +512,13 @@ generate_voice_prompts() {
             --stdout "$text" > "$wav_file" 2>/dev/null
 
         # Convert to 8kHz 8-bit unsigned mono PCM with FFmpeg
-        # - silenceremove: strip leading/trailing silence (threshold -40dB)
-        # - highpass/lowpass: bandpass for radio speaker (200-3500 Hz)
-        # - volume: normalize level
+        # Filter chain:
+        #   1. silenceremove (forward): strip leading silence below -40dB
+        #   2. areverse + silenceremove + areverse: strip trailing silence
+        #      (FFmpeg's silenceremove only works on leading silence, so we
+        #       reverse → strip → reverse to handle the trailing end)
+        #   3. highpass/lowpass: bandpass 200-3500 Hz for radio speaker
+        #   4. volume: boost level for small speaker output
         local raw_file="$raw_dir/voice_${id_str}.raw"
         ffmpeg -y -i "$wav_file" \
             -af "silenceremove=start_periods=1:start_threshold=-40dB:start_silence=0.02,areverse,silenceremove=start_periods=1:start_threshold=-40dB:start_silence=0.02,areverse,highpass=f=200,lowpass=f=3500,volume=1.5" \

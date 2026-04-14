@@ -885,7 +885,6 @@ int MENU_GetLimits(uint8_t menu_id, int32_t *pMin, int32_t *pMax)
 
         #ifdef ENABLE_VOICE_PROMPTS
             case MENU_ACCESS:
-                //*pMin = 0;
                 *pMax = ARRAY_SIZE(gSubMenu_ACCESS) - 1;
                 break;
         #endif

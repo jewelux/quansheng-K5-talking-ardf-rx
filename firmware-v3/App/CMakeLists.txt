@@ -212,6 +212,7 @@ enable_feature(ENABLE_PREVENT_TX)
 
 # ---- ACCESSIBILITY ----
 enable_feature(ENABLE_MORSE)
+enable_feature(ENABLE_VOICE_PROMPTS)
 
 # ---- DEBUGGING ----
 

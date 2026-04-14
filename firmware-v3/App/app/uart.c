@@ -32,6 +32,10 @@
 #include "driver/eeprom.h"
 #include "driver/gpio.h"
 
+#ifdef ENABLE_VOICE_PROMPTS
+#include "driver/py25q16.h"
+#endif
+
 #if defined(ENABLE_UART)
 #include "driver/uart.h"
 #endif
@@ -638,6 +642,70 @@ static void CMD_0602_WriteBK4819Reg(const uint8_t *pBuffer)
 }
 #endif
 
+#ifdef ENABLE_VOICE_PROMPTS
+// CMD_0603: Write to PY25Q16 SPI flash directly (for voice prompt flashing)
+// Format: Header(4) + Address(4) + Size(2) + Data[Size]
+static void CMD_0603_WritePY25Q16(uint32_t Port, const uint8_t *pBuffer)
+{
+    typedef struct __attribute__((__packed__)) {
+        Header_t header;
+        uint32_t address;
+        uint16_t size;
+        uint8_t  data[128];
+    } CMD_0603_t;
+
+    CMD_0603_t *cmd = (CMD_0603_t*) pBuffer;
+
+    // Restrict writes to the voice data area (0x14c000 - 0x200000)
+    // to prevent accidental corruption of firmware or config data
+    if (cmd->address < 0x14c000 || cmd->address >= 0x200000)
+    {
+        // Send error response
+        struct __attribute__((__packed__)) {
+            Header_t header;
+            struct __attribute__((__packed__)) {
+                uint32_t address;
+                uint16_t status;  // 0 = OK, 1 = error
+            } data;
+        } reply;
+        reply.header.ID = 0x0604;
+        reply.header.Size = sizeof(reply.data);
+        reply.data.address = cmd->address;
+        reply.data.status = 1; // error: address out of range
+        SendReply(Port, &reply, sizeof(reply));
+        return;
+    }
+
+    uint16_t size = cmd->size;
+    if (size > 128)
+        size = 128;
+
+    // Check if this is a sector-aligned start — erase sector first
+    if ((cmd->address & 0xFFF) == 0)
+    {
+        PY25Q16_SectorErase(cmd->address);
+    }
+
+    // Write data to SPI flash
+    // Use Append=true to avoid erasing (we handle erase above)
+    PY25Q16_WriteBuffer(cmd->address, cmd->data, size, true);
+
+    // Send success response
+    struct __attribute__((__packed__)) {
+        Header_t header;
+        struct __attribute__((__packed__)) {
+            uint32_t address;
+            uint16_t status;  // 0 = OK
+        } data;
+    } reply;
+    reply.header.ID = 0x0604;
+    reply.header.Size = sizeof(reply.data);
+    reply.data.address = cmd->address;
+    reply.data.status = 0; // OK
+    SendReply(Port, &reply, sizeof(reply));
+}
+#endif
+
 bool UART_IsCommandAvailable(uint32_t Port)
 {
     uint16_t Index;
@@ -859,6 +927,12 @@ void UART_HandleCommand(uint32_t Port)
         
         case 0x0602:
             CMD_0602_WriteBK4819Reg(pUART_Command->Buffer);
+            break;
+#endif
+
+#ifdef ENABLE_VOICE_PROMPTS
+        case 0x0603:
+            CMD_0603_WritePY25Q16(Port, pUART_Command->Buffer);
             break;
 #endif
     } // switch

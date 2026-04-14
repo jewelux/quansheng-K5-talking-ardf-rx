@@ -112,6 +112,10 @@ bool              gSetting_ARDFEnable = false;
 uint8_t           gMorseSpeedWpm = 20;
 #endif
 
+#ifdef ENABLE_VOICE_PROMPTS
+uint8_t           gAccessibilityMode = ACCESS_MODE_MORSE;
+#endif
+
 enum BacklightOnRxTx_t gSetting_backlight_on_tx_rx;
 
 #ifdef ENABLE_AM_FIX

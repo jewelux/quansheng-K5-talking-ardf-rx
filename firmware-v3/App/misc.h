@@ -174,6 +174,13 @@ extern bool                  gSetting_ARDFEnable;
 extern uint8_t               gMorseSpeedWpm;
 #endif
 
+#ifdef ENABLE_VOICE_PROMPTS
+// Accessibility mode: 0 = Morse, 1 = Voice Prompts
+extern uint8_t               gAccessibilityMode;
+#define ACCESS_MODE_MORSE  0
+#define ACCESS_MODE_VOICE  1
+#endif
+
 extern enum BacklightOnRxTx_t gSetting_backlight_on_tx_rx;
 
 #ifdef ENABLE_AM_FIX

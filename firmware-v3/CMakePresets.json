@@ -229,6 +229,18 @@
                 "AUTHOR_STRING_2": "DO9RE",
                 "VERSION_STRING_2": "v0.1"
             }
+        },
+        {
+            "name": "ARDF-Voice",
+            "inherits": "ARDF-Morse",
+            "cacheVariables": {
+                "ENABLE_VOICE": true,
+                "ENABLE_VOICE_PROMPTS": true,
+                "EDITION_STRING": "ARDF-Voice",
+                "TARGET": "f4hwn.ARDF_Voice_K5v3_K1",
+                "AUTHOR_STRING_2": "DO9RE",
+                "VERSION_STRING_2": "v0.1"
+            }
         }
     ],
     "buildPresets": [
@@ -267,6 +279,10 @@
         {
             "name": "ARDF-Morse",
             "configurePreset": "ARDF-Morse"
+        },
+        {
+            "name": "ARDF-Voice",
+            "configurePreset": "ARDF-Voice"
         }
     ]
 }

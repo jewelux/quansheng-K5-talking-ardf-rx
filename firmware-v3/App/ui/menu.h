@@ -170,6 +170,9 @@ enum
         MENU_SET_AUD,
     #endif
 #endif
+#ifdef ENABLE_VOICE_PROMPTS
+    MENU_ACCESS,
+#endif
     MENU_BATCAL,  // battery voltage calibration
     MENU_F1SHRT,
     MENU_F1LONG,
@@ -235,6 +238,10 @@ extern const char* const gSubMenu_F_LOCK[F_LOCK_LEN];
 extern const char        gSubMenu_RX_TX[4][6];
 extern const char        gSubMenu_BAT_TXT[3][8];
 extern const char        gSubMenu_BATTYP[5][12];
+
+#ifdef ENABLE_VOICE_PROMPTS
+    extern const char    gSubMenu_ACCESS[2][7];
+#endif
 
 #ifndef ENABLE_FEAT_F4HWN
     extern const char        gSubMenu_SCRAMBLER[11][7];

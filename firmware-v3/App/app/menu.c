@@ -463,6 +463,12 @@ static void MENU_GetSubMenuValueText(char *buf, size_t buf_size)
             break;
 #endif
 
+#ifdef ENABLE_VOICE_PROMPTS
+        case MENU_ACCESS:
+            snprintf(buf, buf_size, "%s", gSubMenu_ACCESS[sel]);
+            break;
+#endif
+
 #ifdef ENABLE_ARDF
         case MENU_ARDF:
             snprintf(buf, buf_size, "%s", gSubMenu_ARDF[sel]);
@@ -606,6 +612,22 @@ void MENU_PlayMorseForCurrentItem(void)
 
     gMorseAbortKey = KEY_INVALID;
 
+#ifdef ENABLE_VOICE_PROMPTS
+    // If voice mode is active, try to play a voice prompt instead of Morse
+    if (gAccessibilityMode == ACCESS_MODE_VOICE
+        && gEeprom.VOICE_PROMPT != VOICE_PROMPT_OFF)
+    {
+        VOICE_ID_t vid = MENU_GetVoiceIDForCurrentItem();
+        if (vid != VOICE_ID_INVALID)
+        {
+            AUDIO_SetVoiceID(0, vid);
+            AUDIO_PlaySingleVoice(false);
+            return;
+        }
+        // Fallback to Morse if no voice ID found
+    }
+#endif
+
     if (gIsInSubMenu)
     {
         MENU_GetSubMenuValueText(buf, sizeof(buf));
@@ -617,6 +639,108 @@ void MENU_PlayMorseForCurrentItem(void)
         MENU_PlayMorseString(MenuList[gMenuCursor].name);
     }
 }
+
+#ifdef ENABLE_VOICE_PROMPTS
+// --------------------------------------------------------------------------
+// Menu-ID to Voice-ID mapping for voice prompt announcements
+// --------------------------------------------------------------------------
+static const struct {
+    uint8_t    menu_id;
+    VOICE_ID_t voice_id;
+} gMenuVoiceMap[] = {
+    // Standard menu items with existing voice IDs
+    {MENU_STEP,           VOICE_ID_FREQUENCY_STEP},
+    {MENU_TXP,            VOICE_ID_POWER},
+    {MENU_R_DCS,          VOICE_ID_DCS},
+    {MENU_R_CTCS,         VOICE_ID_CTCSS},
+    {MENU_T_DCS,          VOICE_ID_DCS},
+    {MENU_T_CTCS,         VOICE_ID_CTCSS},
+    {MENU_SFT_D,          VOICE_ID_TX_OFFSET_FREQUENCY_DIRECTION},
+    {MENU_OFFSET,         VOICE_ID_TX_OFFSET_FREQUENCY},
+    {MENU_W_N,            VOICE_ID_CHANNEL_BANDWIDTH},
+#ifdef ENABLE_ARDF
+    {MENU_ARDF,                    VOICE_ID_ARDF},
+    {MENU_ARDF_NUMFOXES,           VOICE_ID_NUM_FOX},
+    {MENU_ARDF_FOXDURATION,        VOICE_ID_FOX_DURATION},
+    {MENU_ARDF_SETFOX,             VOICE_ID_ACTIVE_FOX},
+    {MENU_ARDF_TIME_RESET,         VOICE_ID_TIME_RESET},
+    {MENU_ARDF_GAIN_REMEMBER,      VOICE_ID_GAIN_REMEMBER},
+    {MENU_ARDF_CYCLE_END_BEEP,     VOICE_ID_END_SIGNAL},
+    {MENU_ARDF_CLOCK_CORR,         VOICE_ID_CLOCK_CORRECTION},
+    {MENU_ARDF_SNAPSHOT_SPEED,     VOICE_ID_SNAPSHOT_SPEED},
+    {MENU_ARDF_MIST_FREQ,          VOICE_ID_FREQ_MISTUNE},
+    {MENU_ARDF_MIST_GAIN_ADD_STEPS, VOICE_ID_MISTUNE_GAIN},
+#endif
+    {MENU_BCL,            VOICE_ID_BUSY_LOCKOUT},
+    {MENU_COMPAND,        VOICE_ID_COMPANDER},
+    {MENU_AM,             VOICE_ID_MODULATION},
+#ifdef ENABLE_FEAT_F4HWN
+    {MENU_TX_LOCK,        VOICE_ID_TX_LOCK},
+#endif
+    {MENU_LIST_CH,        VOICE_ID_CHANNEL_LIST},
+    {MENU_MEM_CH,         VOICE_ID_MEMORY_CHANNEL},
+    {MENU_DEL_CH,         VOICE_ID_DELETE_CHANNEL},
+    {MENU_MEM_NAME,       VOICE_ID_CHANNEL_NAME},
+    {MENU_S_LIST,         VOICE_ID_SCAN_LIST},
+    {MENU_S_PRI,          VOICE_ID_SCAN_PRIORITY},
+    {MENU_S_PRI_CH_1,     VOICE_ID_PRIORITY_CH_1},
+    {MENU_S_PRI_CH_2,     VOICE_ID_PRIORITY_CH_2},
+    {MENU_SC_REV,         VOICE_ID_SCAN_RESUME},
+    {MENU_F1SHRT,         VOICE_ID_F1_SHORT},
+    {MENU_F1LONG,         VOICE_ID_F1_LONG},
+    {MENU_F2SHRT,         VOICE_ID_F2_SHORT},
+    {MENU_F2LONG,         VOICE_ID_F2_LONG},
+    {MENU_MLONG,          VOICE_ID_M_LONG},
+    {MENU_AUTOLK,         VOICE_ID_KEY_LOCK},
+    {MENU_TOT,            VOICE_ID_TX_TIMEOUT},
+    {MENU_SAVE,           VOICE_ID_BATTERY_SAVE},
+    {MENU_BAT_TXT,        VOICE_ID_BATTERY_TEXT},
+    {MENU_MIC,            VOICE_ID_MICROPHONE},
+    {MENU_MIC_BAR,        VOICE_ID_MIC_BAR},
+    {MENU_MDF,            VOICE_ID_CHANNEL_DISPLAY},
+    {MENU_PONMSG,         VOICE_ID_POWERON_MSG},
+    {MENU_ABR,            VOICE_ID_BACKLIGHT_TIME},
+    {MENU_ABR_MIN,        VOICE_ID_BACKLIGHT_MIN},
+    {MENU_ABR_MAX,        VOICE_ID_BACKLIGHT_MAX},
+    {MENU_ABR_ON_TX_RX,   VOICE_ID_BACKLIGHT_TXRX},
+    {MENU_BEEP,           VOICE_ID_BEEP_PROMPT},
+#ifdef ENABLE_VOICE
+    {MENU_VOICE,          VOICE_ID_VOICE_PROMPT},
+#endif
+#ifdef ENABLE_MORSE
+    {MENU_MORSE_SPEED,    VOICE_ID_MORSE_SPEED},
+#endif
+    {MENU_ROGER,          VOICE_ID_ROGER_BEEP},
+    {MENU_STE,            VOICE_ID_STE},
+    {MENU_RP_STE,         VOICE_ID_REPEATER_STE},
+    {MENU_1_CALL,         VOICE_ID_ONE_CALL},
+    {MENU_UPCODE,         VOICE_ID_UP_CODE},
+    {MENU_DWCODE,         VOICE_ID_DOWN_CODE},
+    {MENU_PTT_ID,         VOICE_ID_PTT_ID},
+    {MENU_D_ST,           VOICE_ID_DTMF_ST},
+    {MENU_D_PRE,          VOICE_ID_DTMF_PREAMBLE},
+    {MENU_D_LIVE_DEC,     VOICE_ID_DTMF_LIVE},
+    {MENU_VOX,            VOICE_ID_VOX_MENU},
+    {MENU_VOL,            VOICE_ID_SYSTEM_INFO},
+    {MENU_TDR,            VOICE_ID_RX_MODE},
+    {MENU_SQL,            VOICE_ID_SQUELCH_LEVEL},
+    {MENU_ACCESS,         VOICE_ID_ACCESS_MODE},
+    {MENU_RESET,          VOICE_ID_RESET},
+};
+
+VOICE_ID_t MENU_GetVoiceIDForCurrentItem(void)
+{
+    const uint8_t current_menu_id = UI_MENU_GetCurrentMenuId();
+
+    for (uint32_t i = 0; i < ARRAY_SIZE(gMenuVoiceMap); i++)
+    {
+        if (gMenuVoiceMap[i].menu_id == current_menu_id)
+            return gMenuVoiceMap[i].voice_id;
+    }
+
+    return VOICE_ID_INVALID;
+}
+#endif // ENABLE_VOICE_PROMPTS
 
 #endif // ENABLE_VOICE || ENABLE_MORSE
 // ---- End Morse code system ----
@@ -751,6 +875,13 @@ int MENU_GetLimits(uint8_t menu_id, int32_t *pMin, int32_t *pMax)
             case MENU_MORSE_SPEED:
                 *pMin = 15;
                 *pMax = 70;
+                break;
+        #endif
+
+        #ifdef ENABLE_VOICE_PROMPTS
+            case MENU_ACCESS:
+                //*pMin = 0;
+                *pMax = ARRAY_SIZE(gSubMenu_ACCESS) - 1;
                 break;
         #endif
 
@@ -1403,6 +1534,13 @@ void MENU_AcceptSetting(void)
                 break;
         #endif
 
+        #ifdef ENABLE_VOICE_PROMPTS
+            case MENU_ACCESS:
+                gAccessibilityMode = gSubMenuSelection;
+                SETTINGS_SaveAccessibilityMode();
+                break;
+        #endif
+
         case MENU_SC_REV:
             gEeprom.SCAN_RESUME_MODE = gSubMenuSelection;
             break;
@@ -1960,6 +2098,12 @@ void MENU_ShowCurrentSetting(void)
 #if defined(ENABLE_VOICE) || defined(ENABLE_MORSE)
         case MENU_MORSE_SPEED:
             gSubMenuSelection = gMorseSpeedWpm;
+            break;
+#endif
+
+#ifdef ENABLE_VOICE_PROMPTS
+        case MENU_ACCESS:
+            gSubMenuSelection = gAccessibilityMode;
             break;
 #endif
 

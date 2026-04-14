@@ -458,6 +458,18 @@ gEeprom.FreqChannel[1]   = IS_FREQ_CHANNEL(Data16[5]) ? Data16[5] : (FREQ_CHANNE
 
 #endif
 
+#ifdef ENABLE_VOICE_PROMPTS
+    // Read accessibility mode from ARDF block at offset 0x0C
+    {
+        uint8_t AccData[4];
+        PY25Q16_ReadBuffer(0x00D000 + 0x0C, AccData, 4);
+        if (AccData[0] != 0xFF)
+            gAccessibilityMode = AccData[0] & 0x01;
+        else
+            gAccessibilityMode = ACCESS_MODE_MORSE;  // default: Morse
+    }
+#endif
+
 
     // 0F40..0F47
     PY25Q16_ReadBuffer(0x00A150, Data, 8);
@@ -846,6 +858,16 @@ void SETTINGS_SaveARDF(void)
 
 }
 
+#endif
+
+#ifdef ENABLE_VOICE_PROMPTS
+void SETTINGS_SaveAccessibilityMode(void)
+{
+    uint8_t AccData[4];
+    memset(AccData, 0xFF, sizeof(AccData));
+    AccData[0] = gAccessibilityMode & 0x01;
+    PY25Q16_WriteBuffer(0x00D000 + 0x0C, AccData, sizeof(AccData), true);
+}
 #endif
 
 

@@ -182,6 +182,9 @@ const t_menu_item MenuList[] =
     {"SetNWR",      MENU_NOAA_S    },
 #endif
 #endif
+#ifdef ENABLE_VOICE_PROMPTS
+    {"Access",      MENU_ACCESS        },
+#endif
     // hidden menu items from here on
     // enabled if pressing both the PTT and upper side button at power-on
     {"F Lock",      MENU_F_LOCK        },
@@ -221,6 +224,14 @@ const char gSubMenu_ARDF_Remember_Gain[][6] =
     "VFO A",
     "VFO B",
     "BOTH"
+};
+#endif
+
+#ifdef ENABLE_VOICE_PROMPTS
+const char gSubMenu_ACCESS[][7] =
+{
+    "Morse",
+    "Voice"
 };
 #endif
 

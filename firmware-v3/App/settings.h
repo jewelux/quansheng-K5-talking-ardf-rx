@@ -324,6 +324,10 @@ void     SETTINGS_FactoryReset(bool bIsAll);
     void SETTINGS_SaveARDF(void);
 #endif
 
+#ifdef ENABLE_VOICE_PROMPTS
+    void SETTINGS_SaveAccessibilityMode(void);
+#endif
+
 void SETTINGS_SaveVfoIndices(void);
 void SETTINGS_SaveVfoIndicesFlush(void);
 void SETTINGS_SaveSettings(void);

@@ -253,22 +253,24 @@ build_v3() {
     info "Verfuegbare CMake-Presets:"
     echo ""
     echo "  ${BOLD}1${RESET}) ARDF-Morse    — ARDF-Empfaenger mit Morse-Accessibility (empfohlen)"
-    echo "  ${BOLD}2${RESET}) ARDF          — Standard-ARDF (Dennis Real / DL9CAT)"
-    echo "  ${BOLD}3${RESET}) Custom        — Benutzerdefiniert"
-    echo "  ${BOLD}4${RESET}) Bandscope     — Mit Spektrumanzeige"
-    echo "  ${BOLD}5${RESET}) Fusion        — Alle Features"
+    echo "  ${BOLD}2${RESET}) ARDF-Voice    — ARDF-Empfaenger mit Voice-Prompt-Accessibility"
+    echo "  ${BOLD}3${RESET}) ARDF          — Standard-ARDF (Dennis Real / DL9CAT)"
+    echo "  ${BOLD}4${RESET}) Custom        — Benutzerdefiniert"
+    echo "  ${BOLD}5${RESET}) Bandscope     — Mit Spektrumanzeige"
+    echo "  ${BOLD}6${RESET}) Fusion        — Alle Features"
     echo ""
 
     local preset
     while true; do
-        read -rp "${BOLD}Preset waehlen [1-5, Standard=1]: ${RESET}" choice
+        read -rp "${BOLD}Preset waehlen [1-6, Standard=1]: ${RESET}" choice
         case "${choice:-1}" in
             1) preset="ARDF-Morse"; break ;;
-            2) preset="ARDF"; break ;;
-            3) preset="Custom"; break ;;
-            4) preset="Bandscope"; break ;;
-            5) preset="Fusion"; break ;;
-            *) echo "Bitte 1-5 eingeben." ;;
+            2) preset="ARDF-Voice"; break ;;
+            3) preset="ARDF"; break ;;
+            4) preset="Custom"; break ;;
+            5) preset="Bandscope"; break ;;
+            6) preset="Fusion"; break ;;
+            *) echo "Bitte 1-6 eingeben." ;;
         esac
     done
 

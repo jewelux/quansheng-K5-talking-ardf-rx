@@ -139,8 +139,18 @@ flash_v1() {
     if ! "$PY" -c "import serial" 2>/dev/null; then
         warn "pyserial nicht gefunden."
         if [[ -n "${MSYSTEM:-}" ]] && ask_yes_no "pyserial installieren?"; then
-            "$PY" -m pip install pyserial 2>/dev/null || \
-            pacman -S --noconfirm mingw-w64-x86_64-python-pyserial 2>/dev/null || true
+            pacman -S --noconfirm mingw-w64-x86_64-python-pyserial 2>/dev/null || \
+            pacman -S --noconfirm "${MINGW_PACKAGE_PREFIX}-python-pyserial" 2>/dev/null || \
+            "$PY" -m pip install --break-system-packages pyserial 2>/dev/null || \
+            "$PY" -m pip install pyserial 2>/dev/null || {
+                fail "pyserial konnte nicht installiert werden."
+                echo "  Manuell: pacman -S \${MINGW_PACKAGE_PREFIX}-python-pyserial"
+                exit 1
+            }
+            ok "pyserial installiert."
+        else
+            fail "pyserial wird fuer V1-Flash benoetigt."
+            exit 1
         fi
     fi
 
@@ -148,7 +158,17 @@ flash_v1() {
         warn "crcmod nicht gefunden."
         if [[ -n "${MSYSTEM:-}" ]] && ask_yes_no "crcmod installieren?"; then
             pacman -S --noconfirm mingw-w64-x86_64-python-crcmod 2>/dev/null || \
-            "$PY" -m pip install crcmod 2>/dev/null || true
+            pacman -S --noconfirm "${MINGW_PACKAGE_PREFIX}-python-crcmod" 2>/dev/null || \
+            "$PY" -m pip install --break-system-packages crcmod 2>/dev/null || \
+            "$PY" -m pip install crcmod 2>/dev/null || {
+                fail "crcmod konnte nicht installiert werden."
+                echo "  Manuell: pacman -S \${MINGW_PACKAGE_PREFIX}-python-crcmod"
+                exit 1
+            }
+            ok "crcmod installiert."
+        else
+            fail "crcmod wird fuer V1-Flash benoetigt."
+            exit 1
         fi
     fi
 
@@ -425,6 +445,71 @@ install_k5tool_build() {
 }
 
 # ---------------------------------------------------------------------------
+# pyocd automatic installation (PEP 668 compatible)
+# ---------------------------------------------------------------------------
+# On MSYS2: tries pacman first, then falls back to a venv.
+# On Linux/macOS: uses a venv to avoid PEP 668 "externally-managed" errors.
+# ---------------------------------------------------------------------------
+install_pyocd() {
+    local PY
+    PY=$(command -v python3 2>/dev/null || command -v python 2>/dev/null || true)
+    if [[ -z "$PY" ]]; then
+        fail "Python3 nicht gefunden — wird fuer pyocd benoetigt."
+        if [[ -n "${MSYSTEM:-}" ]] && ask_yes_no "Python jetzt installieren?"; then
+            pacman -S --noconfirm mingw-w64-x86_64-python 2>/dev/null || \
+            pacman -S --noconfirm "${MINGW_PACKAGE_PREFIX}-python" || {
+                fail "Python konnte nicht installiert werden."
+                exit 1
+            }
+            PY=$(command -v python3 2>/dev/null || command -v python)
+        else
+            exit 1
+        fi
+    fi
+
+    # --- Strategy 1 (MSYS2): try pacman package first ---
+    if [[ -n "${MSYSTEM:-}" ]]; then
+        info "Versuche pyocd ueber pacman zu installieren..."
+        if pacman -S --noconfirm mingw-w64-x86_64-python-pyocd 2>/dev/null || \
+           pacman -S --noconfirm "${MINGW_PACKAGE_PREFIX}-python-pyocd" 2>/dev/null; then
+            ok "pyocd ueber pacman installiert."
+            return 0
+        fi
+        warn "pyocd ist nicht als pacman-Paket verfuegbar."
+        info "Installiere pyocd in einem Python-venv (virtuelle Umgebung)..."
+    fi
+
+    # --- Strategy 2: install in a venv (PEP 668 safe) ---
+    local venv_dir="$REPO_ROOT/tools/.venv_pyocd"
+
+    info "Erstelle virtuelle Umgebung: tools/.venv_pyocd/"
+    "$PY" -m venv "$venv_dir" || {
+        fail "venv konnte nicht erstellt werden."
+        echo ""
+        echo "  Unter MSYS2 ggf. noetig:"
+        echo "    pacman -S ${MINGW_PACKAGE_PREFIX:-mingw-w64-x86_64}-python-virtualenv"
+        echo ""
+        exit 1
+    }
+
+    # Activate venv's pip
+    local venv_pip="$venv_dir/bin/pip"
+    if [[ -n "${MSYSTEM:-}" ]] || [[ "$(uname -s)" == *MINGW* ]]; then
+        venv_pip="$venv_dir/Scripts/pip"
+    fi
+
+    info "Installiere pyocd in venv..."
+    "$venv_pip" install --upgrade pip 2>/dev/null || true
+    "$venv_pip" install pyocd || {
+        fail "pyocd konnte nicht installiert werden."
+        exit 1
+    }
+
+    ok "pyocd in venv installiert: tools/.venv_pyocd/"
+    echo ""
+}
+
+# ---------------------------------------------------------------------------
 # V3 Flash (multiple methods)
 # ---------------------------------------------------------------------------
 flash_v3() {
@@ -460,17 +545,23 @@ flash_v3_k5tool() {
         K5TOOL_PATH=$(command -v K5TOOL 2>/dev/null || command -v k5tool)
         ok "K5TOOL gefunden: $K5TOOL_PATH"
 
-    # 2) Check local tools/ cache
+    # 2) Check local tools/ cache (downloaded .exe or cmake-built binary)
+    elif [[ -f "$REPO_ROOT/tools/K5TOOL/K5TOOL.exe" ]]; then
+        K5TOOL_PATH="$REPO_ROOT/tools/K5TOOL/K5TOOL.exe"
+        ok "K5TOOL gefunden (lokal): $K5TOOL_PATH"
     elif [[ -x "$REPO_ROOT/tools/K5TOOL/K5TOOL" ]]; then
         K5TOOL_PATH="$REPO_ROOT/tools/K5TOOL/K5TOOL"
+        ok "K5TOOL gefunden (lokal): $K5TOOL_PATH"
+    elif [[ -x "$REPO_ROOT/tools/K5TOOL/build/k5tool" ]]; then
+        K5TOOL_PATH="$REPO_ROOT/tools/K5TOOL/build/k5tool"
+        ok "K5TOOL gefunden (lokal): $K5TOOL_PATH"
+    elif [[ -f "$REPO_ROOT/tools/K5TOOL/build/k5tool.exe" ]]; then
+        K5TOOL_PATH="$REPO_ROOT/tools/K5TOOL/build/k5tool.exe"
         ok "K5TOOL gefunden (lokal): $K5TOOL_PATH"
     elif [[ -x "$REPO_ROOT/tools/K5TOOL/k5tool" ]]; then
         K5TOOL_PATH="$REPO_ROOT/tools/K5TOOL/k5tool"
         ok "K5TOOL gefunden (lokal): $K5TOOL_PATH"
-    elif [[ -x "$REPO_ROOT/tools/K5TOOL/K5TOOL.exe" ]]; then
-        K5TOOL_PATH="$REPO_ROOT/tools/K5TOOL/K5TOOL.exe"
-        ok "K5TOOL gefunden (lokal): $K5TOOL_PATH"
-    elif [[ -x "$REPO_ROOT/tools/K5TOOL/k5tool.exe" ]]; then
+    elif [[ -f "$REPO_ROOT/tools/K5TOOL/k5tool.exe" ]]; then
         K5TOOL_PATH="$REPO_ROOT/tools/K5TOOL/k5tool.exe"
         ok "K5TOOL gefunden (lokal): $K5TOOL_PATH"
 
@@ -487,9 +578,13 @@ flash_v3_k5tool() {
             echo "  Manuelle Installation:"
             echo "  ${CYAN}https://github.com/qrp73/K5TOOL${RESET}"
             echo ""
-            echo "  1. Repo klonen: git clone https://github.com/qrp73/K5TOOL.git"
-            echo "  2. Bauen: cd K5TOOL && make"
-            echo "  3. In den PATH kopieren oder direkt aufrufen"
+            echo "  Windows: K5TOOL.exe von GitHub Releases herunterladen:"
+            echo "    ${CYAN}https://github.com/qrp73/K5TOOL/releases${RESET}"
+            echo ""
+            echo "  Linux/macOS (Mono + CMake):"
+            echo "    sudo apt install mono-runtime mono-mcs cmake"
+            echo "    git clone https://github.com/qrp73/K5TOOL.git"
+            echo "    cd K5TOOL && mkdir build && cd build && cmake .. && make"
             echo ""
 
             if ! ask_yes_no "Trotzdem fortfahren (K5TOOL-Pfad manuell angeben)?"; then
@@ -539,9 +634,18 @@ flash_v3_swd() {
 
     # Check for pyocd or openocd
     local swd_tool=""
+    # Also check venv-installed pyocd
+    local venv_pyocd="$REPO_ROOT/tools/.venv_pyocd/bin/pyocd"
+    if [[ -n "${MSYSTEM:-}" ]]; then
+        venv_pyocd="$REPO_ROOT/tools/.venv_pyocd/Scripts/pyocd"
+    fi
+
     if command -v pyocd &>/dev/null; then
         swd_tool="pyocd"
         ok "pyocd gefunden: $(pyocd --version 2>&1 | head -1)"
+    elif [[ -x "$venv_pyocd" ]]; then
+        swd_tool="$venv_pyocd"
+        ok "pyocd gefunden (venv): $venv_pyocd"
     elif command -v openocd &>/dev/null; then
         swd_tool="openocd"
         ok "openocd gefunden: $(openocd --version 2>&1 | head -1)"
@@ -552,15 +656,18 @@ flash_v3_swd() {
         echo "  - Einen SWD-Adapter (ST-Link, J-Link, etc.)"
         echo "  - pyocd oder openocd Software"
         echo ""
-        echo "  Installation von pyocd:"
-        echo "    pip install pyocd"
-        echo ""
 
-        if [[ -n "${MSYSTEM:-}" ]] && ask_yes_no "pyocd jetzt installieren?"; then
-            local PY
-            PY=$(command -v python3 2>/dev/null || command -v python)
-            "$PY" -m pip install pyocd
-            swd_tool="pyocd"
+        if ask_yes_no "pyocd jetzt installieren?"; then
+            install_pyocd
+            # After installation, find pyocd
+            if command -v pyocd &>/dev/null; then
+                swd_tool="pyocd"
+            elif [[ -x "$venv_pyocd" ]]; then
+                swd_tool="$venv_pyocd"
+            else
+                fail "pyocd Installation fehlgeschlagen."
+                exit 1
+            fi
         else
             fail "Kein SWD-Tool verfuegbar."
             exit 1
@@ -584,13 +691,7 @@ flash_v3_swd() {
         exit 0
     fi
 
-    if [[ "$swd_tool" == "pyocd" ]]; then
-        info "Starte pyocd Flash..."
-        pyocd flash -t py32f071xb "$SELECTED_FW" || {
-            fail "SWD-Flash fehlgeschlagen!"
-            exit 1
-        }
-    elif [[ "$swd_tool" == "openocd" ]]; then
+    if [[ "$swd_tool" == "openocd" ]]; then
         info "Starte openocd Flash..."
         # Use the config from the V3 firmware tree if available
         local ocd_cfg="$REPO_ROOT/firmware-v3/tools/unbrick_k5_v1/target/dp32g030.cfg"
@@ -607,6 +708,13 @@ flash_v3_swd() {
                 exit 1
             }
         fi
+    else
+        # swd_tool is "pyocd" or a full path to venv pyocd
+        info "Starte pyocd Flash..."
+        "$swd_tool" flash -t py32f071xb "$SELECTED_FW" || {
+            fail "SWD-Flash fehlgeschlagen!"
+            exit 1
+        }
     fi
 
     ok "=== V3 SWD-Flash abgeschlossen ==="

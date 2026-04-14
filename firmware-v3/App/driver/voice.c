@@ -43,9 +43,8 @@ static inline void DMA_Init()
     LL_SYSCFG_SetDMARemap(DMA1, DMA_CHANNEL, LL_SYSCFG_DMA_MAP_DAC1);
 
     LL_DMA_InitTypeDef InitStruct;
-    //   LL_DMA_StructInit( &InitStruct) ;
-    InitStruct.PeriphOrM2MSrcAddress = (uint32_t)DAC_Buf;
-    InitStruct.MemoryOrM2MDstAddress = LL_DAC_DMA_GetRegAddr(DAC1, DAC_CHANNEL, LL_DAC_DMA_REG_DATA_12BITS_RIGHT_ALIGNED);
+    InitStruct.PeriphOrM2MSrcAddress  = LL_DAC_DMA_GetRegAddr(DAC1, DAC_CHANNEL, LL_DAC_DMA_REG_DATA_12BITS_RIGHT_ALIGNED);
+    InitStruct.MemoryOrM2MDstAddress  = (uint32_t)DAC_Buf;
     InitStruct.Direction = LL_DMA_DIRECTION_MEMORY_TO_PERIPH;
     InitStruct.Mode = LL_DMA_MODE_CIRCULAR;
     InitStruct.PeriphOrM2MSrcIncMode = LL_DMA_PERIPH_NOINCREMENT;
@@ -58,7 +57,11 @@ static inline void DMA_Init()
 
     LL_DMA_EnableIT_HT(DMA1, DMA_CHANNEL);
     LL_DMA_EnableIT_TC(DMA1, DMA_CHANNEL);
-    LL_DMA_EnableChannel(DMA1, DMA_CHANNEL);
+    /* Do NOT enable the DMA channel here — VOICE_Start() enables it after
+       filling DAC_Buf and configuring the correct transfer addresses.
+       Enabling it now would start spurious transfers before voice data
+       is ready, and on Cortex-M0 the CPAR/CMAR registers cannot be
+       written while the channel is enabled. */
 
     NVIC_SetPriority(DMA1_Channel2_3_IRQn, 3);
     NVIC_EnableIRQ(DMA1_Channel2_3_IRQn);
@@ -86,14 +89,17 @@ void VOICE_Init()
     LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_DAC1);
     LL_DAC_SetTriggerSource(DAC1, DAC_CHANNEL, LL_DAC_TRIG_EXT_TIM6_TRGO);
     LL_DAC_SetOutputBuffer(DAC1, DAC_CHANNEL, LL_DAC_OUTPUT_BUFFER_ENABLE);
+
+    /* Enable trigger BEFORE enabling the DAC so the DAC never enters
+       auto-conversion mode (TEN=0).  In auto-mode the DAC could
+       generate spurious DMA requests that interfere with boot. */
+    TIM_Init();
+    LL_DAC_EnableTrigger(DAC1, DAC_CHANNEL);
+
     LL_DAC_EnableDMAReq(DAC1, DAC_CHANNEL);
     LL_DAC_Enable(DAC1, DAC_CHANNEL);
 
     SYSTICK_DelayUs(15);
-
-    TIM_Init();
-
-    LL_DAC_EnableTrigger(DAC1, DAC_CHANNEL);
 }
 
 void VOICE_Start()
@@ -125,10 +131,15 @@ void VOICE_Start()
         memset(DAC_Buf + VOICE_BUF_LEN, 0, VOICE_BUF_SIZE);
     }
 
+    /* Disable DMA channel before reconfiguring — on Cortex-M0 the CPAR,
+       CMAR and CNDTR registers cannot be written while the channel is
+       enabled (EN bit set in CCRx). */
+    LL_DMA_DisableChannel(DMA1, DMA_CHANNEL);
     LL_DMA_ConfigAddresses(DMA1, DMA_CHANNEL, (uint32_t)DAC_Buf,                                                         //
                            LL_DAC_DMA_GetRegAddr(DAC1, DAC_CHANNEL, LL_DAC_DMA_REG_DATA_12BITS_RIGHT_ALIGNED), //
                            LL_DMA_DIRECTION_MEMORY_TO_PERIPH                                                   //
     );
+    LL_DMA_SetDataLength(DMA1, DMA_CHANNEL, sizeof(DAC_Buf) / sizeof(uint16_t));
     LL_DMA_EnableChannel(DMA1, DMA_CHANNEL);
     LL_TIM_EnableCounter(TIMx);
 }

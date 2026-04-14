@@ -518,21 +518,72 @@ flash_v3() {
 
     echo "  V3/K1 Geraete unterstuetzen verschiedene Flash-Methoden:"
     echo ""
-    echo "  ${BOLD}1${RESET}) K5TOOL (USB-Kabel, seriell) — empfohlen"
-    echo "  ${BOLD}2${RESET}) SWD Programmer (pyocd/openocd) — fuer Entwickler"
-    echo "  ${BOLD}3${RESET}) Browser Flasher (UV-Tools 2) — kein lokales Tool noetig"
+    echo "  ${BOLD}1${RESET}) k5flash_v3.py (USB-Kabel, seriell, Python) — empfohlen"
+    echo "  ${BOLD}2${RESET}) K5TOOL (USB-Kabel, seriell, externes Tool)"
+    echo "  ${BOLD}3${RESET}) SWD Programmer (pyocd/openocd) — fuer Entwickler"
+    echo "  ${BOLD}4${RESET}) Browser Flasher (UV-Tools 2) — kein lokales Tool noetig"
     echo ""
 
     local method
     while true; do
-        read -rp "${BOLD}Flash-Methode waehlen [1-3]: ${RESET}" method
+        read -rp "${BOLD}Flash-Methode waehlen [1-4]: ${RESET}" method
         case "$method" in
-            1) flash_v3_k5tool; break ;;
-            2) flash_v3_swd; break ;;
-            3) flash_v3_browser; break ;;
-            *) echo "Bitte 1, 2 oder 3 eingeben." ;;
+            1) flash_v3_python; break ;;
+            2) flash_v3_k5tool; break ;;
+            3) flash_v3_swd; break ;;
+            4) flash_v3_browser; break ;;
+            *) echo "Bitte 1, 2, 3 oder 4 eingeben." ;;
         esac
     done
+}
+
+flash_v3_python() {
+    info "=== V3 Flash via k5flash_v3.py ==="
+
+    local k5flash="$REPO_ROOT/firmware-v3/k5flash_v3.py"
+    if [[ ! -f "$k5flash" ]]; then
+        fail "k5flash_v3.py nicht gefunden in firmware-v3/"
+        exit 1
+    fi
+
+    # Python finden
+    local PY=""
+    for candidate in python3 python; do
+        if command -v "$candidate" &>/dev/null; then
+            PY="$candidate"
+            break
+        fi
+    done
+    if [[ -z "$PY" ]]; then
+        fail "Python nicht gefunden!"
+        echo "  Installiere Python 3 und versuche es erneut."
+        exit 1
+    fi
+    ok "Python gefunden: $PY ($($PY --version 2>&1))"
+
+    # pyserial pruefen
+    if ! "$PY" -c "import serial" 2>/dev/null; then
+        warn "pyserial nicht installiert."
+        if command -v pacman &>/dev/null; then
+            info "Installiere pyserial via pacman..."
+            pacman -S --noconfirm mingw-w64-x86_64-python-pyserial 2>/dev/null \
+                || "$PY" -m pip install pyserial
+        else
+            info "Installiere pyserial via pip..."
+            "$PY" -m pip install pyserial
+        fi
+    fi
+
+    select_firmware_file "*.bin" "V3"
+
+    echo ""
+    info "Starte k5flash_v3.py..."
+    "$PY" "$k5flash" "$SELECTED_FW" || {
+        fail "Flash fehlgeschlagen!"
+        exit 1
+    }
+
+    ok "=== V3 Flash via k5flash_v3.py abgeschlossen ==="
 }
 
 flash_v3_k5tool() {

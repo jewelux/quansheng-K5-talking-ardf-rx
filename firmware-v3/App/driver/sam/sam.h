@@ -1,11 +1,10 @@
-/* SAM (Software Automatic Mouth) TTS Engine – Ported from s-macke/SAM
+/* SAM (Software Automatic Mouth) TTS Engine for PY32F071 (Cortex-M0+)
  *
- * Original SAM by Don't Ask Software (1982).
- * C port by Sebastian Macke (https://github.com/s-macke/SAM).
- * Adapted for PY32F071 (Cortex-M0+) by removing malloc/stdio/SDL
- * dependencies and adding streaming buffer output for DAC+DMA playback.
+ * Formant-based speech synthesizer adapted from the classic 1982 SAM
+ * algorithm.  Integer-only, no FPU required.  Generates 8 kHz 12-bit
+ * PCM samples suitable for direct DAC output.
  *
- * Licensed under GNU GPL v2 (matching original SAM license).
+ * Copyright 2025 – Licensed under Apache 2.0
  */
 
 #ifndef DRIVER_SAM_H
@@ -14,42 +13,38 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+/* ---- Configuration ---- */
+#define SAM_SAMPLE_RATE       8000
+#define SAM_FRAME_SAMPLES     20     /* samples per phoneme sub-frame  */
+#define SAM_MAX_PHONEMES      128    /* max phonemes per utterance     */
+#define SAM_PHONEME_BUF_SIZE  256    /* max phoneme string length      */
+#define SAM_DAC_MID           2048   /* 12-bit DAC midpoint            */
+
+/* ---- Public API ---- */
+
 /* Initialise SAM engine (call once at boot). */
 void SAM_Init(void);
 
-/* Set speaking speed (default 72, lower = slower). */
+/* Set speaking speed: 1 (slowest) – 9 (fastest), default 5. */
 void SAM_SetSpeed(uint8_t speed);
 
-/* Set base pitch (default 64). */
+/* Set base pitch: 1 (lowest) – 9 (highest), default 5. */
 void SAM_SetPitch(uint8_t pitch);
 
-/* Set mouth/throat formant parameters (defaults 128/128). */
-void SAM_SetMouth(uint8_t mouth);
-void SAM_SetThroat(uint8_t throat);
+/* Begin synthesising *text*.  Preprocesses and converts to phonemes.
+ * Call SAM_FillVoiceBuffer() repeatedly afterwards.
+ * Returns estimated duration in 10 ms units (0 if nothing to say). */
+uint16_t SAM_StartSpeaking(const char *text);
 
-/* Convert English text to SAM phoneme string.
- * Input: ASCII text string
- * Output: phoneme string written to internal buffer
- * Returns 1 on success, 0 on failure. */
-int SAM_TextToPhonemes(const char *text);
+/* Generate the next VOICE_BUF_LEN (160) samples into the voice ring
+ * buffer at the current write index.  Returns true while more data is
+ * available; false when the utterance is finished. */
+bool SAM_FillVoiceBuffer(void);
 
-/* Set phoneme string directly (for pre-encoded phonemes).
- * The string must be terminated with 0x9B. */
-void SAM_SetPhonemes(const char *phonemes);
+/* True while synthesis is in progress. */
+bool SAM_IsSpeaking(void);
 
-/* Process phonemes and render speech into internal buffer.
- * Call after SAM_TextToPhonemes() or SAM_SetPhonemes().
- * Returns 1 on success, 0 on failure. */
-int SAM_Render(void);
-
-/* Speak text: convenience function that calls TextToPhonemes + Render.
- * Returns 1 on success, 0 on failure. */
-int SAM_SpeakText(const char *text);
-
-/* Get pointer to rendered audio buffer (8-bit unsigned PCM, ~22050 Hz). */
-const char *SAM_GetBuffer(void);
-
-/* Get length of rendered audio in samples. */
-int SAM_GetBufferLength(void);
+/* Abort current synthesis. */
+void SAM_Stop(void);
 
 #endif /* DRIVER_SAM_H */

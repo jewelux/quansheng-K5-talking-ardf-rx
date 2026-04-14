@@ -658,7 +658,7 @@ static void CMD_0603_WritePY25Q16(uint32_t Port, const uint8_t *pBuffer)
 
     // Restrict writes to the voice data area (0x14c000 - 0x200000)
     // to prevent accidental corruption of firmware or config data
-    if (cmd->address < 0x14c000 || cmd->address >= 0x200000)
+    if (cmd->address < 0x14c000 || (cmd->address + cmd->size) > 0x200000)
     {
         // Send error response
         struct __attribute__((__packed__)) {

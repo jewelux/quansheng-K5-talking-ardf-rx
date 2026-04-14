@@ -465,7 +465,7 @@ def main():
     # Find VPK file
     if vpk_path is None:
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        repo_root = os.path.dirname(os.path.dirname(script_dir))
+        repo_root = os.path.dirname(script_dir)  # firmware-v3/ -> repo root
         search_dirs = [
             os.path.join(repo_root, "build-output"),
             repo_root,

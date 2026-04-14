@@ -565,7 +565,7 @@ lang_code = sys.argv[3]
 #     For each voice ID: uint32_t offset, uint32_t size
 #   Voice data (concatenated raw PCM)
 
-MAX_VOICE_ID = 0x83  # Maximum voice ID (inclusive)
+MAX_VOICE_ID = 0x82  # Maximum voice ID (inclusive)
 
 # Collect all raw files
 voice_data = {}

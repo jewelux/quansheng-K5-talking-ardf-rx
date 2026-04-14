@@ -194,6 +194,18 @@ static bool MENU_PlayMorseElement(const uint16_t duration_ms)
     return true;
 }
 
+static void MENU_WaitForKeyRelease(void)
+{
+    uint16_t wait = 500U;   // max ~500 ms
+    while (wait > 0U)
+    {
+        if (KEYBOARD_Poll() == KEY_INVALID)
+            break;
+        SYSTEM_DelayMs(10);
+        wait -= 10U;
+    }
+}
+
 void MENU_PlayMorseString(const char *text)
 {
     const uint16_t unit_ms = MENU_GetMorseUnitMs();
@@ -606,16 +618,7 @@ void MENU_PlayMorseForCurrentItem(void)
 
     // Wait for the triggering key (UP/DOWN) to be released,
     // otherwise MENU_IsAbortKeyPressed() immediately aborts the Morse output.
-    {
-        uint16_t wait = 500U;   // max ~500 ms
-        while (wait > 0U)
-        {
-            if (KEYBOARD_Poll() == KEY_INVALID)
-                break;
-            SYSTEM_DelayMs(10);
-            wait -= 10U;
-        }
-    }
+    MENU_WaitForKeyRelease();
 
     gMorseAbortKey = KEY_INVALID;
 
@@ -628,6 +631,10 @@ void MENU_PlayMorseForCurrentItem(void)
     {
         // Ensure voice prompt is not OFF so AUDIO_PlaySingleVoice
         // will actually play.  If it was OFF, default to English.
+        // This is intentionally transient (not persisted to flash) — it
+        // acts as an auto-fix so the user doesn't need to configure both
+        // Access mode AND Voice Prompt separately.  The change becomes
+        // permanent when the user visits the VOICE menu and confirms.
         if (gEeprom.VOICE_PROMPT == VOICE_PROMPT_OFF)
             gEeprom.VOICE_PROMPT = VOICE_PROMPT_ENGLISH;
 
@@ -680,18 +687,8 @@ void MENU_PlayMorseForCurrentItem(void)
             gRequestDisplayScreen = DISPLAY_MENU;
         }
 
-        // Wait for the navigation key to be released before re-announcing,
-        // same pattern as the initial key-release wait above.
-        {
-            uint16_t wait = 500U;
-            while (wait > 0U)
-            {
-                if (KEYBOARD_Poll() == KEY_INVALID)
-                    break;
-                SYSTEM_DelayMs(10);
-                wait -= 10U;
-            }
-        }
+        // Wait for the navigation key to be released before re-announcing
+        MENU_WaitForKeyRelease();
 
         gMorseAbortKey = KEY_INVALID;
     }

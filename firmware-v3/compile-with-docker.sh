@@ -8,6 +8,7 @@ set -euo pipefail
 #   ./compile-with-docker.sh Custom
 #   ./compile-with-docker.sh Bandscope -DENABLE_SPECTRUM=ON
 #   ./compile-with-docker.sh Broadcast -DENABLE_FEAT_F4HWN_GAME=ON -DENABLE_NOAA=ON
+#   ./compile-with-docker.sh ARDF-SAM
 #   ./compile-with-docker.sh All
 # Default preset: "Custom"
 # ---------------------------------------------
@@ -22,9 +23,9 @@ EXTRA_ARGS=("$@")
 # ---------------------------------------------
 # Validate preset name
 # ---------------------------------------------
-if [[ ! "$PRESET" =~ ^(Custom|Bandscope|Broadcast|Basic|RescueOps|Game|Fusion|ARDF|All)$ ]]; then
+if [[ ! "$PRESET" =~ ^(Custom|Bandscope|Broadcast|Basic|RescueOps|Game|Fusion|ARDF|ARDF-Morse|ARDF-Voice|ARDF-SAM|All)$ ]]; then
   echo "❌ Unknown preset: '$PRESET'"
-  echo "Valid presets are: Custom, Bandscope, Broadcast, Basic, RescueOps, Game, Fusion, ARDF, All"
+  echo "Valid presets are: Custom, Bandscope, Broadcast, Basic, RescueOps, Game, Fusion, ARDF, ARDF-Morse, ARDF-Voice, ARDF-SAM, All"
   exit 1
 fi
 
@@ -62,7 +63,7 @@ build_preset() {
 # Handle 'All' preset
 # ---------------------------------------------
 if [[ "$PRESET" == "All" ]]; then
-  PRESETS=(Bandscope Broadcast Basic RescueOps Game Fusion ARDF)
+  PRESETS=(Bandscope Broadcast Basic RescueOps Game Fusion ARDF ARDF-Morse ARDF-Voice ARDF-SAM)
   for p in "${PRESETS[@]}"; do
     build_preset "$p"
   done

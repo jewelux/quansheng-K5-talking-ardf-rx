@@ -22,11 +22,12 @@
  *  CONFIGURATION CONSTANTS
  * ===================================================================== */
 
-#define SAM_BUFFER_SIZE  22050   /* ~1 s at 22050 Hz effective rate */
+/* Maximum number of render frames (limits utterance length).
+ * 128 frames × speed-dependent duration ≈ several seconds of speech. */
+#define MAX_FRAMES   128
 
-/* 16.16 fixed-point step for 22050→8000 Hz resampling:
- * 22050 * 65536 / 8000 ≈ 180634 */
-#define RESAMPLE_STEP    180634u
+/* Maximum phoneme buffer size for parser */
+#define MAX_PHON     128
 
 /* ===========================================================================
  *  TABLE DATA  –  ReciterTabs  (text-to-phoneme rule engine)
@@ -739,8 +740,9 @@ static const unsigned char sampledConsonantFlags[] =
     0, 0, 0, 0, 0, 0, 0, 0
 };
 
-/* freq1data and freq2data are NOT const – SetMouthThroat() modifies them */
-static unsigned char freq1data[] =
+/* freq1data and freq2data – mutable copies, modified by SetMouthThroat()
+ * Stored in RAM; initialized from const originals in SAM_Init(). */
+static const unsigned char freq1data_init[] =
 {
     0x00, 0x13, 0x13, 0x13, 0x13, 0x0A, 0x0E, 0x12,
     0x18, 0x1A, 0x16, 0x14, 0x10, 0x14, 0x0E, 0x12,
@@ -754,7 +756,7 @@ static unsigned char freq1data[] =
     6, 0x0A, 0x0A, 6, 6, 6, 0x2C, 0x13
 };
 
-static unsigned char freq2data[] =
+static const unsigned char freq2data_init[] =
 {
     0x00, 0x43, 0x43, 0x43, 0x43, 0x54, 0x48, 0x42,
     0x3E, 0x28, 0x2C, 0x1E, 0x24, 0x2C, 0x48, 0x30,
@@ -767,6 +769,10 @@ static unsigned char freq2data[] =
     0x54, 0x54, 0x1A, 0x1A, 0x1A, 0x42, 0x42, 0x42,
     0x6D, 0x56, 0x6D, 0x54, 0x54, 0x54, 0x7F, 0x7F
 };
+
+/* Mutable working copies (in RAM) */
+#define freq1data freq1data_mut
+#define freq2data freq2data_mut
 
 static const unsigned char freq3data[] =
 {
@@ -1085,27 +1091,23 @@ static const unsigned char sampleTable[0x500] =
     ,  0xFE , 1 , 0xFC , 3 , 0xE0 ,0xF , 0 , 0xFC
 };
 
-static const int timetable[5][5] =
-{
-    {162, 167, 167, 127, 128},
-    {226, 60, 60, 0, 0},
-    {225, 60, 59, 0, 0},
-    {200, 0, 0, 54, 55},
-    {199, 0, 0, 54, 54}
-};
 
 /* ===========================================================================
  *  STATIC STATE VARIABLES
+ *
+ *  Memory is scarce (only ~1.9 KB free RAM).  We overlap arrays whose
+ *  lifetimes do not overlap using a union:
+ *
+ *    Parse phase:  sam_input, inputtemp, phonemeindex, phonemeLength_arr, stress
+ *    Render phase: frequency1-3, amplitude1-3, pitches, sampledConsonantFlag
+ *
+ *  After PrepareOutput() copies results to phonemeIndexOutput/stressOutput/
+ *  phonemeLengthOutput, the parse arrays are dead and the render arrays
+ *  can be built in the same memory.
  * =========================================================================== */
 
 /* Simulated 6502 registers (shared by reciter, parser, renderer) */
 static unsigned char A, X, Y;
-
-/* Reciter working buffer */
-static unsigned char inputtemp[256];
-
-/* SAM input/phoneme buffer */
-static unsigned char sam_input[256];
 
 /* SAM parameters */
 static unsigned char sam_speed  = 72;
@@ -1115,7 +1117,6 @@ static unsigned char sam_throat = 128;
 static int           sam_singmode = 0;
 
 /* Parser working variables */
-static unsigned char mem39;
 static unsigned char mem44;
 static unsigned char mem47;
 static unsigned char mem49;
@@ -1125,41 +1126,93 @@ static unsigned char mem53;
 static unsigned char mem56;
 static unsigned char mem59 = 0;
 
-/* Phoneme tables */
-static unsigned char stress[256];
-static unsigned char phonemeLength_arr[256];
-static unsigned char phonemeindex[256];
+/* ----- Memory-overlapped arrays (union) ----- */
+static union {
+    struct {
+        unsigned char sam_input[MAX_PHON*2]; /* 256 – text/phoneme I/O  */
+        unsigned char inputtemp[MAX_PHON*2]; /* 256 – reciter scratch   */
+        unsigned char phonemeindex[MAX_PHON*2];
+        unsigned char phonemeLength_arr[MAX_PHON*2];
+        unsigned char stress[MAX_PHON*2];
+    } p;  /* total 1280 bytes */
+    struct {
+        unsigned char frequency1[MAX_FRAMES];
+        unsigned char frequency2[MAX_FRAMES];
+        unsigned char frequency3[MAX_FRAMES];
+        unsigned char amplitude1[MAX_FRAMES];
+        unsigned char amplitude2[MAX_FRAMES];
+        unsigned char amplitude3[MAX_FRAMES];
+        unsigned char pitches[MAX_FRAMES];
+        unsigned char sampledConsonantFlag[MAX_FRAMES];
+    } r;  /* total 1024 bytes */
+} sam_mem;
 
-/* Output phoneme tables */
+/* Convenience macros so existing code can keep using the old names */
+#define sam_input              sam_mem.p.sam_input
+#define inputtemp              sam_mem.p.inputtemp
+#define phonemeindex           sam_mem.p.phonemeindex
+#define phonemeLength_arr      sam_mem.p.phonemeLength_arr
+#define stress                 sam_mem.p.stress
+#define frequency1             sam_mem.r.frequency1
+#define frequency2             sam_mem.r.frequency2
+#define frequency3             sam_mem.r.frequency3
+#define amplitude1             sam_mem.r.amplitude1
+#define amplitude2             sam_mem.r.amplitude2
+#define amplitude3             sam_mem.r.amplitude3
+#define pitches                sam_mem.r.pitches
+#define sampledConsonantFlag   sam_mem.r.sampledConsonantFlag
+
+/* Output phoneme tables (persist from parse into render) */
 static unsigned char phonemeIndexOutput[60];
 static unsigned char stressOutput[60];
 static unsigned char phonemeLengthOutput[60];
 
-/* Renderer frame tables */
-static unsigned char pitches[256];
-static unsigned char frequency1[256];
-static unsigned char frequency2[256];
-static unsigned char frequency3[256];
-static unsigned char amplitude1[256];
-static unsigned char amplitude2[256];
-static unsigned char amplitude3[256];
-static unsigned char sampledConsonantFlag[256];
+/* ----- Incremental render state machine -----
+ * Instead of rendering all audio into a 22 KB buffer, we generate
+ * samples on-the-fly in SAM_FillVoiceBuffer().  The render state
+ * captures the position within the SAM output loop so it can be
+ * suspended and resumed per voice-buffer chunk. */
+typedef struct {
+    uint8_t  Y;                /* current frame index */
+    uint8_t  mem48;            /* remaining frames */
+    uint8_t  phase1, phase2, phase3; /* formant phase accumulators */
+    uint8_t  mem44;            /* pitch period counter */
+    uint8_t  mem38;            /* pitch sub-counter */
+    uint8_t  speedcounter;
+    uint8_t  mem39;            /* sampled consonant flag for current frame */
+    uint8_t  mem66;            /* sampled phoneme read pointer */
+    uint8_t  sub_k;            /* 0-4: which of the 5 formant sub-samples */
+    uint16_t p1, p2, p3;      /* formant sub-sample accumulators */
+    /* Bresenham resampler: 22050 → 8000 Hz */
+    uint16_t resample_err;     /* accumulator, wraps at 22050 */
+    uint8_t  last_sample;      /* most recent 8-bit PCM sample */
+    /* Sampled-consonant sub-state */
+    uint8_t  sc_phase;         /* outer loop counter */
+    uint8_t  sc_bit;           /* bit counter (0-7) */
+    uint8_t  sc_byte;          /* current sample byte */
+    uint8_t  sc_type;          /* 0=unvoiced full, 1=voiced sub */
+    /* timetable-based timing */
+    int      tt_accum;         /* accumulated timetable ticks */
+    uint8_t  tt_prev_idx;      /* previous timetable column index */
+    uint8_t  tt_sub;           /* sub-sample within current 5-sample group */
+    uint8_t  tt_ary[5];       /* current 5-sample group */
+    uint8_t  tt_pending;       /* samples remaining in tt_ary */
+    /* States */
+    uint8_t  state;            /* 0=idle, 1=formant, 2=sampled-unvoiced, 3=sampled-voiced, 4=done */
+} render_state_t;
 
-/* Audio output buffer (replaces malloc'd buffer) */
-static unsigned char sam_buffer[SAM_BUFFER_SIZE];
-static int           bufferpos = 0;
-static unsigned int  oldtimetableindex = 0;
+static render_state_t rs;
+static bool sam_speaking;
 
-/* K5 playback state */
-static uint32_t sam_playback_frac;   /* 16.16 fixed-point read position */
-static uint32_t sam_total_samples;   /* rendered sample count            */
-static bool     sam_speaking;
+/* Mutable freq tables (modified by SetMouthThroat) */
+static unsigned char freq1data_mut[80];
+static unsigned char freq2data_mut[80];
 
 /* ---- Forward declarations ---- */
-static int  TextToPhonemes(unsigned char *input);
+static int  TextToPhonemes(unsigned char *input_buf);
 static int  SAMMain(void);
 static void SetMouthThroat(unsigned char mouth, unsigned char throat);
-static void Render(void);
+static void RenderFrames(void);
 
 /* ===========================================================================
  *  RECITER  –  English text to phoneme string conversion
@@ -1622,11 +1675,10 @@ static void Insert(unsigned char position, unsigned char mem60_val,
 static void Init(void)
 {
     int i;
+    /* Initialize mutable freq tables from flash originals */
+    memcpy(freq1data_mut, freq1data_init, sizeof(freq1data_init));
+    memcpy(freq2data_mut, freq2data_init, sizeof(freq2data_init));
     SetMouthThroat(sam_mouth, sam_throat);
-
-    bufferpos = 0;
-    oldtimetableindex = 0;
-    memset(sam_buffer, 128, SAM_BUFFER_SIZE);
 
     for(i=0; i<256; i++)
     {
@@ -2177,27 +2229,23 @@ static void PrepareOutput(void)
         A = phonemeindex[X];
         if (A == 255)
         {
-            A = 255;
             phonemeIndexOutput[Y] = 255;
-            Render();
             return;
         }
         if (A == 254)
         {
+            /* Skip breath markers – we render everything as one segment */
             X++;
-            int temp = X;
-            phonemeIndexOutput[Y] = 255;
-            Render();
-            X = temp;
-            Y = 0;
             continue;
         }
         if (A == 0) { X++; continue; }
-        phonemeIndexOutput[Y] = A;
-        phonemeLengthOutput[Y] = phonemeLength_arr[X];
-        stressOutput[Y] = stress[X];
+        if (Y < 59) {
+            phonemeIndexOutput[Y] = A;
+            phonemeLengthOutput[Y] = phonemeLength_arr[X];
+            stressOutput[Y] = stress[X];
+            Y++;
+        }
         X++;
-        Y++;
     }
 }
 
@@ -2225,138 +2273,56 @@ static int SAMMain(void)
 
     InsertBreath();
     PrepareOutput();
+
+    /* Now parse arrays are dead.  Build render frames in the union's
+     * render side (overwrites parse data – that's fine). */
+    RenderFrames();
     return 1;
 }
 
+
 /* ===========================================================================
- *  RENDERER  –  Phoneme frames to PCM audio
+ *  RENDERER  –  Frame setup (no audio output)
+ *
+ *  RenderFrames() creates the frame tables (frequency1-3, amplitude1-3,
+ *  pitches, sampledConsonantFlag) from phonemeIndexOutput/stressOutput/
+ *  phonemeLengthOutput.  This OVERWRITES the parse-phase union data.
+ *
+ *  Audio generation happens incrementally in SAM_FillVoiceBuffer().
  * =========================================================================== */
 
-static void Output8BitAry(int index, unsigned char ary[5])
+static unsigned char ReadFrame(unsigned char p, unsigned char idx)
 {
-    int k;
-    bufferpos += timetable[oldtimetableindex][index];
-    oldtimetableindex = index;
-    for(k=0; k<5; k++)
-    {
-        int pos = bufferpos/50 + k;
-        if (pos >= 0 && pos < SAM_BUFFER_SIZE)
-            sam_buffer[pos] = ary[k];
-    }
-}
-
-static void Output8Bit(int index, unsigned char Aval)
-{
-    unsigned char ary[5] = {Aval, Aval, Aval, Aval, Aval};
-    Output8BitAry(index, ary);
-}
-
-static unsigned char Read(unsigned char p, unsigned char Yidx)
-{
+    if (idx >= MAX_FRAMES) return 0;
     switch(p)
     {
-    case 168: return pitches[Yidx];
-    case 169: return frequency1[Yidx];
-    case 170: return frequency2[Yidx];
-    case 171: return frequency3[Yidx];
-    case 172: return amplitude1[Yidx];
-    case 173: return amplitude2[Yidx];
-    case 174: return amplitude3[Yidx];
+    case 168: return pitches[idx];
+    case 169: return frequency1[idx];
+    case 170: return frequency2[idx];
+    case 171: return frequency3[idx];
+    case 172: return amplitude1[idx];
+    case 173: return amplitude2[idx];
+    case 174: return amplitude3[idx];
     }
     return 0;
 }
 
-static void Write(unsigned char p, unsigned char Yidx, unsigned char value)
+static void WriteFrame(unsigned char p, unsigned char idx, unsigned char value)
 {
+    if (idx >= MAX_FRAMES) return;
     switch(p)
     {
-    case 168: pitches[Yidx] = value; return;
-    case 169: frequency1[Yidx] = value; return;
-    case 170: frequency2[Yidx] = value; return;
-    case 171: frequency3[Yidx] = value; return;
-    case 172: amplitude1[Yidx] = value; return;
-    case 173: amplitude2[Yidx] = value; return;
-    case 174: amplitude3[Yidx] = value; return;
+    case 168: pitches[idx] = value; return;
+    case 169: frequency1[idx] = value; return;
+    case 170: frequency2[idx] = value; return;
+    case 171: frequency3[idx] = value; return;
+    case 172: amplitude1[idx] = value; return;
+    case 173: amplitude2[idx] = value; return;
+    case 174: amplitude3[idx] = value; return;
     }
 }
 
-static void RenderSample(unsigned char *mem66_ptr)
-{
-    int tempA;
-    mem49 = Y;
-    A = mem39&7;
-    X = A-1;
-    mem56 = X;
-    mem53 = tab48426[X];
-    mem47 = X;
-
-    A = mem39 & 248;
-    if(A == 0)
-    {
-        Y = mem49;
-        A = pitches[mem49] >> 4;
-        goto pos48315;
-    }
-
-    Y = A ^ 255;
-pos48274:
-    mem56 = 8;
-    A = sampleTable[mem47*256+Y];
-pos48280:
-    tempA = A;
-    A = A << 1;
-    if ((tempA & 128) == 0)
-    {
-        X = mem53;
-        Output8Bit(1, (X&0x0f) * 16);
-        if(X != 0) goto pos48296;
-    }
-    Output8Bit(2, 5 * 16);
-pos48296:
-    X = 0;
-    mem56--;
-    if (mem56 != 0) goto pos48280;
-    Y++;
-    if (Y != 0) goto pos48274;
-    mem44 = 1;
-    Y = mem49;
-    return;
-
-    unsigned char phase1;
-pos48315:
-    phase1 = A ^ 255;
-    Y = *mem66_ptr;
-    do
-    {
-        mem56 = 8;
-        A = sampleTable[mem47*256+Y];
-        do
-        {
-            tempA = A;
-            A = A << 1;
-            if ((tempA & 128) != 0)
-            {
-                X = 26;
-                Output8Bit(3, (X&0xf)*16);
-            } else
-            {
-                X = 6;
-                Output8Bit(4, (X&0xf)*16);
-            }
-            mem56--;
-        } while(mem56 != 0);
-        Y++;
-        phase1++;
-    } while (phase1 != 0);
-
-    A = 1;
-    mem44 = 1;
-    *mem66_ptr = Y;
-    Y = mem49;
-    return;
-}
-
-static void AddInflection(unsigned char mem48, unsigned char phase1)
+static void AddInflection(unsigned char inflection, unsigned char phase1_local)
 {
     mem49 = X;
     A = X;
@@ -2367,26 +2333,25 @@ static void AddInflection(unsigned char mem48, unsigned char phase1)
 
     while( (A=pitches[X]) == 127) X++;
 
-pos48398:
-    A += mem48;
-    phase1 = A;
-    pitches[X] = A;
-
-    X++;
-    if (X == mem49) return;
-    if (pitches[X] == 255) { X++; if (X == mem49) return; }
-    A = phase1;
-    goto pos48398;
+    while(1)
+    {
+        A += inflection;
+        phase1_local = A;
+        pitches[X] = A;
+        X++;
+        if (X == mem49) return;
+        if (pitches[X] == 255) continue;
+        A = phase1_local;
+    }
 }
 
 static unsigned char trans(unsigned char mem39212, unsigned char mem39213)
 {
     unsigned char carry;
     int temp;
-    unsigned char mem39214, mem39215;
+    unsigned char mem39215;
     A = 0;
     mem39215 = 0;
-    mem39214 = 0;
     X = 8;
     do
     {
@@ -2406,12 +2371,12 @@ static unsigned char trans(unsigned char mem39212, unsigned char mem39213)
         carry = temp;
         X--;
     } while (X != 0);
-    temp = mem39214 & 128;
-    mem39214 = (mem39214 << 1) | (carry?1:0);
+    temp = 0;
     carry = temp;
     temp = mem39215 & 128;
     mem39215 = (mem39215 << 1) | (carry?1:0);
     carry = temp;
+
     return mem39215;
 }
 
@@ -2426,8 +2391,9 @@ static void SetMouthThroat(unsigned char mouth, unsigned char throat)
         16, 13, 15, 11, 18, 14, 11, 9, 6, 6, 6};
 
     unsigned char throatFormants5_29[30] = {
-        255, 255, 255, 255, 255, 84, 73, 67, 63, 40, 44, 31, 37, 45, 73, 49,
-        36, 30, 51, 37, 29, 69, 24, 50, 30, 24, 83, 46, 54, 86};
+    255, 255,
+    255, 255, 255, 84, 73, 67, 63, 40, 44, 31, 37, 45, 73, 49,
+    36, 30, 51, 37, 29, 69, 24, 50, 30, 24, 83, 46, 54, 86};
 
     unsigned char mouthFormants48_53[6] = {19, 27, 21, 27, 18, 13};
     unsigned char throatFormants48_53[6] = {72, 39, 31, 43, 30, 34};
@@ -2438,11 +2404,13 @@ static void SetMouthThroat(unsigned char mouth, unsigned char throat)
         initialFrequency = mouthFormants5_29[pos];
         if (initialFrequency != 0) newFrequency = trans(mouth, initialFrequency);
         freq1data[pos] = newFrequency;
+
         initialFrequency = throatFormants5_29[pos];
         if(initialFrequency != 0) newFrequency = trans(throat, initialFrequency);
         freq2data[pos] = newFrequency;
         pos++;
     }
+
     pos = 48;
     Y = 0;
     while(pos != 54)
@@ -2450,6 +2418,7 @@ static void SetMouthThroat(unsigned char mouth, unsigned char throat)
         initialFrequency = mouthFormants48_53[Y];
         newFrequency = trans(mouth, initialFrequency);
         freq1data[pos] = newFrequency;
+
         initialFrequency = throatFormants48_53[Y];
         newFrequency = trans(throat, initialFrequency);
         freq2data[pos] = newFrequency;
@@ -2458,23 +2427,28 @@ static void SetMouthThroat(unsigned char mouth, unsigned char throat)
     }
 }
 
-static void Render(void)
+/* RenderFrames: Create frame data tables from phoneme output.
+ * After this call, frequency1-3, amplitude1-3, pitches, and
+ * sampledConsonantFlag contain the per-frame parameters. */
+static void RenderFrames(void)
 {
     unsigned char phase1 = 0;
     unsigned char phase2 = 0;
     unsigned char phase3 = 0;
-    unsigned char mem66_local = 0;
-    unsigned char mem38 = 0;
-    unsigned char mem40 = 0;
-    unsigned char speedcounter = 0;
+    unsigned char mem38_local = 0;
+    unsigned char mem40_local = 0;
+    unsigned char speedcounter_local = 0;
     unsigned char mem48_local = 0;
     int i;
 
-    if (phonemeIndexOutput[0] == 255) return;
+    if (phonemeIndexOutput[0] == 255) { rs.mem48 = 0; rs.state = 4; return; }
 
     A = 0;
     X = 0;
     mem44 = 0;
+
+    /* Clear render union before writing frames */
+    memset(&sam_mem.r, 0, sizeof(sam_mem.r));
 
     /* CREATE FRAMES */
     do
@@ -2486,7 +2460,6 @@ static void Render(void)
 
         if (A == 1)
         {
-            A = 1;
             mem48_local = 1;
             AddInflection(mem48_local, phase1);
         }
@@ -2502,6 +2475,7 @@ static void Render(void)
 
         do
         {
+            if (X >= MAX_FRAMES) break;
             frequency1[X] = freq1data[Y];
             frequency2[X] = freq2data[Y];
             frequency3[X] = freq3data[Y];
@@ -2515,6 +2489,9 @@ static void Render(void)
         } while(phase2 != 0);
         mem44++;
     } while(mem44 != 0);
+
+    /* Record total frame count */
+    rs.mem48 = (X < MAX_FRAMES) ? X : MAX_FRAMES;
 
     /* CREATE TRANSITIONS */
     A = 0;
@@ -2550,64 +2527,71 @@ static void Render(void)
         A = mem49 + phonemeLengthOutput[mem44];
         mem49 = A;
         A = A + phase2;
-        speedcounter = A;
+        speedcounter_local = A;
         mem47 = 168;
         phase3 = mem49 - phase1;
         A = phase1 + phase2;
-        mem38 = A;
+        mem38_local = A;
 
         X = A;
         X -= 2;
         if ((X & 128) == 0)
         do
         {
-            mem40 = mem38;
+            mem40_local = mem38_local;
             if (mem47 == 168)
             {
                 unsigned char mem36, mem37;
                 mem36 = phonemeLengthOutput[mem44] >> 1;
                 mem37 = phonemeLengthOutput[mem44+1] >> 1;
-                mem40 = mem36 + mem37;
+                mem40_local = mem36 + mem37;
                 mem37 += mem49;
                 mem36 = mem49 - mem36;
-                A = Read(mem47, mem37);
+                A = ReadFrame(mem47, mem37);
                 Y = mem36;
-                mem53 = A - Read(mem47, mem36);
+                mem53 = A - ReadFrame(mem47, mem36);
             } else
             {
-                A = Read(mem47, speedcounter);
+                A = ReadFrame(mem47, speedcounter_local);
                 Y = phase3;
-                mem53 = A - Read(mem47, phase3);
+                mem53 = A - ReadFrame(mem47, phase3);
             }
 
             {
                 signed char m53 = (signed char)mem53;
                 mem50 = mem53 & 128;
-                unsigned char m53abs = abs(m53);
-                mem51 = m53abs % mem40;
-                mem53 = (unsigned char)((signed char)(m53) / mem40);
+                unsigned char m53abs;
+                if (m53 < 0) m53abs = (unsigned char)(-m53);
+                else m53abs = (unsigned char)m53;
+                if (mem40_local != 0) {
+                    mem51 = m53abs % mem40_local;
+                    mem53 = (unsigned char)((signed char)(mem53) / (signed char)mem40_local);
+                } else {
+                    mem51 = 0;
+                    mem53 = 0;
+                }
             }
 
-            X = mem40;
+            X = mem40_local;
             Y = phase3;
             mem56 = 0;
             while(1)
             {
-                A = Read(mem47, Y) + mem53;
+                A = ReadFrame(mem47, Y) + mem53;
                 mem48_local = A;
                 Y++;
                 X--;
                 if(X == 0) break;
                 mem56 += mem51;
-                if (mem56 >= mem40)
+                if (mem56 >= mem40_local)
                 {
-                    mem56 -= mem40;
+                    mem56 -= mem40_local;
                     if ((mem50 & 128)==0)
                     {
                         if(mem48_local != 0) mem48_local++;
                     } else mem48_local--;
                 }
-                Write(mem47, Y, mem48_local);
+                WriteFrame(mem47, Y, mem48_local);
             }
             mem47++;
         } while (mem47 != 175);
@@ -2616,104 +2600,209 @@ static void Render(void)
         X = mem44;
     }
 
-    mem48_local = mem49 + phonemeLengthOutput[mem44];
-
     /* ASSIGN PITCH CONTOUR */
     if (!sam_singmode)
     {
-        for(i=0; i<256; i++) {
+        for(i=0; i < (int)rs.mem48; i++) {
             pitches[i] -= (frequency1[i] >> 1);
         }
     }
 
-    phase1 = 0;
-    phase2 = 0;
-    phase3 = 0;
-    mem49 = 0;
-    speedcounter = 72;
-
     /* RESCALE AMPLITUDE */
-    for(i=255; i>=0; i--)
+    for(i = (int)rs.mem48 - 1; i>=0; i--)
     {
         amplitude1[i] = amplitudeRescale[amplitude1[i]];
         amplitude2[i] = amplitudeRescale[amplitude2[i]];
         amplitude3[i] = amplitudeRescale[amplitude3[i]];
     }
 
-    Y = 0;
-    A = pitches[0];
-    mem44 = A;
-    X = A;
-    mem38 = A - (A>>2);
+    /* Initialize render state machine for incremental playback */
+    rs.Y = 0;
+    rs.phase1 = 0;
+    rs.phase2 = 0;
+    rs.phase3 = 0;
+    rs.speedcounter = 72;
+    rs.mem66 = 0;
+    rs.resample_err = 0;
+    rs.last_sample = 128;
+    rs.tt_pending = 0;
+    rs.tt_prev_idx = 0;
+    rs.tt_accum = 0;
+    rs.sc_bit = 0;
+    rs.sc_phase = 0;
 
-    /* PROCESS THE FRAMES */
-    while(1)
+    if (rs.mem48 > 0) {
+        A = pitches[0];
+        rs.mem44 = A;
+        rs.mem38 = A - (A>>2);
+        rs.state = 1;  /* ready to generate */
+    } else {
+        rs.state = 4;  /* done */
+    }
+}
+
+
+/* ===========================================================================
+ *  INCREMENTAL AUDIO GENERATION
+ *
+ *  GenerateOneSample() produces one 8-bit PCM sample at ~22050 Hz
+ *  by stepping through the SAM render state machine.
+ * =========================================================================== */
+
+static int GenerateOneSample(void)
+{
+    if (rs.state >= 4)
+        return -1;
+
+    /* Return pending sub-samples from previous 5-sample group */
+    if (rs.tt_pending > 0) {
+        unsigned char s = rs.tt_ary[5 - rs.tt_pending];
+        rs.tt_pending--;
+        return s;
+    }
+
+    /* Generate next group */
+    while (rs.state != 4)
     {
-        A = sampledConsonantFlag[Y];
-        mem39 = A;
-        A = A & 248;
-        if(A != 0)
+        unsigned char Yf = rs.Y;
+        if (Yf >= rs.mem48) {
+            rs.state = 4;
+            return -1;
+        }
+
+        A = sampledConsonantFlag[Yf];
+        rs.mem39 = A;
+
+        if ((A & 248) != 0)
         {
-            RenderSample(&mem66_local);
-            Y += 2;
-            mem48_local -= 2;
-        } else
+            /* Sampled consonant – produce a single sample */
+            unsigned char tableIdx = (rs.mem39 & 7) - 1;
+            unsigned char tableOffset = rs.mem39 & 248;
+            unsigned char sampleByte;
+            unsigned char sample;
+
+            if (tableOffset != 0) {
+                /* Unvoiced: read from sample table */
+                unsigned char yy = tableOffset ^ 255;
+                yy = (yy + rs.sc_phase) & 0xFF;
+                sampleByte = sampleTable[tableIdx * 256 + yy];
+                sample = ((sampleByte >> (7 - rs.sc_bit)) & 1) ?
+                         (tab48426[tableIdx] & 0x0f) * 16 : 5 * 16;
+                rs.sc_bit++;
+                if (rs.sc_bit >= 8) {
+                    rs.sc_bit = 0;
+                    rs.sc_phase++;
+                    if (rs.sc_phase == 0) {
+                        /* Wrapped around – advance frame */
+                        rs.mem44 = 1;
+                        if (rs.Y + 2 <= rs.mem48) {
+                            rs.Y += 2;
+                        } else {
+                            rs.state = 4;
+                        }
+                        rs.sc_phase = 0;
+                        rs.speedcounter = sam_speed;
+                        goto advance_pitch;
+                    }
+                }
+                return sample;
+            } else {
+                /* Voiced sampled consonant */
+                unsigned char pitchVal = pitches[Yf] >> 4;
+                if (pitchVal == 0) pitchVal = 1;
+                unsigned char yy = rs.mem66;
+                sampleByte = sampleTable[tableIdx * 256 + yy];
+                sample = ((sampleByte >> (7 - rs.sc_bit)) & 1) ?
+                         (26 & 0xf) * 16 : (6 & 0xf) * 16;
+                rs.sc_bit++;
+                if (rs.sc_bit >= 8) {
+                    rs.sc_bit = 0;
+                    rs.mem66++;
+                    rs.sc_phase++;
+                    if (rs.sc_phase >= pitchVal) {
+                        rs.sc_phase = 0;
+                        rs.mem44 = 1;
+                        rs.Y = Yf; /* stays on same frame */
+                        goto advance_pitch;
+                    }
+                }
+                return sample;
+            }
+        }
+        else
         {
-            unsigned char ary[5];
-            unsigned int p1 = phase1 * 256;
-            unsigned int p2 = phase2 * 256;
-            unsigned int p3 = phase3 * 256;
+            /* Formant synthesis – generate 5 sub-samples */
+            unsigned int p1 = rs.phase1 * 256;
+            unsigned int p2 = rs.phase2 * 256;
+            unsigned int p3 = rs.phase3 * 256;
             int k;
-            for (k=0; k<5; k++) {
-                signed char sp1 = (signed char)sinus[0xff & (p1>>8)];
-                signed char sp2 = (signed char)sinus[0xff & (p2>>8)];
-                signed char rp3 = (signed char)rectangle[0xff & (p3>>8)];
-                signed int sin1 = sp1 * ((unsigned char)amplitude1[Y] & 0x0f);
-                signed int sin2 = sp2 * ((unsigned char)amplitude2[Y] & 0x0f);
-                signed int rect = rp3 * ((unsigned char)amplitude3[Y] & 0x0f);
+            for (k = 0; k < 5; k++) {
+                signed char sp1 = (signed char)sinus[0xff & (p1 >> 8)];
+                signed char sp2 = (signed char)sinus[0xff & (p2 >> 8)];
+                signed char rp3 = (signed char)rectangle[0xff & (p3 >> 8)];
+                signed int sin1 = sp1 * ((unsigned char)amplitude1[Yf] & 0x0f);
+                signed int sin2 = sp2 * ((unsigned char)amplitude2[Yf] & 0x0f);
+                signed int rect = rp3 * ((unsigned char)amplitude3[Yf] & 0x0f);
                 signed int mux = sin1 + sin2 + rect;
                 mux /= 32;
                 mux += 128;
-                ary[k] = (unsigned char)mux;
-                p1 += frequency1[Y] * 256 / 4;
-                p2 += frequency2[Y] * 256 / 4;
-                p3 += frequency3[Y] * 256 / 4;
+                if (mux < 0) mux = 0;
+                if (mux > 255) mux = 255;
+                rs.tt_ary[k] = (unsigned char)mux;
+                p1 += frequency1[Yf] * 256 / 4;
+                p2 += frequency2[Yf] * 256 / 4;
+                p3 += frequency3[Yf] * 256 / 4;
             }
-            Output8BitAry(0, ary);
-            speedcounter--;
-            if (speedcounter != 0) goto pos48155;
-            Y++;
-            mem48_local--;
+
+            /* Speed counter: frame advance */
+            rs.speedcounter--;
+            if (rs.speedcounter == 0) {
+                rs.Y++;
+                rs.mem48--;
+                rs.speedcounter = sam_speed;
+            }
+
+            goto advance_pitch;
         }
 
-        if(mem48_local == 0) return;
-        speedcounter = sam_speed;
-pos48155:
-        mem44--;
-        if(mem44 == 0)
+advance_pitch:
+        /* Pitch period tracking */
+        rs.mem44--;
+        if (rs.mem44 == 0)
         {
-pos48159:
-            A = pitches[Y];
-            mem44 = A;
-            A = A - (A>>2);
-            mem38 = A;
-            phase1 = 0;
-            phase2 = 0;
-            phase3 = 0;
-            continue;
+            unsigned char yy = rs.Y;
+            if (yy < rs.mem48) {
+                A = pitches[yy];
+            } else {
+                A = 64;
+            }
+            rs.mem44 = A;
+            rs.mem38 = A - (A >> 2);
+            rs.phase1 = 0;
+            rs.phase2 = 0;
+            rs.phase3 = 0;
         }
-        mem38--;
-        if((mem38 != 0) || (mem39 == 0))
+        else
         {
-            phase1 += frequency1[Y];
-            phase2 += frequency2[Y];
-            phase3 += frequency3[Y];
-            continue;
+            rs.mem38--;
+            unsigned char yy = rs.Y;
+            if (yy < rs.mem48) {
+                rs.phase1 += frequency1[yy];
+                rs.phase2 += frequency2[yy];
+                rs.phase3 += frequency3[yy];
+            }
         }
-        RenderSample(&mem66_local);
-        goto pos48159;
+
+        /* If we generated formant samples, return first one */
+        if (rs.tt_pending == 0 && (rs.mem39 & 248) == 0) {
+            rs.tt_pending = 4;
+            return rs.tt_ary[0];
+        }
     }
+
+    return -1;
 }
+
 
 /* ===========================================================================
  *  PUBLIC API  –  Quansheng K5 interface
@@ -2721,51 +2810,29 @@ pos48159:
 
 void SAM_Init(void)
 {
-    sam_speed  = 72;
-    sam_pitch  = 64;
-    sam_mouth  = 128;
-    sam_throat = 128;
-    sam_speaking = false;
-    sam_playback_frac = 0;
-    sam_total_samples = 0;
+    memcpy(freq1data_mut, freq1data_init, sizeof(freq1data_init));
+    memcpy(freq2data_mut, freq2data_init, sizeof(freq2data_init));
     SetMouthThroat(sam_mouth, sam_throat);
+    sam_speaking = false;
+    memset(&rs, 0, sizeof(rs));
+    rs.state = 4;
 }
 
 void SAM_SetSpeed(uint8_t speed)
 {
-    /* Map 1-9 to SAM speed values (higher value = slower) */
     static const unsigned char speed_map[10] = {
-        72,   /* 0: unused, default */
-        150,  /* 1: slowest */
-        130,  /* 2 */
-        110,  /* 3 */
-        90,   /* 4 */
-        72,   /* 5: default */
-        60,   /* 6 */
-        50,   /* 7 */
-        40,   /* 8 */
-        30    /* 9: fastest */
+        72, 150, 130, 110, 90, 72, 60, 50, 40, 30
     };
-    if (speed > 9) speed = 5;
+    if (speed > 9) speed = 9;
     sam_speed = speed_map[speed];
 }
 
 void SAM_SetPitch(uint8_t pitch)
 {
-    /* Map 1-9 to SAM pitch values */
     static const unsigned char pitch_map[10] = {
-        64,   /* 0: unused, default */
-        20,   /* 1: lowest */
-        30,   /* 2 */
-        40,   /* 3 */
-        50,   /* 4 */
-        64,   /* 5: default */
-        80,   /* 6 */
-        100,  /* 7 */
-        150,  /* 8 */
-        200   /* 9: highest */
+        64, 20, 30, 42, 52, 64, 80, 110, 150, 200
     };
-    if (pitch > 9) pitch = 5;
+    if (pitch > 9) pitch = 9;
     sam_pitch = pitch_map[pitch];
 }
 
@@ -2775,33 +2842,29 @@ uint16_t SAM_StartSpeaking(const char *text)
 
     if (!text || !text[0]) return 0;
 
-    /* Copy text into SAM input buffer */
+    /* Copy text into SAM input buffer (parse union) */
     len = 0;
     while (text[len] && len < 254) len++;
     for (i = 0; i < len; i++)
         sam_input[i] = (unsigned char)text[i];
     sam_input[len] = 0;
 
-    /* Run reciter: text → phoneme string */
+    /* Run reciter: text -> phoneme string */
     if (!TextToPhonemes(sam_input))
         return 0;
 
-    /* Run SAM parser + renderer: phoneme string → PCM buffer */
+    /* Run SAM parser + frame renderer (fills render union) */
     if (!SAMMain())
         return 0;
 
-    /* Calculate total rendered samples and estimated duration */
-    sam_total_samples = (uint32_t)(bufferpos / 50);
-    if (sam_total_samples > SAM_BUFFER_SIZE)
-        sam_total_samples = SAM_BUFFER_SIZE;
-
-    sam_playback_frac = 0;
     sam_speaking = true;
 
-    /* Duration in 10 ms units: (samples / 22050) * 100 = samples * 100 / 22050 */
+    /* Estimate duration in 10ms units */
     {
-        uint32_t dur = (sam_total_samples * 100u) / 22050u;
+        uint32_t total_src_samples = (uint32_t)rs.mem48 * sam_speed * 5;
+        uint32_t dur = (total_src_samples * 100u) / 22050u;
         if (dur > 0xFFFF) dur = 0xFFFF;
+        if (dur == 0) dur = 1;
         return (uint16_t)dur;
     }
 }
@@ -2810,37 +2873,39 @@ bool SAM_FillVoiceBuffer(void)
 {
     uint16_t i;
     uint16_t *dst;
-    uint32_t src_idx;
-    unsigned char sample;
-    uint16_t dac_val;
+    int sample;
 
     if (!sam_speaking)
         return false;
 
-    /* Check if voice ring buffer has room */
     if (gVoiceBufLen >= VOICE_BUF_CAP)
-        return true;  /* still speaking, but buffer full */
+        return true;
 
     dst = gVoiceBuf[gVoiceBufWriteIndex];
 
     for (i = 0; i < VOICE_BUF_LEN; i++)
     {
-        src_idx = sam_playback_frac >> 16;
-        if (src_idx >= sam_total_samples)
+        /* Bresenham resampling: 22050 -> 8000 Hz */
+        while (rs.resample_err < 22050)
         {
-            /* Fill remainder with silence (DAC midpoint) */
-            for (; i < VOICE_BUF_LEN; i++)
-                dst[i] = SAM_DAC_MID;
-            sam_speaking = false;
-            break;
+            sample = GenerateOneSample();
+            if (sample < 0)
+            {
+                for (; i < VOICE_BUF_LEN; i++)
+                    dst[i] = SAM_DAC_MID;
+                sam_speaking = false;
+                goto done;
+            }
+            rs.last_sample = (uint8_t)sample;
+            rs.resample_err += 8000;
         }
-        sample = sam_buffer[src_idx];
-        /* Convert 8-bit unsigned [0,255] → 12-bit unsigned centred at 2048 */
-        dac_val = (uint16_t)sample * 16;
-        dst[i] = dac_val;
-        sam_playback_frac += RESAMPLE_STEP;
+        rs.resample_err -= 22050;
+
+        /* Convert 8-bit [0,255] -> 12-bit [0,4080] */
+        dst[i] = (uint16_t)rs.last_sample << 4;
     }
 
+done:
     VOICE_BUF_ForwardWriteIndex();
     gVoiceBufLen++;
 
@@ -2855,5 +2920,5 @@ bool SAM_IsSpeaking(void)
 void SAM_Stop(void)
 {
     sam_speaking = false;
-    sam_playback_frac = sam_total_samples << 16;
+    rs.state = 4;
 }

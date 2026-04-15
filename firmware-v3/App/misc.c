@@ -116,6 +116,11 @@ uint8_t           gMorseSpeedWpm = 20;
 uint8_t           gAccessibilityMode = ACCESS_MODE_MORSE;
 #endif
 
+#ifdef ENABLE_SAM_TTS
+uint8_t           gSamSpeedSetting = 5;
+uint8_t           gSamPitchSetting = 5;
+#endif
+
 enum BacklightOnRxTx_t gSetting_backlight_on_tx_rx;
 
 #ifdef ENABLE_AM_FIX

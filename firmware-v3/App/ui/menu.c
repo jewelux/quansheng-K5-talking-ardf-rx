@@ -42,171 +42,184 @@
 #include "ui.h"
 
 
+/* Helper macros to initialise t_menu_item with/without spell_out */
+#ifdef ENABLE_SAM_TTS
+#define MI(name, id, spell) {name, id, spell}
+#else
+#define MI(name, id, spell) {name, id}
+#endif
+
 const t_menu_item MenuList[] =
 {
-//   text,          menu ID
-    {"Step",        MENU_STEP          },
-    {"Power",       MENU_TXP           }, // was "TXP"
-    {"RxDCS",       MENU_R_DCS         }, // was "R_DCS"
-    {"RxCTCS",      MENU_R_CTCS        }, // was "R_CTCS"
-    {"TxDCS",       MENU_T_DCS         }, // was "T_DCS"
-    {"TxCTCS",      MENU_T_CTCS        }, // was "T_CTCS"
-    {"TxODir",      MENU_SFT_D         }, // was "SFT_D"
-    {"TxOffs",      MENU_OFFSET        }, // was "OFFSET"
-    {"W/N",         MENU_W_N           },
+//   text,          menu ID,              spell  (1=spell letters, 0=read as word)
+    MI("Step",      MENU_STEP,            0),
+    MI("Power",     MENU_TXP,             0),    // was "TXP"
+    MI("RxDCS",     MENU_R_DCS,           1),    // was "R_DCS" — abbreviation
+    MI("RxCTCS",    MENU_R_CTCS,          1),    // was "R_CTCS" — abbreviation
+    MI("TxDCS",     MENU_T_DCS,           1),    // was "T_DCS" — abbreviation
+    MI("TxCTCS",    MENU_T_CTCS,          1),    // was "T_CTCS" — abbreviation
+    MI("TxODir",    MENU_SFT_D,           1),    // was "SFT_D"
+    MI("TxOffs",    MENU_OFFSET,          1),    // was "OFFSET"
+    MI("W/N",       MENU_W_N,             1),
 
 #ifdef ENABLE_ARDF
-    {"ARDF",        MENU_ARDF          },
-    {"NumFox",      MENU_ARDF_NUMFOXES },
-    {"FoxDur",      MENU_ARDF_FOXDURATION},
-    {"ActFox",      MENU_ARDF_SETFOX   },
-    {"TiRst",       MENU_ARDF_TIME_RESET },
-    {"GainRe",      MENU_ARDF_GAIN_REMEMBER },
-    {"EndSig",      MENU_ARDF_CYCLE_END_BEEP },
-    {"ClkCor",      MENU_ARDF_CLOCK_CORR },
+    MI("ARDF",      MENU_ARDF,            1),    // abbreviation
+    MI("NumFox",    MENU_ARDF_NUMFOXES,   0),
+    MI("FoxDur",    MENU_ARDF_FOXDURATION,0),
+    MI("ActFox",    MENU_ARDF_SETFOX,     0),
+    MI("TiRst",     MENU_ARDF_TIME_RESET, 1),
+    MI("GainRe",    MENU_ARDF_GAIN_REMEMBER, 1),
+    MI("EndSig",    MENU_ARDF_CYCLE_END_BEEP, 1),
+    MI("ClkCor",    MENU_ARDF_CLOCK_CORR, 1),
 #endif
 
 #ifndef ENABLE_FEAT_F4HWN
-    {"Scramb",      MENU_SCR           }, // was "SCR"
+    MI("Scramb",    MENU_SCR,             0),    // was "SCR"
 #endif
-    {"BusyCL",      MENU_BCL           }, // was "BCL"
-    {"Compnd",      MENU_COMPAND       },
-    {"Mode",        MENU_AM            }, // was "AM"
+    MI("BusyCL",    MENU_BCL,             1),    // was "BCL"
+    MI("Compnd",    MENU_COMPAND,         0),
+    MI("Mode",      MENU_AM,              0),    // was "AM"
 #ifdef ENABLE_FEAT_F4HWN
-    {"TXLock",      MENU_TX_LOCK       }, 
+    MI("TXLock",    MENU_TX_LOCK,         1), 
 #endif
-    {"ChList",      MENU_LIST_CH       },
-    {"ChSave",      MENU_MEM_CH        }, // was "MEM-CH"
-    {"ChDele",      MENU_DEL_CH        }, // was "DEL-CH"
-    {"ChName",      MENU_MEM_NAME      },
+    MI("ChList",    MENU_LIST_CH,         1),
+    MI("ChSave",    MENU_MEM_CH,          1),    // was "MEM-CH"
+    MI("ChDele",    MENU_DEL_CH,          1),    // was "DEL-CH"
+    MI("ChName",    MENU_MEM_NAME,        1),
 
-    {"ScList",       MENU_S_LIST       },
-    {"ScPri",        MENU_S_PRI        },
-    {"PriCh1",       MENU_S_PRI_CH_1   },
-    {"PriCh2",       MENU_S_PRI_CH_2   },
-    {"ScnRev",      MENU_SC_REV        },
+    MI("ScList",    MENU_S_LIST,          1),
+    MI("ScPri",     MENU_S_PRI,           1),
+    MI("PriCh1",    MENU_S_PRI_CH_1,      1),
+    MI("PriCh2",    MENU_S_PRI_CH_2,      1),
+    MI("ScnRev",    MENU_SC_REV,          1),
 #ifndef ENABLE_FEAT_F4HWN
     #ifdef ENABLE_NOAA
-        {"NOAA-S",      MENU_NOAA_S    },
+        MI("NOAA-S",    MENU_NOAA_S,      1),
     #endif
 #endif
-    {"F1Shrt",      MENU_F1SHRT        },
-    {"F1Long",      MENU_F1LONG        },
-    {"F2Shrt",      MENU_F2SHRT        },
-    {"F2Long",      MENU_F2LONG        },
-    {"M Long",      MENU_MLONG         },
+    MI("F1Shrt",    MENU_F1SHRT,          1),
+    MI("F1Long",    MENU_F1LONG,          1),
+    MI("F2Shrt",    MENU_F2SHRT,          1),
+    MI("F2Long",    MENU_F2LONG,          1),
+    MI("M Long",    MENU_MLONG,           0),
 
-    {"KeyLck",      MENU_AUTOLK        }, // was "AUTOLk"
-    {"TxTOut",      MENU_TOT           }, // was "TOT"
-    {"BatSav",      MENU_SAVE          }, // was "SAVE"
-    {"BatTxt",      MENU_BAT_TXT       },
-    {"Mic",         MENU_MIC           },
-    {"MicBar",      MENU_MIC_BAR       },
-    {"ChDisp",      MENU_MDF           }, // was "MDF"
-    {"POnMsg",      MENU_PONMSG        },
-    {"BLTime",      MENU_ABR           }, // was "ABR"
-    {"BLMin",       MENU_ABR_MIN       },
-    {"BLMax",       MENU_ABR_MAX       },
-    {"BLTxRx",      MENU_ABR_ON_TX_RX  },
-    {"Beep",        MENU_BEEP          },
+    MI("KeyLck",    MENU_AUTOLK,          1),    // was "AUTOLk"
+    MI("TxTOut",    MENU_TOT,             1),    // was "TOT"
+    MI("BatSav",    MENU_SAVE,            1),    // was "SAVE"
+    MI("BatTxt",    MENU_BAT_TXT,         1),
+    MI("Mic",       MENU_MIC,             0),
+    MI("MicBar",    MENU_MIC_BAR,         1),
+    MI("ChDisp",    MENU_MDF,             1),    // was "MDF"
+    MI("POnMsg",    MENU_PONMSG,          1),
+    MI("BLTime",    MENU_ABR,             1),    // was "ABR"
+    MI("BLMin",     MENU_ABR_MIN,         1),
+    MI("BLMax",     MENU_ABR_MAX,         1),
+    MI("BLTxRx",    MENU_ABR_ON_TX_RX,    1),
+    MI("Beep",      MENU_BEEP,            0),
 #ifdef ENABLE_VOICE
-    {"Voice",       MENU_VOICE         },
+    MI("Voice",     MENU_VOICE,           0),
 #endif
 #ifdef ENABLE_MORSE
-    {"MrsSpd",      MENU_MORSE_SPEED   },
+    MI("MrsSpd",    MENU_MORSE_SPEED,     1),
 #endif
-    {"Roger",       MENU_ROGER         },
-    {"STE",         MENU_STE           },
-    {"RP STE",      MENU_RP_STE        },
-    {"1 Call",      MENU_1_CALL        },
+    MI("Roger",     MENU_ROGER,           0),
+    MI("STE",       MENU_STE,             1),
+    MI("RP STE",    MENU_RP_STE,          1),
+    MI("1 Call",    MENU_1_CALL,          0),
 #ifdef ENABLE_ALARM
-    {"AlarmT",      MENU_AL_MOD        },
+    MI("AlarmT",    MENU_AL_MOD,          0),
 #endif
 #ifdef ENABLE_DTMF_CALLING
-    {"ANI ID",      MENU_ANI_ID        },
+    MI("ANI ID",    MENU_ANI_ID,          1),
 #endif
-    {"UPCode",      MENU_UPCODE        },
-    {"DWCode",      MENU_DWCODE        },
-    {"PTT ID",      MENU_PTT_ID        },
-    {"D ST",        MENU_D_ST          },
+    MI("UPCode",    MENU_UPCODE,          1),
+    MI("DWCode",    MENU_DWCODE,          1),
+    MI("PTT ID",    MENU_PTT_ID,          1),
+    MI("D ST",      MENU_D_ST,            1),
 #ifdef ENABLE_DTMF_CALLING
-    {"D Resp",      MENU_D_RSP         },
-    {"D Hold",      MENU_D_HOLD        },
+    MI("D Resp",    MENU_D_RSP,           0),
+    MI("D Hold",    MENU_D_HOLD,          0),
 #endif
-    {"D Prel",      MENU_D_PRE         },
+    MI("D Prel",    MENU_D_PRE,           0),
 #ifdef ENABLE_DTMF_CALLING
-    {"D Decd",      MENU_D_DCD         },
-    {"D List",      MENU_D_LIST        },
+    MI("D Decd",    MENU_D_DCD,           0),
+    MI("D List",    MENU_D_LIST,          0),
 #endif
-    {"D Live",      MENU_D_LIVE_DEC    }, // live DTMF decoder
+    MI("D Live",    MENU_D_LIVE_DEC,      0),    // live DTMF decoder
 #ifndef ENABLE_FEAT_F4HWN
     #ifdef ENABLE_AM_FIX
-        {"AM Fix",      MENU_AM_FIX        },
+        MI("AM Fix",    MENU_AM_FIX,      0),
     #endif
 #endif
-    {"VOX",         MENU_VOX           },
+    MI("VOX",       MENU_VOX,             1),
 #ifdef ENABLE_FEAT_F4HWN
-    {"SysInf",      MENU_VOL           }, // was "VOL"
+    MI("SysInf",    MENU_VOL,             0),    // was "VOL"
 #else
-    {"BatVol",      MENU_VOL           }, // was "VOL"
+    MI("BatVol",    MENU_VOL,             0),    // was "VOL"
 #endif
-    {"RxMode",      MENU_TDR           },
-    {"Sql",         MENU_SQL           },
+    MI("RxMode",    MENU_TDR,             0),
+    MI("Sql",       MENU_SQL,             0),
 #ifdef ENABLE_FEAT_F4HWN
-    {"SetPwr",      MENU_SET_PWR       },
-    {"SetPTT",      MENU_SET_PTT       },
-    {"SetTOT",      MENU_SET_TOT       },
-    {"SetEOT",      MENU_SET_EOT       },
-    {"SetCtr",      MENU_SET_CTR       },
-    {"SetInv",      MENU_SET_INV       },
-    {"SetLck",      MENU_SET_LCK       },
-    {"SetMet",      MENU_SET_MET       },
-    {"SetGUI",      MENU_SET_GUI       },
+    MI("SetPwr",    MENU_SET_PWR,         1),
+    MI("SetPTT",    MENU_SET_PTT,         1),
+    MI("SetTOT",    MENU_SET_TOT,         1),
+    MI("SetEOT",    MENU_SET_EOT,         1),
+    MI("SetCtr",    MENU_SET_CTR,         1),
+    MI("SetInv",    MENU_SET_INV,         1),
+    MI("SetLck",    MENU_SET_LCK,         1),
+    MI("SetMet",    MENU_SET_MET,         1),
+    MI("SetGUI",    MENU_SET_GUI,         1),
 #ifdef ENABLE_FEAT_F4HWN_AUDIO    
-    {"SetRxA",      MENU_SET_AUD       },
+    MI("SetRxA",    MENU_SET_AUD,         1),
 #endif
-    {"SetTmr",      MENU_SET_TMR       },
+    MI("SetTmr",    MENU_SET_TMR,         1),
 #ifdef ENABLE_FEAT_F4HWN_SLEEP
-    {"SetOff",       MENU_SET_OFF      },
+    MI("SetOff",    MENU_SET_OFF,         1),
 #endif
 #ifdef ENABLE_FEAT_F4HWN_NARROWER
-    {"SetNFM",      MENU_SET_NFM       },
+    MI("SetNFM",    MENU_SET_NFM,         1),
 #endif
 #ifdef ENABLE_FEAT_F4HWN_VOL
-    {"SetVol",      MENU_SET_VOL       },
+    MI("SetVol",    MENU_SET_VOL,         1),
 #endif
 #ifdef ENABLE_FEAT_F4HWN_RESCUE_OPS
-    {"SetKey",      MENU_SET_KEY       },
+    MI("SetKey",    MENU_SET_KEY,         1),
 #endif
 #ifdef ENABLE_NOAA
-    {"SetNWR",      MENU_NOAA_S    },
+    MI("SetNWR",    MENU_NOAA_S,          1),
 #endif
 #endif
 #if defined(ENABLE_VOICE_PROMPTS) || defined(ENABLE_SAM_TTS)
-    {"Access",      MENU_ACCESS        },
+    MI("Access",    MENU_ACCESS,          0),
+#endif
+#ifdef ENABLE_SAM_TTS
+    MI("SamSpd",    MENU_SAM_SPEED,       1),
+    MI("SamPit",    MENU_SAM_PITCH,       1),
 #endif
     // hidden menu items from here on
     // enabled if pressing both the PTT and upper side button at power-on
-    {"F Lock",      MENU_F_LOCK        },
+    MI("F Lock",    MENU_F_LOCK,          0),
 #ifndef ENABLE_FEAT_F4HWN
-    {"Tx 200",      MENU_200TX         }, // was "200TX"
-    {"Tx 350",      MENU_350TX         }, // was "350TX"
-    {"Tx 500",      MENU_500TX         }, // was "500TX"
+    MI("Tx 200",    MENU_200TX,           0),    // was "200TX"
+    MI("Tx 350",    MENU_350TX,           0),    // was "350TX"
+    MI("Tx 500",    MENU_500TX,           0),    // was "500TX"
 #endif
-    {"350 En",      MENU_350EN         }, // was "350EN"
+    MI("350 En",    MENU_350EN,           0),    // was "350EN"
 #ifndef ENABLE_FEAT_F4HWN
-    {"ScraEn",      MENU_SCREN         }, // was "SCREN"
+    MI("ScraEn",    MENU_SCREN,           0),    // was "SCREN"
 #endif
 #ifdef ENABLE_F_CAL_MENU
-    {"FrCali",      MENU_F_CALI        }, // reference xtal calibration
+    MI("FrCali",    MENU_F_CALI,          0),    // reference xtal calibration
 #endif
-    {"BatCal",      MENU_BATCAL        }, // battery voltage calibration
-    {"BatTyp",      MENU_BATTYP        }, // battery type 1600/2200mAh
-    {"SetNav",      MENU_SET_NAV       }, // set navigation (LEFT / RIGHT or UP / DOWN)
-    {"Reset",       MENU_RESET         }, // might be better to move this to the hidden menu items ?
+    MI("BatCal",    MENU_BATCAL,          0),    // battery voltage calibration
+    MI("BatTyp",    MENU_BATTYP,          0),    // battery type 1600/2200mAh
+    MI("SetNav",    MENU_SET_NAV,         1),    // set navigation (LEFT / RIGHT or UP / DOWN)
+    MI("Reset",     MENU_RESET,           0),    // might be better to move this to the hidden menu items ?
 
-    {"",                              0xff               }  // end of list - DO NOT delete or move this this
+    MI("",          0xff,                 0)     // end of list - DO NOT delete or move this this
 };
+
+#undef MI
 
 const uint8_t FIRST_HIDDEN_MENU_ITEM = MENU_F_LOCK;
 
@@ -1186,6 +1199,15 @@ void UI_DisplayMenu(void)
 #if defined(ENABLE_VOICE_PROMPTS) || defined(ENABLE_SAM_TTS)
         case MENU_ACCESS:
             strcpy(String, gSubMenu_ACCESS[gSubMenuSelection]);
+            break;
+#endif
+
+#ifdef ENABLE_SAM_TTS
+        case MENU_SAM_SPEED:
+            sprintf(String, "%u", (unsigned)gSubMenuSelection);
+            break;
+        case MENU_SAM_PITCH:
+            sprintf(String, "%u", (unsigned)gSubMenuSelection);
             break;
 #endif
 

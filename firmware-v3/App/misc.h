@@ -188,6 +188,11 @@ extern uint8_t               gAccessibilityMode;
 #endif
 #endif
 
+#ifdef ENABLE_SAM_TTS
+extern uint8_t               gSamSpeedSetting;  // 1-9, default 5
+extern uint8_t               gSamPitchSetting;  // 1-9, default 5
+#endif
+
 extern enum BacklightOnRxTx_t gSetting_backlight_on_tx_rx;
 
 #ifdef ENABLE_AM_FIX

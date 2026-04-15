@@ -46,6 +46,10 @@
 #include "app/ardf.h"
 #endif
 
+#ifdef ENABLE_SAM_TTS
+#include "driver/sam/sam.h"
+#endif
+
 
 uint8_t gUnlockAllTxConfCnt;
 
@@ -488,6 +492,15 @@ static void MENU_GetSubMenuValueText(char *buf, size_t buf_size)
             break;
 #endif
 
+#ifdef ENABLE_SAM_TTS
+        case MENU_SAM_SPEED:
+            snprintf(buf, buf_size, "Speed %u", (unsigned)sel);
+            break;
+        case MENU_SAM_PITCH:
+            snprintf(buf, buf_size, "Pitch %u", (unsigned)sel);
+            break;
+#endif
+
 #ifdef ENABLE_ARDF
         case MENU_ARDF:
             snprintf(buf, buf_size, "%s", gSubMenu_ARDF[sel]);
@@ -653,10 +666,31 @@ void MENU_PlayMorseForCurrentItem(void)
     if (gAccessibilityMode == ACCESS_MODE_SAM)
     {
         if (gIsInSubMenu)
+        {
             MENU_GetSubMenuValueText(buf, sizeof(buf));
+        }
         else
-            strncpy(buf, MenuList[gMenuCursor].name, sizeof(buf) - 1);
-        buf[sizeof(buf) - 1] = '\0';
+        {
+            const char *name = MenuList[gMenuCursor].name;
+            if (MenuList[gMenuCursor].spell_out)
+            {
+                /* Spell out abbreviation letter-by-letter by inserting
+                 * spaces between each character for SAM */
+                int j = 0;
+                for (int k = 0; name[k] && j < (int)sizeof(buf) - 2; k++)
+                {
+                    if (j > 0 && j < (int)sizeof(buf) - 2)
+                        buf[j++] = ' ';
+                    buf[j++] = name[k];
+                }
+                buf[j] = '\0';
+            }
+            else
+            {
+                strncpy(buf, name, sizeof(buf) - 1);
+                buf[sizeof(buf) - 1] = '\0';
+            }
+        }
         AUDIO_PlaySAMText(buf);
         return;
     }
@@ -948,6 +982,17 @@ int MENU_GetLimits(uint8_t menu_id, int32_t *pMin, int32_t *pMax)
         #if defined(ENABLE_VOICE_PROMPTS) || defined(ENABLE_SAM_TTS)
             case MENU_ACCESS:
                 *pMax = ARRAY_SIZE(gSubMenu_ACCESS) - 1;
+                break;
+        #endif
+
+        #ifdef ENABLE_SAM_TTS
+            case MENU_SAM_SPEED:
+                *pMin = 1;
+                *pMax = 9;
+                break;
+            case MENU_SAM_PITCH:
+                *pMin = 1;
+                *pMax = 9;
                 break;
         #endif
 
@@ -1607,6 +1652,19 @@ void MENU_AcceptSetting(void)
                 break;
         #endif
 
+        #ifdef ENABLE_SAM_TTS
+            case MENU_SAM_SPEED:
+                gSamSpeedSetting = gSubMenuSelection;
+                SAM_SetSpeed(gSamSpeedSetting);
+                SETTINGS_SaveAccessibilityMode();
+                break;
+            case MENU_SAM_PITCH:
+                gSamPitchSetting = gSubMenuSelection;
+                SAM_SetPitch(gSamPitchSetting);
+                SETTINGS_SaveAccessibilityMode();
+                break;
+        #endif
+
         case MENU_SC_REV:
             gEeprom.SCAN_RESUME_MODE = gSubMenuSelection;
             break;
@@ -2170,6 +2228,15 @@ void MENU_ShowCurrentSetting(void)
 #if defined(ENABLE_VOICE_PROMPTS) || defined(ENABLE_SAM_TTS)
         case MENU_ACCESS:
             gSubMenuSelection = gAccessibilityMode;
+            break;
+#endif
+
+#ifdef ENABLE_SAM_TTS
+        case MENU_SAM_SPEED:
+            gSubMenuSelection = gSamSpeedSetting;
+            break;
+        case MENU_SAM_PITCH:
+            gSubMenuSelection = gSamPitchSetting;
             break;
 #endif
 

@@ -319,6 +319,10 @@ static void processFKeyFunction(const KEY_Code_t Key, const bool beep)
                         gTxVfo->freq_config_RX.Frequency = frequency;
                         BK4819_SetFrequency(frequency);
                         gRequestSaveChannel = 1;
+#ifdef ENABLE_SAM_TTS
+                        if (gAccessibilityMode == ACCESS_MODE_SAM)
+                            AUDIO_SamSayFrequency(frequency);
+#endif
                         return;
                     }
 
@@ -611,6 +615,10 @@ static void MAIN_Key_DIGITS(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 
 #ifdef ENABLE_VOICE
             gAnotherVoiceID = (VOICE_ID_t)Key;
+#endif
+#ifdef ENABLE_SAM_TTS
+            if (gAccessibilityMode == ACCESS_MODE_SAM)
+                AUDIO_SamSayDigit(Key);
 #endif
             uint8_t totalDigits = 6; // by default frequency is lower than 1 GHz
             if (gTxVfo->pRX->Frequency >= _1GHz_in_KHz) {

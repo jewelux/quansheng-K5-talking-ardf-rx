@@ -26,6 +26,9 @@
 typedef struct {
     const char  name[7];    // menu display area only has room for 6 characters
     uint8_t     menu_id;
+#ifdef ENABLE_SAM_TTS
+    uint8_t     spell_out;  // 1 = SAM spells letter-by-letter, 0 = read as word
+#endif
 } t_menu_item;
 
 enum
@@ -172,6 +175,10 @@ enum
 #endif
 #if defined(ENABLE_VOICE_PROMPTS) || defined(ENABLE_SAM_TTS)
     MENU_ACCESS,
+#endif
+#ifdef ENABLE_SAM_TTS
+    MENU_SAM_SPEED,
+    MENU_SAM_PITCH,
 #endif
     MENU_BATCAL,  // battery voltage calibration
     MENU_F1SHRT,

@@ -219,6 +219,8 @@ void AUDIO_PlayBeep(BEEP_Type_t Beep);
 
 #ifdef ENABLE_SAM_TTS
     void    AUDIO_PlaySAMText(const char *text);
+    void    AUDIO_SamSayFrequency(uint32_t frequency);
+    void    AUDIO_SamSayDigit(uint8_t digit);
 #endif
 
 #endif

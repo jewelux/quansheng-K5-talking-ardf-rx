@@ -244,15 +244,25 @@
         },
         {
             "name": "ARDF-SAM",
-            "inherits": "ARDF-Voice",
+            "inherits": "ARDF",
             "cacheVariables": {
                 "ENABLE_SAM_TTS": true,
+                "ENABLE_MORSE": false,
                 "ENABLE_VOICE": false,
                 "ENABLE_VOICE_PROMPTS": false,
+                "ENABLE_FMRADIO": false,
+                "ENABLE_SPECTRUM": false,
+                "ENABLE_VOX": false,
+                "ENABLE_FEAT_F4HWN_GAME": false,
+                "ENABLE_FEAT_F4HWN_SCREENSHOT": false,
+                "ENABLE_FEAT_F4HWN_SPECTRUM": false,
+                "ENABLE_FEAT_F4HWN_PMR": false,
+                "ENABLE_FEAT_F4HWN_GMRS_FRS_MURS": false,
+                "ENABLE_FEAT_F4HWN_RESCUE_OPS": false,
                 "EDITION_STRING": "ARDF-SAM",
                 "TARGET": "f4hwn.ARDF_SAM_K5v3_K1",
                 "AUTHOR_STRING_2": "DO9RE",
-                "VERSION_STRING_2": "v0.1"
+                "VERSION_STRING_2": "v0.2"
             }
         }
     ],

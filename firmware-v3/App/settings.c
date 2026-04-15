@@ -32,6 +32,10 @@
 #include "app/ardf.h"
 #endif
 
+#ifdef ENABLE_SAM_TTS
+#include "driver/sam/sam.h"
+#endif
+
 
 EEPROM_Config_t gEeprom = { 0 };
 
@@ -467,6 +471,18 @@ gEeprom.FreqChannel[1]   = IS_FREQ_CHANNEL(Data16[5]) ? Data16[5] : (FREQ_CHANNE
             gAccessibilityMode = AccData[0] & 0x03;
         else
             gAccessibilityMode = ACCESS_MODE_MORSE;  // default: Morse
+#ifdef ENABLE_SAM_TTS
+        if (AccData[1] != 0xFF && AccData[1] >= 1 && AccData[1] <= 9)
+            gSamSpeedSetting = AccData[1];
+        else
+            gSamSpeedSetting = 5;
+        if (AccData[2] != 0xFF && AccData[2] >= 1 && AccData[2] <= 9)
+            gSamPitchSetting = AccData[2];
+        else
+            gSamPitchSetting = 5;
+        SAM_SetSpeed(gSamSpeedSetting);
+        SAM_SetPitch(gSamPitchSetting);
+#endif
     }
 #endif
 
@@ -866,6 +882,10 @@ void SETTINGS_SaveAccessibilityMode(void)
     uint8_t AccData[4];
     memset(AccData, 0xFF, sizeof(AccData));
     AccData[0] = gAccessibilityMode & 0x03;
+#ifdef ENABLE_SAM_TTS
+    AccData[1] = gSamSpeedSetting;
+    AccData[2] = gSamPitchSetting;
+#endif
     PY25Q16_WriteBuffer(0x00D000 + 0x0C, AccData, sizeof(AccData), true);
 }
 #endif

@@ -247,6 +247,8 @@
             "inherits": "ARDF-Voice",
             "cacheVariables": {
                 "ENABLE_SAM_TTS": true,
+                "ENABLE_VOICE": false,
+                "ENABLE_VOICE_PROMPTS": false,
                 "EDITION_STRING": "ARDF-SAM",
                 "TARGET": "f4hwn.ARDF_SAM_K5v3_K1",
                 "AUTHOR_STRING_2": "DO9RE",

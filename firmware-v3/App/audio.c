@@ -218,12 +218,18 @@ void AUDIO_PlayBeep(BEEP_Type_t Beep)
 
 }
 
-#ifdef ENABLE_VOICE
+/* Voice buffer infrastructure: needed by both pre-produced voice prompts
+   (ENABLE_VOICE) and SAM TTS (ENABLE_SAM_TTS) for DAC/DMA playback. */
+#if defined(ENABLE_VOICE) || defined(ENABLE_SAM_TTS)
 
 uint16_t gVoiceBuf[VOICE_BUF_CAP][VOICE_BUF_LEN];
 uint8_t gVoiceBufReadIndex = 0;
 uint8_t gVoiceBufWriteIndex = 0;
 uint8_t gVoiceBufLen = 0;
+
+#endif /* ENABLE_VOICE || ENABLE_SAM_TTS */
+
+#ifdef ENABLE_VOICE
 
 VOICE_ID_t        gVoiceID[8];
 uint8_t           gVoiceReadIndex;

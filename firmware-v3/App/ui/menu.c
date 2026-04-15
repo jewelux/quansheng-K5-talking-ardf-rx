@@ -182,7 +182,7 @@ const t_menu_item MenuList[] =
     {"SetNWR",      MENU_NOAA_S    },
 #endif
 #endif
-#ifdef ENABLE_VOICE_PROMPTS
+#if defined(ENABLE_VOICE_PROMPTS) || defined(ENABLE_SAM_TTS)
     {"Access",      MENU_ACCESS        },
 #endif
     // hidden menu items from here on
@@ -227,11 +227,13 @@ const char gSubMenu_ARDF_Remember_Gain[][6] =
 };
 #endif
 
-#ifdef ENABLE_VOICE_PROMPTS
+#if defined(ENABLE_VOICE_PROMPTS) || defined(ENABLE_SAM_TTS)
 const char gSubMenu_ACCESS[ACCESS_MODE_COUNT][7] =
 {
     "Morse",
+#ifdef ENABLE_VOICE_PROMPTS
     "Voice",
+#endif
 #ifdef ENABLE_SAM_TTS
     "SAM",
 #endif
@@ -1181,7 +1183,7 @@ void UI_DisplayMenu(void)
 #endif
             break;
 
-#ifdef ENABLE_VOICE_PROMPTS
+#if defined(ENABLE_VOICE_PROMPTS) || defined(ENABLE_SAM_TTS)
         case MENU_ACCESS:
             strcpy(String, gSubMenu_ACCESS[gSubMenuSelection]);
             break;

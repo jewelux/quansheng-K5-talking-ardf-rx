@@ -324,7 +324,7 @@ void     SETTINGS_FactoryReset(bool bIsAll);
     void SETTINGS_SaveARDF(void);
 #endif
 
-#ifdef ENABLE_VOICE_PROMPTS
+#if defined(ENABLE_VOICE_PROMPTS) || defined(ENABLE_SAM_TTS)
     void SETTINGS_SaveAccessibilityMode(void);
 #endif
 

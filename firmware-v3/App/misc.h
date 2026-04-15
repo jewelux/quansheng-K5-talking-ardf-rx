@@ -174,13 +174,17 @@ extern bool                  gSetting_ARDFEnable;
 extern uint8_t               gMorseSpeedWpm;
 #endif
 
-#ifdef ENABLE_VOICE_PROMPTS
-// Accessibility mode: 0 = Morse, 1 = Voice Prompts, 2 = SAM TTS
+#if defined(ENABLE_VOICE_PROMPTS) || defined(ENABLE_SAM_TTS)
+// Accessibility mode: 0 = Morse, 1 = Voice Prompts (if available), next = SAM TTS (if available)
 extern uint8_t               gAccessibilityMode;
 #define ACCESS_MODE_MORSE  0
+#ifdef ENABLE_VOICE_PROMPTS
 #define ACCESS_MODE_VOICE  1
 #ifdef ENABLE_SAM_TTS
 #define ACCESS_MODE_SAM    2
+#endif
+#elif defined(ENABLE_SAM_TTS)
+#define ACCESS_MODE_SAM    1
 #endif
 #endif
 

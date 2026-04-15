@@ -482,7 +482,7 @@ static void MENU_GetSubMenuValueText(char *buf, size_t buf_size)
             break;
 #endif
 
-#ifdef ENABLE_VOICE_PROMPTS
+#if defined(ENABLE_VOICE_PROMPTS) || defined(ENABLE_SAM_TTS)
         case MENU_ACCESS:
             snprintf(buf, buf_size, "%s", gSubMenu_ACCESS[sel]);
             break;
@@ -647,6 +647,7 @@ void MENU_PlayMorseForCurrentItem(void)
         }
         // Fallback to Morse if no voice ID found
     }
+#endif
 
 #ifdef ENABLE_SAM_TTS
     if (gAccessibilityMode == ACCESS_MODE_SAM)
@@ -659,7 +660,6 @@ void MENU_PlayMorseForCurrentItem(void)
         AUDIO_PlaySAMText(buf);
         return;
     }
-#endif
 #endif
 
     // ---------- Morse playback with interrupt-and-restart ----------
@@ -945,7 +945,7 @@ int MENU_GetLimits(uint8_t menu_id, int32_t *pMin, int32_t *pMax)
                 break;
         #endif
 
-        #ifdef ENABLE_VOICE_PROMPTS
+        #if defined(ENABLE_VOICE_PROMPTS) || defined(ENABLE_SAM_TTS)
             case MENU_ACCESS:
                 *pMax = ARRAY_SIZE(gSubMenu_ACCESS) - 1;
                 break;
@@ -1600,7 +1600,7 @@ void MENU_AcceptSetting(void)
                 break;
         #endif
 
-        #ifdef ENABLE_VOICE_PROMPTS
+        #if defined(ENABLE_VOICE_PROMPTS) || defined(ENABLE_SAM_TTS)
             case MENU_ACCESS:
                 gAccessibilityMode = gSubMenuSelection;
                 SETTINGS_SaveAccessibilityMode();
@@ -2167,7 +2167,7 @@ void MENU_ShowCurrentSetting(void)
             break;
 #endif
 
-#ifdef ENABLE_VOICE_PROMPTS
+#if defined(ENABLE_VOICE_PROMPTS) || defined(ENABLE_SAM_TTS)
         case MENU_ACCESS:
             gSubMenuSelection = gAccessibilityMode;
             break;

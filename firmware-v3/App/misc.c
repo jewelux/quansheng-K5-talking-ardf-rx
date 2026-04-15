@@ -112,7 +112,7 @@ bool              gSetting_ARDFEnable = false;
 uint8_t           gMorseSpeedWpm = 20;
 #endif
 
-#ifdef ENABLE_VOICE_PROMPTS
+#if defined(ENABLE_VOICE_PROMPTS) || defined(ENABLE_SAM_TTS)
 uint8_t           gAccessibilityMode = ACCESS_MODE_MORSE;
 #endif
 

@@ -458,7 +458,7 @@ gEeprom.FreqChannel[1]   = IS_FREQ_CHANNEL(Data16[5]) ? Data16[5] : (FREQ_CHANNE
 
 #endif
 
-#ifdef ENABLE_VOICE_PROMPTS
+#if defined(ENABLE_VOICE_PROMPTS) || defined(ENABLE_SAM_TTS)
     // Read accessibility mode from ARDF block at offset 0x0C
     {
         uint8_t AccData[4];
@@ -860,7 +860,7 @@ void SETTINGS_SaveARDF(void)
 
 #endif
 
-#ifdef ENABLE_VOICE_PROMPTS
+#if defined(ENABLE_VOICE_PROMPTS) || defined(ENABLE_SAM_TTS)
 void SETTINGS_SaveAccessibilityMode(void)
 {
     uint8_t AccData[4];

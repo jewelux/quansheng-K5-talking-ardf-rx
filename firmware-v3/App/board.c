@@ -182,7 +182,7 @@ void BOARD_Init(void)
     BOARD_GPIO_Init();
     BACKLIGHT_InitHardware();
     BOARD_ADC_Init();
-#ifdef ENABLE_VOICE
+#if defined(ENABLE_VOICE) || defined(ENABLE_SAM_TTS)
     VOICE_Init();
 #endif
 #ifdef ENABLE_SAM_TTS

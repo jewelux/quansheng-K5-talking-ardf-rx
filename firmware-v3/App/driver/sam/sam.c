@@ -23,8 +23,8 @@
  * ===================================================================== */
 
 /* Maximum number of render frames (limits utterance length).
- * 128 frames × speed-dependent duration ≈ several seconds of speech. */
-#define MAX_FRAMES   128
+ * Original SAM uses 256.  Reduced values truncate longer utterances. */
+#define MAX_FRAMES   256
 
 /* Maximum phoneme buffer size for parser */
 #define MAX_PHON     128
@@ -2758,7 +2758,13 @@ static int GenerateOneSample(void)
             rs.speedcounter--;
             if (rs.speedcounter == 0) {
                 rs.Y++;
-                rs.mem48--;
+                /* Note: do NOT decrement rs.mem48 here.  rs.mem48 holds
+                   the total frame count (constant).  The original SAM
+                   uses a decrementing counter with an == 0 exit test,
+                   but this port uses an ascending Y with a >= mem48
+                   bounds check.  Decrementing mem48 while also
+                   incrementing Y causes early termination at half the
+                   expected frames. */
                 rs.speedcounter = sam_speed;
             }
 

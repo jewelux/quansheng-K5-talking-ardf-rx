@@ -126,9 +126,14 @@ enable_feature(ENABLE_AIRCOPY
     ui/aircopy.c
 )
 enable_feature(ENABLE_NOAA)
-enable_feature(ENABLE_VOICE 
+enable_feature(ENABLE_VOICE
     driver/voice.c
 )
+# When SAM TTS is enabled without ENABLE_VOICE, we still need the voice
+# driver (DAC/DMA) for audio output.
+if(ENABLE_SAM_TTS AND NOT ENABLE_VOICE)
+    target_sources(App INTERFACE ${CMAKE_CURRENT_LIST_DIR}/driver/voice.c)
+endif()
 enable_feature(ENABLE_VOX)
 enable_feature(ENABLE_ALARM)
 enable_feature(ENABLE_TX1750)

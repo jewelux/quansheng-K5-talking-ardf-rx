@@ -170,7 +170,7 @@ enum
         MENU_SET_AUD,
     #endif
 #endif
-#ifdef ENABLE_VOICE_PROMPTS
+#if defined(ENABLE_VOICE_PROMPTS) || defined(ENABLE_SAM_TTS)
     MENU_ACCESS,
 #endif
     MENU_BATCAL,  // battery voltage calibration
@@ -239,8 +239,8 @@ extern const char        gSubMenu_RX_TX[4][6];
 extern const char        gSubMenu_BAT_TXT[3][8];
 extern const char        gSubMenu_BATTYP[5][12];
 
-#ifdef ENABLE_VOICE_PROMPTS
-    #ifdef ENABLE_SAM_TTS
+#if defined(ENABLE_VOICE_PROMPTS) || defined(ENABLE_SAM_TTS)
+    #if defined(ENABLE_VOICE_PROMPTS) && defined(ENABLE_SAM_TTS)
         #define ACCESS_MODE_COUNT 3
     #else
         #define ACCESS_MODE_COUNT 2

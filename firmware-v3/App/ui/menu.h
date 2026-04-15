@@ -173,7 +173,7 @@ enum
         MENU_SET_AUD,
     #endif
 #endif
-#if defined(ENABLE_VOICE_PROMPTS) || defined(ENABLE_SAM_TTS)
+#if defined(ENABLE_MORSE) || defined(ENABLE_VOICE_PROMPTS) || defined(ENABLE_SAM_TTS)
     MENU_ACCESS,
 #endif
 #ifdef ENABLE_SAM_TTS
@@ -246,12 +246,7 @@ extern const char        gSubMenu_RX_TX[4][6];
 extern const char        gSubMenu_BAT_TXT[3][8];
 extern const char        gSubMenu_BATTYP[5][12];
 
-#if defined(ENABLE_VOICE_PROMPTS) || defined(ENABLE_SAM_TTS)
-    #if defined(ENABLE_VOICE_PROMPTS) && defined(ENABLE_SAM_TTS)
-        #define ACCESS_MODE_COUNT 3
-    #else
-        #define ACCESS_MODE_COUNT 2
-    #endif
+#if defined(ENABLE_MORSE) || defined(ENABLE_VOICE_PROMPTS) || defined(ENABLE_SAM_TTS)
     extern const char    gSubMenu_ACCESS[ACCESS_MODE_COUNT][7];
 #endif
 

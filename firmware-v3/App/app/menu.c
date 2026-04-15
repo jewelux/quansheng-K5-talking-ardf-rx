@@ -73,6 +73,7 @@ uint8_t gUnlockAllTxConfCnt;
 
 static void MENU_ClampSelection(int8_t Direction);
 
+#ifdef ENABLE_MORSE
 static const char *MENU_GetMorsePattern(char ch)
 {
     switch (ch)
@@ -127,7 +128,9 @@ static uint16_t MENU_GetMorseUnitMs(void)
 
     return unit;
 }
+#endif // ENABLE_MORSE — pattern/unit functions
 
+#ifdef ENABLE_MORSE
 KEY_Code_t gMorseAbortKey = KEY_INVALID;
 
 static bool MENU_IsAbortKeyPressed(void)
@@ -197,6 +200,7 @@ static bool MENU_PlayMorseElement(const uint16_t duration_ms)
     BK4819_EnterTxMute();
     return true;
 }
+#endif // ENABLE_MORSE
 
 static void MENU_WaitForKeyRelease(void)
 {
@@ -210,6 +214,7 @@ static void MENU_WaitForKeyRelease(void)
     }
 }
 
+#ifdef ENABLE_MORSE
 void MENU_PlayMorseString(const char *text)
 {
     const uint16_t unit_ms = MENU_GetMorseUnitMs();
@@ -269,6 +274,7 @@ void MENU_PlayMorseString(const char *text)
 done:
     MENU_MorseAudioTeardown();
 }
+#endif // ENABLE_MORSE
 
 static void MENU_GetSubMenuValueText(char *buf, size_t buf_size)
 {
@@ -486,7 +492,7 @@ static void MENU_GetSubMenuValueText(char *buf, size_t buf_size)
             break;
 #endif
 
-#if defined(ENABLE_VOICE_PROMPTS) || defined(ENABLE_SAM_TTS)
+#if defined(ENABLE_MORSE) || defined(ENABLE_VOICE_PROMPTS) || defined(ENABLE_SAM_TTS)
         case MENU_ACCESS:
             snprintf(buf, buf_size, "%s", gSubMenu_ACCESS[sel]);
             break;
@@ -629,11 +635,12 @@ void MENU_PlayMorseForCurrentItem(void)
 {
     char buf[48];
 
-    // Wait for the triggering key (UP/DOWN) to be released,
-    // otherwise MENU_IsAbortKeyPressed() immediately aborts the Morse output.
+    // Wait for the triggering key (UP/DOWN) to be released
     MENU_WaitForKeyRelease();
 
+#ifdef ENABLE_MORSE
     gMorseAbortKey = KEY_INVALID;
+#endif
 
 #ifdef ENABLE_VOICE_PROMPTS
     // If voice mode is active, try to play a voice prompt instead of Morse.
@@ -697,6 +704,7 @@ void MENU_PlayMorseForCurrentItem(void)
 #endif
 
     // ---------- Morse playback with interrupt-and-restart ----------
+#ifdef ENABLE_MORSE
     // When the user presses UP/DOWN during Morse output, the playback
     // is aborted and gMorseAbortKey is set.  We then navigate to the
     // next/previous menu item and immediately re-announce it, so the
@@ -739,6 +747,7 @@ void MENU_PlayMorseForCurrentItem(void)
 
         gMorseAbortKey = KEY_INVALID;
     }
+#endif // ENABLE_MORSE
 }
 
 #ifdef ENABLE_VOICE_PROMPTS
@@ -979,7 +988,7 @@ int MENU_GetLimits(uint8_t menu_id, int32_t *pMin, int32_t *pMax)
                 break;
         #endif
 
-        #if defined(ENABLE_VOICE_PROMPTS) || defined(ENABLE_SAM_TTS)
+        #if defined(ENABLE_MORSE) || defined(ENABLE_VOICE_PROMPTS) || defined(ENABLE_SAM_TTS)
             case MENU_ACCESS:
                 *pMax = ARRAY_SIZE(gSubMenu_ACCESS) - 1;
                 break;
@@ -1645,7 +1654,7 @@ void MENU_AcceptSetting(void)
                 break;
         #endif
 
-        #if defined(ENABLE_VOICE_PROMPTS) || defined(ENABLE_SAM_TTS)
+        #if defined(ENABLE_MORSE) || defined(ENABLE_VOICE_PROMPTS) || defined(ENABLE_SAM_TTS)
             case MENU_ACCESS:
                 gAccessibilityMode = gSubMenuSelection;
                 SETTINGS_SaveAccessibilityMode();
@@ -2225,7 +2234,7 @@ void MENU_ShowCurrentSetting(void)
             break;
 #endif
 
-#if defined(ENABLE_VOICE_PROMPTS) || defined(ENABLE_SAM_TTS)
+#if defined(ENABLE_MORSE) || defined(ENABLE_VOICE_PROMPTS) || defined(ENABLE_SAM_TTS)
         case MENU_ACCESS:
             gSubMenuSelection = gAccessibilityMode;
             break;

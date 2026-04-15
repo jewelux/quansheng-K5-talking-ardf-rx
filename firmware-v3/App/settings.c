@@ -462,15 +462,15 @@ gEeprom.FreqChannel[1]   = IS_FREQ_CHANNEL(Data16[5]) ? Data16[5] : (FREQ_CHANNE
 
 #endif
 
-#if defined(ENABLE_VOICE_PROMPTS) || defined(ENABLE_SAM_TTS)
+#if defined(ENABLE_MORSE) || defined(ENABLE_VOICE_PROMPTS) || defined(ENABLE_SAM_TTS)
     // Read accessibility mode from ARDF block at offset 0x0C
     {
         uint8_t AccData[4];
         PY25Q16_ReadBuffer(0x00D000 + 0x0C, AccData, 4);
-        if (AccData[0] != 0xFF)
-            gAccessibilityMode = AccData[0] & 0x03;
+        if (AccData[0] != 0xFF && AccData[0] < ACCESS_MODE_COUNT)
+            gAccessibilityMode = AccData[0];
         else
-            gAccessibilityMode = ACCESS_MODE_MORSE;  // default: Morse
+            gAccessibilityMode = 0;  // default: first available mode
 #ifdef ENABLE_SAM_TTS
         if (AccData[1] != 0xFF && AccData[1] >= 1 && AccData[1] <= 9)
             gSamSpeedSetting = AccData[1];
@@ -876,7 +876,7 @@ void SETTINGS_SaveARDF(void)
 
 #endif
 
-#if defined(ENABLE_VOICE_PROMPTS) || defined(ENABLE_SAM_TTS)
+#if defined(ENABLE_MORSE) || defined(ENABLE_VOICE_PROMPTS) || defined(ENABLE_SAM_TTS)
 void SETTINGS_SaveAccessibilityMode(void)
 {
     uint8_t AccData[4];

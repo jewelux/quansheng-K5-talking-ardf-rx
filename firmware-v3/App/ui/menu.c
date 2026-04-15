@@ -189,7 +189,7 @@ const t_menu_item MenuList[] =
     MI("SetNWR",    MENU_NOAA_S,          1),
 #endif
 #endif
-#if defined(ENABLE_VOICE_PROMPTS) || defined(ENABLE_SAM_TTS)
+#if defined(ENABLE_MORSE) || defined(ENABLE_VOICE_PROMPTS) || defined(ENABLE_SAM_TTS)
     MI("Access",    MENU_ACCESS,          0),
 #endif
 #ifdef ENABLE_SAM_TTS
@@ -240,10 +240,12 @@ const char gSubMenu_ARDF_Remember_Gain[][6] =
 };
 #endif
 
-#if defined(ENABLE_VOICE_PROMPTS) || defined(ENABLE_SAM_TTS)
+#if defined(ENABLE_MORSE) || defined(ENABLE_VOICE_PROMPTS) || defined(ENABLE_SAM_TTS)
 const char gSubMenu_ACCESS[ACCESS_MODE_COUNT][7] =
 {
+#ifdef ENABLE_MORSE
     "Morse",
+#endif
 #ifdef ENABLE_VOICE_PROMPTS
     "Voice",
 #endif
@@ -1196,7 +1198,7 @@ void UI_DisplayMenu(void)
 #endif
             break;
 
-#if defined(ENABLE_VOICE_PROMPTS) || defined(ENABLE_SAM_TTS)
+#if defined(ENABLE_MORSE) || defined(ENABLE_VOICE_PROMPTS) || defined(ENABLE_SAM_TTS)
         case MENU_ACCESS:
             strcpy(String, gSubMenu_ACCESS[gSubMenuSelection]);
             break;

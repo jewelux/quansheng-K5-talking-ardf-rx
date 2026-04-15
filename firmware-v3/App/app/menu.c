@@ -684,9 +684,9 @@ void MENU_PlayMorseForCurrentItem(void)
                 /* Spell out abbreviation letter-by-letter by inserting
                  * spaces between each character for SAM */
                 int j = 0;
-                for (int k = 0; name[k] && j < (int)sizeof(buf) - 2; k++)
+                for (int k = 0; name[k] && j < (int)sizeof(buf) - 3; k++)
                 {
-                    if (j > 0 && j < (int)sizeof(buf) - 2)
+                    if (j > 0)
                         buf[j++] = ' ';
                     buf[j++] = name[k];
                 }

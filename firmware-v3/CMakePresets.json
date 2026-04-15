@@ -294,6 +294,10 @@
         {
             "name": "ARDF-Voice",
             "configurePreset": "ARDF-Voice"
+        },
+        {
+            "name": "ARDF-SAM",
+            "configurePreset": "ARDF-SAM"
         }
     ]
 }

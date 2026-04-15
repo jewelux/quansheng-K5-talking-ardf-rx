@@ -1142,6 +1142,10 @@ static void MAIN_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
                 BK4819_SetFrequency(frequency);
                 BK4819_RX_TurnOn();
                 gRequestSaveChannel = 1;
+#ifdef ENABLE_SAM_TTS
+                if (gAccessibilityMode == ACCESS_MODE_SAM)
+                    AUDIO_SamSayFrequency(frequency);
+#endif
                 return;
             }
 

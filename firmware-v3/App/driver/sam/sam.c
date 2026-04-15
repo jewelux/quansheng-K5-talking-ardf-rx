@@ -643,39 +643,74 @@ static const unsigned char phoneme_flags2[] =
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
+/* Stressed phoneme lengths – durations used when the phoneme carries
+ * stress.  Adjustments vs. original SAM:
+ *   [18]  RX  0xC→0xE   longer word-final R for clearer rhotic quality
+ *   [32]  S*  2→4       longer sibilant onset (S at word start)
+ *   [33]  SH  2→4       matching SH increase
+ *   [48]  EY  0xE→0x10  diphthongs need time for formant glide
+ *   [49]  AY  0xF→0x11
+ *   [50]  OY  0xF→0x11
+ *   [51]  AW  0xF→0x11
+ *   [52]  OW  0xE→0x10
+ *   [53]  UW  0xE→0x10
+ *   [67]  P*b 2→4       longer plosive burst for crisper /p/
+ *   [70]  T*b 2→4       longer plosive burst for crisper /t/
+ *   [73]  K*b 1→3       longer plosive burst for crisper /k/
+ */
 static const unsigned char phonemeStressedLengthTable[] =
 {
     0x00, 0x12, 0x12, 0x12, 8, 0xB, 9, 0xB,
     0xE, 0xF, 0xB, 0x10, 0xC, 6, 6, 0xE,
-    0xC, 0xE, 0xC, 0xB, 8, 8, 0xB, 0xA,
+    0xC, 0xE, 0xE, 0xB, 8, 8, 0xB, 0xA,
     9, 8, 8, 8, 8, 8, 3, 5,
-    2, 2, 2, 2, 2, 2, 6, 6,
+    4, 4, 2, 2, 2, 2, 6, 6,
     8, 6, 6, 2, 9, 4, 2, 1,
-    0xE, 0xF, 0xF, 0xF, 0xE, 0xE, 8, 2,
+    0x10, 0x11, 0x11, 0x11, 0x10, 0x10, 8, 2,
     2, 7, 2, 1, 7, 2, 2, 7,
-    2, 2, 8, 2, 2, 6, 2, 2,
-    7, 2, 4, 7, 1, 4, 5, 5
+    2, 2, 8, 4, 2, 4, 4, 2,
+    7, 3, 4, 7, 1, 4, 5, 5
 };
 
+/* Unstressed phoneme lengths – base durations.  Adjustments:
+ *   [18]  RX  0xA→0xB   slightly longer R
+ *   [32]  S*  2→3       longer sibilant
+ *   [33]  SH  2→3       matching SH
+ *   [48]  EY  0xD→0xF   diphthong glide time
+ *   [49]  AY  0xC→0xE
+ *   [50]  OY  0xC→0xE
+ *   [51]  AW  0xC→0xE
+ *   [52]  OW  0xE→0x10
+ *   [53]  UW  9→0xB
+ *   [67]  P*b 2→3       plosive burst
+ *   [70]  T*b 2→3       plosive burst
+ *   [73]  K*b 1→2       plosive burst
+ */
 static const unsigned char phonemeLengthTable[] =
 {
     0, 0x12, 0x12, 0x12, 8, 8, 8, 8,
     8, 0xB, 6, 0xC, 0xA, 5, 5, 0xB,
-    0xA, 0xA, 0xA, 9, 8, 7, 9, 7,
+    0xA, 0xA, 0xB, 9, 8, 7, 9, 7,
     6, 8, 6, 7, 7, 7, 2, 5,
-    2, 2, 2, 2, 2, 2, 6, 6,
+    3, 3, 2, 2, 2, 2, 6, 6,
     7, 6, 6, 2, 8, 3, 1, 0x1E,
-    0xD, 0xC, 0xC, 0xC, 0xE, 9, 6, 1,
+    0xF, 0xE, 0xE, 0xE, 0x10, 0xB, 6, 1,
     2, 5, 1, 1, 6, 1, 2, 6,
-    1, 2, 8, 2, 2, 4, 2, 2,
-    6, 1, 4, 6, 1, 4, 0xC7, 0xFF
+    1, 2, 8, 3, 2, 4, 3, 2,
+    6, 2, 4, 6, 1, 4, 0xC7, 0xFF
 };
 
 /* ===========================================================================
  *  TABLE DATA  –  RenderTabs  (audio renderer)
  * =========================================================================== */
 
-static const unsigned char tab48426[5] = { 0x18, 0x1A, 0x17, 0x17, 0x17 };
+/* Sampled consonant amplitude table.  Low nibble controls the
+ * amplitude (half-swing from centre = nibble << 2).  The original SAM
+ * values produced asymmetric noise biased below 128, causing DC-offset
+ * clicks at formant/noise transitions and poor plosive definition.
+ * Increased values here widen the amplitude swing (centred at 128) for
+ * crisper plosive bursts and better fricative energy. */
+static const unsigned char tab48426[5] = { 0x1B, 0x1D, 0x1C, 0x1A, 0x1A };
 
 static const unsigned char tab47492[] =
 {
@@ -683,10 +718,15 @@ static const unsigned char tab47492[] =
     6, 0xC, 6
 };
 
+/* Amplitude rescaling: maps raw 0-15 phoneme amplitude to output level.
+ * Previous curve compressed the mid-range (2-4→2, 5-6→3), reducing
+ * consonant formant resolution.  This more linear curve preserves
+ * mid-range detail, giving voiced/unvoiced consonants better definition
+ * on the small speaker. */
 static const unsigned char amplitudeRescale[] =
 {
-    0, 1, 2, 2, 2, 3, 3, 4,
-    4, 5, 6, 8, 9, 0xB, 0xD, 0xF, 0
+    0, 1, 2, 3, 3, 4, 5, 5,
+    6, 7, 8, 9, 0xB, 0xC, 0xE, 0xF, 0
 };
 
 static const unsigned char blendRank[] =
@@ -1114,11 +1154,13 @@ static const unsigned char sampleTable[0x500] =
 /* Simulated 6502 registers (shared by reciter, parser, renderer) */
 static unsigned char A, X, Y;
 
-/* SAM parameters */
+/* SAM parameters – voice character.
+ * Mouth/throat at 128 is neutral.  Slight increases make formants
+ * brighter, improving intelligibility on the small radio speaker. */
 static unsigned char sam_speed  = 72;
 static unsigned char sam_pitch  = 64;
-static unsigned char sam_mouth  = 128;
-static unsigned char sam_throat = 128;
+static unsigned char sam_mouth  = 145;
+static unsigned char sam_throat = 135;
 static int           sam_singmode = 0;
 
 /* Parser working variables */
@@ -2687,12 +2729,18 @@ static int GenerateOneSample(void)
             unsigned char sample;
 
             if (tableOffset != 0) {
-                /* Unvoiced: read from sample table */
+                /* Unvoiced: read from sample table.
+                 * Centre noise symmetrically around 128 (DAC midpoint)
+                 * to eliminate DC offset and transition clicks.
+                 * Half-swing = low nibble of tab48426 × 4. */
                 unsigned char yy = tableOffset ^ 255;
                 yy = (yy + rs.sc_phase) & 0xFF;
                 sampleByte = sampleTable[tableIdx * 256 + yy];
-                sample = ((sampleByte >> (7 - rs.sc_bit)) & 1) ?
-                         (tab48426[tableIdx] & 0x0f) * 16 : 5 * 16;
+                {
+                    unsigned char amp = (tab48426[tableIdx] & 0x0f) << 2;
+                    sample = ((sampleByte >> (7 - rs.sc_bit)) & 1) ?
+                             128 + amp : 128 - amp;
+                }
                 rs.sc_bit++;
                 if (rs.sc_bit >= 8) {
                     rs.sc_bit = 0;
@@ -2717,8 +2765,9 @@ static int GenerateOneSample(void)
                 if (pitchVal == 0) pitchVal = 1;
                 unsigned char yy = rs.mem66;
                 sampleByte = sampleTable[tableIdx * 256 + yy];
+                /* Voiced: symmetric around 128, amplitude ±40 */
                 sample = ((sampleByte >> (7 - rs.sc_bit)) & 1) ?
-                         (26 & 0xf) * 16 : (6 & 0xf) * 16;
+                         168 : 88;
                 rs.sc_bit++;
                 if (rs.sc_bit >= 8) {
                     rs.sc_bit = 0;
@@ -2896,7 +2945,14 @@ bool SAM_FillVoiceBuffer(void)
 
     for (i = 0; i < VOICE_BUF_LEN; i++)
     {
-        /* Bresenham resampling: 22050 -> 8000 Hz */
+        /* Bresenham resampling: 22050 -> 8000 Hz.
+         * Average all source samples that fall into each output slot
+         * instead of keeping only the last one (nearest-neighbour).
+         * This acts as a simple box-filter anti-aliasing and removes
+         * the harsh aliasing artefacts of the original approach.
+         * Typical count is 2 or 3 (22050/8000 ≈ 2.76). */
+        int sum = 0;
+        int count = 0;
         while (rs.resample_err < 22050)
         {
             sample = GenerateOneSample();
@@ -2907,10 +2963,19 @@ bool SAM_FillVoiceBuffer(void)
                 sam_speaking = false;
                 goto done;
             }
-            rs.last_sample = (uint8_t)sample;
+            sum += sample;
+            count++;
             rs.resample_err += 8000;
         }
         rs.resample_err -= 22050;
+
+        /* Average the accumulated samples */
+        if (count <= 1)
+            rs.last_sample = (uint8_t)sum;
+        else if (count == 2)
+            rs.last_sample = (uint8_t)((sum + 1) >> 1);
+        else
+            rs.last_sample = (uint8_t)((sum + count / 2) / count);
 
         /* Convert 8-bit [0,255] -> 12-bit [0,4080] */
         dst[i] = (uint16_t)rs.last_sample << 4;

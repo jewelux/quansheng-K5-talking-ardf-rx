@@ -2949,8 +2949,10 @@ bool SAM_FillVoiceBuffer(void)
          * Average all source samples that fall into each output slot
          * instead of keeping only the last one (nearest-neighbour).
          * This acts as a simple box-filter anti-aliasing and removes
-         * the harsh aliasing artefacts of the original approach.
-         * Typical count is 2 or 3 (22050/8000 ≈ 2.76). */
+         * the harsh aliasing artifacts of the original approach.
+         * Typical count is 2 or 3 (22050/8000 ≈ 2.76).
+         * Samples are unsigned 8-bit [0,255]; max sum ≈ 3×255 = 765,
+         * well within int range. */
         int sum = 0;
         int count = 0;
         while (rs.resample_err < 22050)
@@ -2969,13 +2971,8 @@ bool SAM_FillVoiceBuffer(void)
         }
         rs.resample_err -= 22050;
 
-        /* Average the accumulated samples */
-        if (count <= 1)
-            rs.last_sample = (uint8_t)sum;
-        else if (count == 2)
-            rs.last_sample = (uint8_t)((sum + 1) >> 1);
-        else
-            rs.last_sample = (uint8_t)((sum + count / 2) / count);
+        /* Rounded average of accumulated samples (count is 1-3) */
+        rs.last_sample = (uint8_t)((sum + count / 2) / count);
 
         /* Convert 8-bit [0,255] -> 12-bit [0,4080] */
         dst[i] = (uint16_t)rs.last_sample << 4;

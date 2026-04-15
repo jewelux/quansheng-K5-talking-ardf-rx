@@ -23,8 +23,13 @@
  * ===================================================================== */
 
 /* Maximum number of render frames (limits utterance length).
- * Original SAM uses 256.  Reduced values truncate longer utterances. */
-#define MAX_FRAMES   256
+ * Original SAM uses 256, but on this MCU with only 16 KB RAM we use 128
+ * to keep the sam_mem union within 1280 bytes (dominated by the parse
+ * side).  128 frames at standard speed (~72 samples/frame) still covers
+ * several seconds of speech, which is sufficient for menu announcements.
+ * The truncation bug was caused by rs.mem48-- (now removed), not by
+ * MAX_FRAMES being too small. */
+#define MAX_FRAMES   128
 
 /* Maximum phoneme buffer size for parser */
 #define MAX_PHON     128

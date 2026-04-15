@@ -34,7 +34,7 @@ void MENU_StopCssScan(void);
 
 void MENU_ProcessKeys(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld);
 
-#if defined(ENABLE_VOICE) || defined(ENABLE_MORSE)
+#if defined(ENABLE_VOICE) || defined(ENABLE_MORSE) || defined(ENABLE_SAM_TTS)
 void MENU_PlayMorseString(const char *text);
 void MENU_PlayMorseForCurrentItem(void);
 extern KEY_Code_t gMorseAbortKey;

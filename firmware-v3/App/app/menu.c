@@ -54,7 +54,7 @@
 uint8_t gUnlockAllTxConfCnt;
 
 // ---- Morse code accessibility system (ported from V1) ----
-#if defined(ENABLE_VOICE) || defined(ENABLE_MORSE)
+#if defined(ENABLE_VOICE) || defined(ENABLE_MORSE) || defined(ENABLE_SAM_TTS)
 
 #include "external/printf/printf.h"
 #include "driver/system.h"
@@ -843,7 +843,7 @@ VOICE_ID_t MENU_GetVoiceIDForCurrentItem(void)
 }
 #endif // ENABLE_VOICE_PROMPTS
 
-#endif // ENABLE_VOICE || ENABLE_MORSE
+#endif // ENABLE_VOICE || ENABLE_MORSE || ENABLE_SAM_TTS
 // ---- End Morse code system ----
 
 #ifdef ENABLE_F_CAL_MENU
@@ -3031,7 +3031,7 @@ static void MENU_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
 
         gRequestDisplayScreen = DISPLAY_MENU;
 
-        #ifdef ENABLE_MORSE
+        #if defined(ENABLE_MORSE) || defined(ENABLE_SAM_TTS)
             MENU_PlayMorseForCurrentItem();
         #endif
 
@@ -3059,7 +3059,7 @@ static void MENU_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
 
         gSubMenuSelection     = FREQUENCY_RoundToStep(Offset, gTxVfo->StepFrequency);
         gRequestDisplayScreen = DISPLAY_MENU;
-        #ifdef ENABLE_MORSE
+        #if defined(ENABLE_MORSE) || defined(ENABLE_SAM_TTS)
             MENU_PlayMorseForCurrentItem();
         #endif
         return;
@@ -3083,7 +3083,7 @@ static void MENU_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
 
         gSubMenuSelection     = duration;
         gRequestDisplayScreen = DISPLAY_MENU;
-        #ifdef ENABLE_MORSE
+        #if defined(ENABLE_MORSE) || defined(ENABLE_SAM_TTS)
             MENU_PlayMorseForCurrentItem();
         #endif
         return;
@@ -3104,7 +3104,7 @@ static void MENU_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
 
         gSubMenuSelection     = correction;
         gRequestDisplayScreen = DISPLAY_MENU;
-        #ifdef ENABLE_MORSE
+        #if defined(ENABLE_MORSE) || defined(ENABLE_SAM_TTS)
             MENU_PlayMorseForCurrentItem();
         #endif
         return;
@@ -3127,7 +3127,7 @@ static void MENU_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
         default:
             MENU_ClampSelection(Direction);
             gRequestDisplayScreen = DISPLAY_MENU;
-            #ifdef ENABLE_MORSE
+            #if defined(ENABLE_MORSE) || defined(ENABLE_SAM_TTS)
                 MENU_PlayMorseForCurrentItem();
             #endif
             return;
@@ -3166,7 +3166,7 @@ static void MENU_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
         }
 
         gRequestDisplayScreen = DISPLAY_MENU;
-        #ifdef ENABLE_MORSE
+        #if defined(ENABLE_MORSE) || defined(ENABLE_SAM_TTS)
             MENU_PlayMorseForCurrentItem();
         #endif
     }
@@ -3177,7 +3177,7 @@ static void MENU_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
             gSubMenuSelection = Channel;
 
         gRequestDisplayScreen = DISPLAY_MENU;
-        #ifdef ENABLE_MORSE
+        #if defined(ENABLE_MORSE) || defined(ENABLE_SAM_TTS)
             MENU_PlayMorseForCurrentItem();
         #endif
     }

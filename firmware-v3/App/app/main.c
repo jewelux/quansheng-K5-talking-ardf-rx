@@ -64,7 +64,7 @@ static void MAIN_PlayArdfGainSAM(void)
 
     if (neg_level > 0)
     {
-        snprintf(buf, sizeof(buf), "N %u", (unsigned)neg_level);
+        snprintf(buf, sizeof(buf), "negative %u", (unsigned)neg_level);
     }
     else
     {

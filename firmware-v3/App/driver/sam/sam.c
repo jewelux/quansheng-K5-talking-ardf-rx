@@ -2928,12 +2928,15 @@ uint16_t SAM_StartSpeaking(const char *text)
 
     if (!text || !text[0]) return 0;
 
-    /* Copy text into SAM input buffer (parse union) */
+    /* Copy text into SAM input buffer (parse union).
+     * Zero the entire remainder of the buffer to prevent stale data
+     * from a previous (longer) utterance leaking into the reciter,
+     * which reads all 255 positions regardless of actual text length. */
     len = 0;
     while (text[len] && len < 254) len++;
     for (i = 0; i < len; i++)
         sam_input[i] = (unsigned char)text[i];
-    sam_input[len] = 0;
+    memset(&sam_input[len], 0, 256 - len);
 
     /* Run reciter: text -> phoneme string */
     if (!TextToPhonemes(sam_input))

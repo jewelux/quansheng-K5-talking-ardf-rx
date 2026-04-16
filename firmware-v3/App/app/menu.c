@@ -714,16 +714,21 @@ void MENU_PlayMorseForCurrentItem(void)
         {
             /* SAM pronunciation hints: override problematic menu names
              * with phonetically clearer alternatives for the TTS engine.
-             * Display text is unaffected. */
+             * Display text is unaffected.
+             * "Rx" uses "R EX" to separate the R and X sounds clearly.
+             * SAM parameter menus: "SAM" spoken as word, abbreviation spelled. */
             const char *sam_text = NULL;
             switch (UI_MENU_GetCurrentMenuId())
             {
                 case MENU_TXP:      sam_text = "POW ER";   break;
                 case MENU_STEP:     sam_text = "STEHP";    break;
-                case MENU_R_CTCS:   sam_text = "R X C T C S S"; break;
-                case MENU_T_CTCS:   sam_text = "T X C T C S S"; break;
-                case MENU_R_DCS:    sam_text = "R X D C S"; break;
-                case MENU_T_DCS:    sam_text = "T X D C S"; break;
+                case MENU_R_CTCS:   sam_text = "R EX C T C S S"; break;
+                case MENU_T_CTCS:   sam_text = "T EX C T C S S"; break;
+                case MENU_R_DCS:    sam_text = "R EX D C S"; break;
+                case MENU_T_DCS:    sam_text = "T EX D C S"; break;
+                case MENU_SAM_SPEED: sam_text = "SAM S P D"; break;
+                case MENU_SAM_PITCH: sam_text = "SAM P T C"; break;
+                case MENU_SAM_MOUTH: sam_text = "SAM M T H"; break;
                 default: break;
             }
 

@@ -475,7 +475,7 @@ gEeprom.FreqChannel[1]   = IS_FREQ_CHANNEL(Data16[5]) ? Data16[5] : (FREQ_CHANNE
         if (AccData[1] != 0xFF && AccData[1] >= 1 && AccData[1] <= 9)
             gSamSpeedSetting = AccData[1];
         else
-            gSamSpeedSetting = 5;
+            gSamSpeedSetting = 9;
         if (AccData[2] != 0xFF && AccData[2] >= 1 && AccData[2] <= 9)
             gSamPitchSetting = AccData[2];
         else
@@ -483,7 +483,7 @@ gEeprom.FreqChannel[1]   = IS_FREQ_CHANNEL(Data16[5]) ? Data16[5] : (FREQ_CHANNE
         if (AccData[3] != 0xFF && AccData[3] >= 1 && AccData[3] <= 9)
             gSamMouthSetting = AccData[3];
         else
-            gSamMouthSetting = 5;
+            gSamMouthSetting = 9;
         SAM_SetSpeed(gSamSpeedSetting);
         SAM_SetPitch(gSamPitchSetting);
         SAM_SetMouthThroatParam(gSamMouthSetting);

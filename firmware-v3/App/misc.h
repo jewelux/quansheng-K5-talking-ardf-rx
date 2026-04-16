@@ -193,9 +193,9 @@ enum {
 #endif
 
 #ifdef ENABLE_SAM_TTS
-extern uint8_t               gSamSpeedSetting;  // 1-9, default 5
+extern uint8_t               gSamSpeedSetting;  // 1-9, default 9
 extern uint8_t               gSamPitchSetting;  // 1-9, default 5
-extern uint8_t               gSamMouthSetting;  // 1-9, default 5
+extern uint8_t               gSamMouthSetting;  // 1-9, default 9
 #endif
 
 extern enum BacklightOnRxTx_t gSetting_backlight_on_tx_rx;

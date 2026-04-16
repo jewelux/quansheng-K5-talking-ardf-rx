@@ -117,9 +117,9 @@ uint8_t           gAccessibilityMode = 0;  // defaults to first available mode
 #endif
 
 #ifdef ENABLE_SAM_TTS
-uint8_t           gSamSpeedSetting = 5;
+uint8_t           gSamSpeedSetting = 9;
 uint8_t           gSamPitchSetting = 5;
-uint8_t           gSamMouthSetting = 5;
+uint8_t           gSamMouthSetting = 9;
 #endif
 
 enum BacklightOnRxTx_t gSetting_backlight_on_tx_rx;

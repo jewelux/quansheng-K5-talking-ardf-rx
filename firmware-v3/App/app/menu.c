@@ -675,92 +675,136 @@ void MENU_PlayMorseForCurrentItem(void)
 #ifdef ENABLE_SAM_TTS
     if (gAccessibilityMode == ACCESS_MODE_SAM)
     {
-        if (gIsInSubMenu)
+        gSamAbortKey = KEY_INVALID;
+
+        /* ---------- SAM playback with interrupt-and-restart ----------
+         * When the user presses a key during SAM output, playback is
+         * aborted immediately.  If the key was UP or DOWN we navigate
+         * to the next/previous item and re-announce, matching the
+         * existing Morse behaviour.  For any other key we simply stop. */
+        for (;;)
         {
-            MENU_GetSubMenuValueText(buf, sizeof(buf));
+            /* Force display update BEFORE speaking so screen and voice
+             * are always in sync. */
+            MENU_ShowCurrentSetting();
+            gScreenToDisplay = DISPLAY_MENU;
+            UI_DisplayMenu();
 
-            /* Determine if this submenu value should be spelled out
-             * letter-by-letter (short abbreviations like AM, FM, USB) */
-            bool spell_sub = false;
-            switch (UI_MENU_GetCurrentMenuId())
+            /* Build the text to speak */
+            if (gIsInSubMenu)
             {
-                case MENU_AM:        /* FM, AM, USB, BYP, RAW */
-                case MENU_W_N:       /* Wide, Narrow */
-                case MENU_TDR:       /* RxMode sub-values */
-                    spell_sub = true;
-                    break;
-                default:
-                    break;
-            }
+                MENU_GetSubMenuValueText(buf, sizeof(buf));
 
-            if (spell_sub && buf[0])
-            {
-                /* Spell out abbreviation by inserting spaces */
-                char tmp[48];
-                int j = 0;
-                for (int k = 0; buf[k] && j < (int)sizeof(tmp) - 3; k++)
+                /* Determine if this submenu value should be spelled out
+                 * letter-by-letter (short abbreviations like AM, FM, USB) */
+                bool spell_sub = false;
+                switch (UI_MENU_GetCurrentMenuId())
                 {
-                    if (buf[k] == ' ') continue; /* skip existing spaces */
-                    if (j > 0)
-                        tmp[j++] = ' ';
-                    tmp[j++] = buf[k];
+                    case MENU_AM:        /* FM, AM, USB, BYP, RAW */
+                    case MENU_W_N:       /* Wide, Narrow */
+                    case MENU_TDR:       /* RxMode sub-values */
+                        spell_sub = true;
+                        break;
+                    default:
+                        break;
                 }
-                tmp[j] = '\0';
-                strncpy(buf, tmp, sizeof(buf) - 1);
-                buf[sizeof(buf) - 1] = '\0';
-            }
-        }
-        else
-        {
-            /* SAM pronunciation hints: override problematic menu names
-             * with phonetically clearer alternatives for the TTS engine.
-             * Display text is unaffected.
-             * "Rx" uses "R EX" to separate the R and X sounds clearly.
-             * SAM parameter menus: "SAM" spoken as word, abbreviation spelled. */
-            const char *sam_text = NULL;
-            switch (UI_MENU_GetCurrentMenuId())
-            {
-                case MENU_TXP:      sam_text = "POW ER";   break;
-                case MENU_STEP:     sam_text = "STEHP";    break;
-                case MENU_R_CTCS:   sam_text = "R EX C T C S S"; break;
-                case MENU_T_CTCS:   sam_text = "T EX C T C S S"; break;
-                case MENU_R_DCS:    sam_text = "R EX D C S"; break;
-                case MENU_T_DCS:    sam_text = "T EX D C S"; break;
-                case MENU_SAM_SPEED: sam_text = "SAM S P D"; break;
-                case MENU_SAM_PITCH: sam_text = "SAM P T C"; break;
-                case MENU_SAM_MOUTH: sam_text = "SAM M T H"; break;
-                default: break;
-            }
 
-            if (sam_text)
-            {
-                strncpy(buf, sam_text, sizeof(buf) - 1);
-                buf[sizeof(buf) - 1] = '\0';
-            }
-            else
-            {
-                const char *name = MenuList[gMenuCursor].name;
-                if (MenuList[gMenuCursor].spell_out)
+                if (spell_sub && buf[0])
                 {
-                    /* Spell out abbreviation letter-by-letter by inserting
-                     * spaces between each character for SAM */
+                    /* Spell out abbreviation by inserting spaces */
+                    char tmp[48];
                     int j = 0;
-                    for (int k = 0; name[k] && j < (int)sizeof(buf) - 3; k++)
+                    for (int k = 0; buf[k] && j < (int)sizeof(tmp) - 3; k++)
                     {
+                        if (buf[k] == ' ') continue; /* skip existing spaces */
                         if (j > 0)
-                            buf[j++] = ' ';
-                        buf[j++] = name[k];
+                            tmp[j++] = ' ';
+                        tmp[j++] = buf[k];
                     }
-                    buf[j] = '\0';
-                }
-                else
-                {
-                    strncpy(buf, name, sizeof(buf) - 1);
+                    tmp[j] = '\0';
+                    strncpy(buf, tmp, sizeof(buf) - 1);
                     buf[sizeof(buf) - 1] = '\0';
                 }
             }
+            else
+            {
+                /* SAM pronunciation hints: override problematic menu names
+                 * with phonetically clearer alternatives for the TTS engine.
+                 * Display text is unaffected.
+                 * "Rx" uses "R EX" to separate the R and X sounds clearly.
+                 * SAM parameter menus: "SAM" spoken as word, abbreviation spelled. */
+                const char *sam_text = NULL;
+                switch (UI_MENU_GetCurrentMenuId())
+                {
+                    case MENU_TXP:      sam_text = "POW ER";   break;
+                    case MENU_STEP:     sam_text = "STEHP";    break;
+                    case MENU_R_CTCS:   sam_text = "R EX C T C S S"; break;
+                    case MENU_T_CTCS:   sam_text = "T EX C T C S S"; break;
+                    case MENU_R_DCS:    sam_text = "R EX D C S"; break;
+                    case MENU_T_DCS:    sam_text = "T EX D C S"; break;
+                    case MENU_SAM_SPEED: sam_text = "SAM S P D"; break;
+                    case MENU_SAM_PITCH: sam_text = "SAM P T C"; break;
+                    case MENU_SAM_MOUTH: sam_text = "SAM M T H"; break;
+                    default: break;
+                }
+
+                if (sam_text)
+                {
+                    strncpy(buf, sam_text, sizeof(buf) - 1);
+                    buf[sizeof(buf) - 1] = '\0';
+                }
+                else
+                {
+                    const char *name = MenuList[gMenuCursor].name;
+                    if (MenuList[gMenuCursor].spell_out)
+                    {
+                        /* Spell out abbreviation letter-by-letter by inserting
+                         * spaces between each character for SAM */
+                        int j = 0;
+                        for (int k = 0; name[k] && j < (int)sizeof(buf) - 3; k++)
+                        {
+                            if (j > 0)
+                                buf[j++] = ' ';
+                            buf[j++] = name[k];
+                        }
+                        buf[j] = '\0';
+                    }
+                    else
+                    {
+                        strncpy(buf, name, sizeof(buf) - 1);
+                        buf[sizeof(buf) - 1] = '\0';
+                    }
+                }
+            }
+
+            AUDIO_PlaySAMText(buf);
+
+            /* Check whether SAM was interrupted by UP or DOWN */
+            if (gSamAbortKey != KEY_UP && gSamAbortKey != KEY_DOWN)
+                break;   /* completed normally or aborted by a non-nav key */
+
+            /* Navigate in the direction of the pressed key */
+            {
+                const int8_t dir = (gSamAbortKey == KEY_UP) ? 1 : -1;
+
+                if (!gIsInSubMenu)
+                {
+                    gMenuCursor = NUMBER_AddWithWraparound(
+                        gMenuCursor, -dir, 0, gMenuListCount - 1);
+                    gFlagRefreshSetting = true;
+                }
+                else
+                {
+                    MENU_ClampSelection(dir);
+                }
+                gRequestDisplayScreen = DISPLAY_MENU;
+            }
+
+            /* Wait for the navigation key to be released before re-announcing */
+            MENU_WaitForKeyRelease();
+
+            gSamAbortKey = KEY_INVALID;
         }
-        AUDIO_PlaySAMText(buf);
         return;
     }
 #endif

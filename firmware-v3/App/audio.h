@@ -218,9 +218,13 @@ void AUDIO_PlayBeep(BEEP_Type_t Beep);
 #endif
 
 #ifdef ENABLE_SAM_TTS
-    void    AUDIO_PlaySAMText(const char *text);
+    #include "driver/keyboard.h"
+    /* Returns true if playback was interrupted by a key press. */
+    bool    AUDIO_PlaySAMText(const char *text);
     void    AUDIO_SamSayFrequency(uint32_t frequency);
     void    AUDIO_SamSayDigit(uint8_t digit);
+    /* Set by AUDIO_PlaySAMText when interrupted; consumed by menu loop. */
+    extern KEY_Code_t gSamAbortKey;
 #endif
 
 #endif

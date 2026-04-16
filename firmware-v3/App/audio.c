@@ -40,6 +40,7 @@
 
 #ifdef ENABLE_SAM_TTS
 #include "driver/sam/sam.h"
+#include "driver/keyboard.h"
 #endif
 
 
@@ -539,14 +540,19 @@ void AUDIO_PlayQueuedVoice(void)
 
 #ifdef ENABLE_SAM_TTS
 
-void AUDIO_PlaySAMText(const char *text)
+/* Key that caused the SAM TTS to abort.  Set by AUDIO_PlaySAMText when
+ * a key is detected during playback, consumed by the menu loop to
+ * decide whether to re-announce the next item. */
+KEY_Code_t gSamAbortKey = KEY_INVALID;
+
+bool AUDIO_PlaySAMText(const char *text)
 {
     if (!text || !*text)
-        return;
+        return false;
 
     uint16_t duration_10ms = SAM_StartSpeaking(text);
     if (duration_10ms == 0)
-        return;
+        return false;
 
     if (FUNCTION_IsRx())
         BK4819_SetAF(BK4819_AF_MUTE);
@@ -570,23 +576,50 @@ void AUDIO_PlaySAMText(const char *text)
 
     VOICE_Start();
 
-    /* Continue filling the buffer while the DMA ISR drains it */
+    bool interrupted = false;
+
+    /* Continue filling the buffer while the DMA ISR drains it.
+     * Poll the keyboard so we can abort immediately if a new
+     * key is pressed (interrupt-and-restart behaviour). */
     while (SAM_IsSpeaking())
     {
+        KEY_Code_t key = KEYBOARD_Poll();
+        if (key != KEY_INVALID)
+        {
+            gSamAbortKey = key;
+            SAM_Stop();
+            interrupted = true;
+            break;
+        }
+
         if (gVoiceBufLen < VOICE_BUF_CAP)
             SAM_FillVoiceBuffer();
         else
             SYSTEM_DelayMs(5);
     }
 
-    /* Wait for the remaining buffered samples to play out */
-    while (gVoiceBufLen > 0)
-        SYSTEM_DelayMs(5);
+    if (!interrupted)
+    {
+        /* Wait for the remaining buffered samples to play out */
+        while (gVoiceBufLen > 0)
+        {
+            KEY_Code_t key = KEYBOARD_Poll();
+            if (key != KEY_INVALID)
+            {
+                gSamAbortKey = key;
+                interrupted = true;
+                break;
+            }
+            SYSTEM_DelayMs(5);
+        }
+    }
 
     /* Short tail silence so the DAC settles */
-    SYSTEM_DelayMs(20);
+    if (!interrupted)
+        SYSTEM_DelayMs(20);
 
     VOICE_Stop();
+    gVoiceBufLen = 0;
 
     if (FUNCTION_IsRx())
         RADIO_SetModulation(gRxVfo->Modulation);
@@ -602,6 +635,8 @@ void AUDIO_PlaySAMText(const char *text)
     #ifdef ENABLE_VOX
         gVoxResumeCountdown = 80;
     #endif
+
+    return interrupted;
 }
 
 void AUDIO_SamSayFrequency(uint32_t frequency)

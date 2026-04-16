@@ -56,6 +56,7 @@ uint8_t gUnlockAllTxConfCnt;
 // ---- Morse code accessibility system (ported from V1) ----
 #if defined(ENABLE_VOICE) || defined(ENABLE_MORSE) || defined(ENABLE_SAM_TTS)
 
+#include <stdlib.h>
 #include "external/printf/printf.h"
 #include "driver/system.h"
 #include "functions.h"

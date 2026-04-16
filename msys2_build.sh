@@ -255,32 +255,34 @@ build_v3() {
     echo "  ${BOLD} 1${RESET}) ARDF-Morse    — ARDF-Empfaenger mit Morse-Accessibility (empfohlen)"
     echo "  ${BOLD} 2${RESET}) ARDF-Voice    — ARDF-Empfaenger mit Voice-Prompt-Accessibility"
     echo "  ${BOLD} 3${RESET}) ARDF-SAM      — ARDF-Empfaenger mit SAM-TTS-Accessibility"
-    echo "  ${BOLD} 4${RESET}) ARDF          — Standard-ARDF (Dennis Real / DL9CAT)"
-    echo "  ${BOLD} 5${RESET}) Custom        — Benutzerdefiniert"
-    echo "  ${BOLD} 6${RESET}) Bandscope     — Mit Spektrumanzeige"
-    echo "  ${BOLD} 7${RESET}) Broadcast     — UKW/KW-Empfaenger"
-    echo "  ${BOLD} 8${RESET}) Basic         — Basis-Firmware"
-    echo "  ${BOLD} 9${RESET}) RescueOps     — Such- und Rettungsfunk"
-    echo "  ${BOLD}10${RESET}) Game          — Mit Spielen"
-    echo "  ${BOLD}11${RESET}) Fusion        — Alle Features"
+    echo "  ${BOLD} 4${RESET}) ARDF-SAM-A11y — ARDF + SAM + Kompass + Sonifikation (Accessibility)"
+    echo "  ${BOLD} 5${RESET}) ARDF          — Standard-ARDF (Dennis Real / DL9CAT)"
+    echo "  ${BOLD} 6${RESET}) Custom        — Benutzerdefiniert"
+    echo "  ${BOLD} 7${RESET}) Bandscope     — Mit Spektrumanzeige"
+    echo "  ${BOLD} 8${RESET}) Broadcast     — UKW/KW-Empfaenger"
+    echo "  ${BOLD} 9${RESET}) Basic         — Basis-Firmware"
+    echo "  ${BOLD}10${RESET}) RescueOps     — Such- und Rettungsfunk"
+    echo "  ${BOLD}11${RESET}) Game          — Mit Spielen"
+    echo "  ${BOLD}12${RESET}) Fusion        — Alle Features"
     echo ""
 
     local preset
     while true; do
-        read -rp "${BOLD}Preset waehlen [1-11, Standard=1]: ${RESET}" choice
+        read -rp "${BOLD}Preset waehlen [1-12, Standard=1]: ${RESET}" choice
         case "${choice:-1}" in
             1)  preset="ARDF-Morse"; break ;;
             2)  preset="ARDF-Voice"; break ;;
             3)  preset="ARDF-SAM"; break ;;
-            4)  preset="ARDF"; break ;;
-            5)  preset="Custom"; break ;;
-            6)  preset="Bandscope"; break ;;
-            7)  preset="Broadcast"; break ;;
-            8)  preset="Basic"; break ;;
-            9)  preset="RescueOps"; break ;;
-            10) preset="Game"; break ;;
-            11) preset="Fusion"; break ;;
-            *)  echo "Bitte 1-11 eingeben." ;;
+            4)  preset="ARDF-SAM-Access"; break ;;
+            5)  preset="ARDF"; break ;;
+            6)  preset="Custom"; break ;;
+            7)  preset="Bandscope"; break ;;
+            8)  preset="Broadcast"; break ;;
+            9)  preset="Basic"; break ;;
+            10) preset="RescueOps"; break ;;
+            11) preset="Game"; break ;;
+            12) preset="Fusion"; break ;;
+            *)  echo "Bitte 1-12 eingeben." ;;
         esac
     done
 

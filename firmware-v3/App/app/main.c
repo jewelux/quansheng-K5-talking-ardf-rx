@@ -51,6 +51,36 @@
 #include "app/ardf.h"
 #endif
 
+#if defined(ENABLE_ARDF) && defined(ENABLE_SAM_TTS)
+#include <stdio.h>
+/* Announce current gain setting via SAM TTS.
+ * Negative gain levels are spoken as "N 1" .. "N 9".
+ * Normal gain is spoken as the dB value, e.g. "minus 25". */
+static void MAIN_PlayArdfGainSAM(void)
+{
+    const uint8_t vfo = gEeprom.RX_VFO;
+    const uint8_t neg_level = ARDF_Get_NegGainLevel(vfo);
+    char buf[16];
+
+    if (neg_level > 0)
+    {
+        snprintf(buf, sizeof(buf), "N %u", (unsigned)neg_level);
+    }
+    else
+    {
+        int8_t gain_dB = ardf_gain_table[ARDF_Get_GainIndex(vfo)].gain_dB;
+        if (gain_dB < 0)
+            snprintf(buf, sizeof(buf), "minus %d", (int)(-gain_dB));
+        else if (gain_dB == 0)
+            snprintf(buf, sizeof(buf), "0");
+        else
+            snprintf(buf, sizeof(buf), "%d", (int)gain_dB);
+    }
+
+    AUDIO_PlaySAMText(buf);
+}
+#endif
+
 // Full VFO backup for restore on EXIT
 static VFO_Info_t gVfoBackup;
 static uint16_t   gScreenChannelBackup = 0;
@@ -1086,6 +1116,10 @@ static void MAIN_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
         }
 
         ARDF_ActivateGainIndex();
+
+#ifdef ENABLE_SAM_TTS
+        MAIN_PlayArdfGainSAM();
+#endif
 
         return;
     }

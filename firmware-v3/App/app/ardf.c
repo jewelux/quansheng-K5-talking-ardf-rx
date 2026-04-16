@@ -443,11 +443,11 @@ static void ARDF_PlaySingleSnapshotBeep(uint8_t level)
     gEeprom.BEEP_CONTROL = 1;
 
     if ( level <= 3 )
-       AUDIO_PlayBeep(BEEP_440HZ_500MS);
+       AUDIO_PlayBeep(BEEP_ARDF_LOW);       // 440 Hz — low signal
     else if ( level <= 6 )
-       AUDIO_PlayBeep(BEEP_1KHZ_60MS_OPTIONAL);
+       AUDIO_PlayBeep(BEEP_ARDF_MID);       // 880 Hz — medium signal
     else
-       AUDIO_PlayBeep(BEEP_880HZ_60MS_DOUBLE_BEEP);
+       AUDIO_PlayBeep(BEEP_ARDF_HIGH);      // 1500 Hz — high signal
 
     gEeprom.BEEP_CONTROL = old_beep_control;
 }
@@ -599,9 +599,10 @@ static void ARDF_FillSineBuffer(uint16_t freq_hz, uint32_t *phase_acc)
 {
     /* Fixed-point phase increment per sample.
      * phase_acc uses 16.16 format, table has 32 entries.
-     * increment = freq_hz * 32 * 65536 / 8000 = freq_hz * 262144 / 8000
-     *           = freq_hz * 32768 / 1000 */
-    uint32_t phase_inc = ((uint32_t)freq_hz * 32768U) / 1000U;
+     * One complete cycle = 32 * 65536 = 2097152 phase units.
+     * At 8000 Hz sample rate:
+     *   increment = freq_hz * 2097152 / 8000 = freq_hz * 262144 / 1000 */
+    uint32_t phase_inc = ((uint32_t)freq_hz * 262144U) / 1000U;
 
     for (uint16_t i = 0; i < VOICE_BUF_LEN; i++)
     {
@@ -628,8 +629,14 @@ void ARDF_CompassMode(void)
 
     uint32_t phase = 0;
 
-    /* Mute the BK4819 AF output so only the DAC tone is heard */
+    /* Mute the BK4819 AF output so only the DAC tone is heard.
+     * Additionally disable the BK4819 AF DAC in REG_30 to prevent
+     * any noise from the BK4819 analog output mixing with the MCU
+     * DAC sine wave on the shared audio amplifier line. */
     BK4819_SetAF(BK4819_AF_MUTE);
+    uint16_t saved_reg30 = BK4819_ReadRegister(BK4819_REG_30);
+    BK4819_WriteRegister(BK4819_REG_30,
+        saved_reg30 & ~BK4819_REG_30_MASK_ENABLE_AF_DAC);
     AUDIO_AudioPathOn();
 
     /* Pre-fill the voice ring buffer with initial tone */
@@ -670,6 +677,9 @@ void ARDF_CompassMode(void)
     /* Teardown: stop DAC playback, restore audio */
     VOICE_Stop();
     gVoiceBufLen = 0;
+
+    /* Re-enable BK4819 AF DAC before restoring modulation */
+    BK4819_WriteRegister(BK4819_REG_30, saved_reg30);
 
     RADIO_SetModulation(gRxVfo->Modulation);
     AUDIO_AudioPathOn();

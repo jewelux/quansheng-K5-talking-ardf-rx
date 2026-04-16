@@ -38,7 +38,12 @@ enum BEEP_Type_t
     BEEP_500HZ_30MS,
     BEEP_600HZ_30MS,
 #endif
-    BEEP_880HZ_60MS_DOUBLE_BEEP
+    BEEP_880HZ_60MS_DOUBLE_BEEP,
+#ifdef ENABLE_ARDF
+    BEEP_ARDF_LOW,      // 440 Hz, 60ms — low signal sonification
+    BEEP_ARDF_MID,      // 880 Hz, 60ms — medium signal sonification
+    BEEP_ARDF_HIGH,     // 1500 Hz, 60ms — high signal sonification
+#endif
 };
 
 typedef enum BEEP_Type_t BEEP_Type_t;

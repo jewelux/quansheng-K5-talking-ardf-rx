@@ -134,6 +134,17 @@ void AUDIO_PlayBeep(BEEP_Type_t Beep)
             ToneFrequency = 600;
             break;
 #endif
+#ifdef ENABLE_ARDF
+        case BEEP_ARDF_LOW:
+            ToneFrequency = 440;
+            break;
+        case BEEP_ARDF_MID:
+            ToneFrequency = 880;
+            break;
+        case BEEP_ARDF_HIGH:
+            ToneFrequency = 1500;
+            break;
+#endif
     }
 
     if(Beep == BEEP_400HZ_30MS || Beep == BEEP_500HZ_30MS || Beep == BEEP_600HZ_30MS)
@@ -175,6 +186,14 @@ void AUDIO_PlayBeep(BEEP_Type_t Beep)
         case BEEP_600HZ_30MS:
             BK4819_ExitTxMute();
             Duration = 30;
+            break;
+#endif
+#ifdef ENABLE_ARDF
+        case BEEP_ARDF_LOW:
+        case BEEP_ARDF_MID:
+        case BEEP_ARDF_HIGH:
+            BK4819_ExitTxMute();
+            Duration = 60;
             break;
 #endif
         case BEEP_440HZ_500MS:
@@ -557,6 +576,13 @@ bool AUDIO_PlaySAMText(const char *text)
     if (FUNCTION_IsRx())
         BK4819_SetAF(BK4819_AF_MUTE);
 
+    /* Disable the BK4819 AF DAC output to prevent FM/AM noise from the
+     * BK4819 analog path interfering with the MCU DAC SAM audio on the
+     * shared audio amplifier line.  RSSI and RX DSP remain active. */
+    uint16_t saved_reg30 = BK4819_ReadRegister(BK4819_REG_30);
+    BK4819_WriteRegister(BK4819_REG_30,
+        saved_reg30 & ~BK4819_REG_30_MASK_ENABLE_AF_DAC);
+
     #ifdef ENABLE_FMRADIO
         if (gFmRadioMode)
             BK1080_Mute(true);
@@ -637,6 +663,9 @@ bool AUDIO_PlaySAMText(const char *text)
 
     VOICE_Stop();
     gVoiceBufLen = 0;
+
+    /* Re-enable BK4819 AF DAC before restoring modulation */
+    BK4819_WriteRegister(BK4819_REG_30, saved_reg30);
 
     if (FUNCTION_IsRx())
         RADIO_SetModulation(gRxVfo->Modulation);

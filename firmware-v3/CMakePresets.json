@@ -269,11 +269,10 @@
             "name": "ARDF-SAM-Access",
             "inherits": "ARDF-SAM",
             "cacheVariables": {
-                "ENABLE_MORSE": true,
                 "EDITION_STRING": "ARDF-SAM-Access",
                 "TARGET": "f4hwn.ARDF_SAM_Access_K5v3_K1",
                 "AUTHOR_STRING_2": "DO9RE",
-                "VERSION_STRING_2": "v0.1"
+                "VERSION_STRING_2": "v0.3"
             }
         }
     ],

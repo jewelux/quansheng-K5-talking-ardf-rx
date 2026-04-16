@@ -31,6 +31,10 @@ void SAM_SetSpeed(uint8_t speed);
 /* Set base pitch: 1 (lowest) – 9 (highest), default 5. */
 void SAM_SetPitch(uint8_t pitch);
 
+/* Set mouth/throat character: 1 (deep) – 9 (bright), default 5.
+ * Controls formant frequencies for voice timbre. */
+void SAM_SetMouthThroatParam(uint8_t level);
+
 /* Begin synthesising *text*.  Preprocesses and converts to phonemes.
  * Call SAM_FillVoiceBuffer() repeatedly afterwards.
  * Returns estimated duration in 10 ms units (0 if nothing to say). */

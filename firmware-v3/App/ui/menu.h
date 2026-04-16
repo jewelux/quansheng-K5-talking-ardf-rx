@@ -179,6 +179,7 @@ enum
 #ifdef ENABLE_SAM_TTS
     MENU_SAM_SPEED,
     MENU_SAM_PITCH,
+    MENU_SAM_MOUTH,
 #endif
     MENU_BATCAL,  // battery voltage calibration
     MENU_F1SHRT,

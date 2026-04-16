@@ -505,6 +505,9 @@ static void MENU_GetSubMenuValueText(char *buf, size_t buf_size)
         case MENU_SAM_PITCH:
             snprintf(buf, buf_size, "Pitch %u", (unsigned)sel);
             break;
+        case MENU_SAM_MOUTH:
+            snprintf(buf, buf_size, "Mouth %u", (unsigned)sel);
+            break;
 #endif
 
 #ifdef ENABLE_ARDF
@@ -675,27 +678,81 @@ void MENU_PlayMorseForCurrentItem(void)
         if (gIsInSubMenu)
         {
             MENU_GetSubMenuValueText(buf, sizeof(buf));
+
+            /* Determine if this submenu value should be spelled out
+             * letter-by-letter (short abbreviations like AM, FM, USB) */
+            bool spell_sub = false;
+            switch (UI_MENU_GetCurrentMenuId())
+            {
+                case MENU_AM:        /* FM, AM, USB, BYP, RAW */
+                case MENU_W_N:       /* Wide, Narrow */
+                case MENU_TDR:       /* RxMode sub-values */
+                    spell_sub = true;
+                    break;
+                default:
+                    break;
+            }
+
+            if (spell_sub && buf[0])
+            {
+                /* Spell out abbreviation by inserting spaces */
+                char tmp[48];
+                int j = 0;
+                for (int k = 0; buf[k] && j < (int)sizeof(tmp) - 3; k++)
+                {
+                    if (buf[k] == ' ') continue; /* skip existing spaces */
+                    if (j > 0)
+                        tmp[j++] = ' ';
+                    tmp[j++] = buf[k];
+                }
+                tmp[j] = '\0';
+                strncpy(buf, tmp, sizeof(buf) - 1);
+                buf[sizeof(buf) - 1] = '\0';
+            }
         }
         else
         {
-            const char *name = MenuList[gMenuCursor].name;
-            if (MenuList[gMenuCursor].spell_out)
+            /* SAM pronunciation hints: override problematic menu names
+             * with phonetically clearer alternatives for the TTS engine.
+             * Display text is unaffected. */
+            const char *sam_text = NULL;
+            switch (UI_MENU_GetCurrentMenuId())
             {
-                /* Spell out abbreviation letter-by-letter by inserting
-                 * spaces between each character for SAM */
-                int j = 0;
-                for (int k = 0; name[k] && j < (int)sizeof(buf) - 3; k++)
-                {
-                    if (j > 0)
-                        buf[j++] = ' ';
-                    buf[j++] = name[k];
-                }
-                buf[j] = '\0';
+                case MENU_TXP:      sam_text = "POW ER";   break;
+                case MENU_STEP:     sam_text = "STEHP";    break;
+                case MENU_R_CTCS:   sam_text = "R X C T C S S"; break;
+                case MENU_T_CTCS:   sam_text = "T X C T C S S"; break;
+                case MENU_R_DCS:    sam_text = "R X D C S"; break;
+                case MENU_T_DCS:    sam_text = "T X D C S"; break;
+                default: break;
+            }
+
+            if (sam_text)
+            {
+                strncpy(buf, sam_text, sizeof(buf) - 1);
+                buf[sizeof(buf) - 1] = '\0';
             }
             else
             {
-                strncpy(buf, name, sizeof(buf) - 1);
-                buf[sizeof(buf) - 1] = '\0';
+                const char *name = MenuList[gMenuCursor].name;
+                if (MenuList[gMenuCursor].spell_out)
+                {
+                    /* Spell out abbreviation letter-by-letter by inserting
+                     * spaces between each character for SAM */
+                    int j = 0;
+                    for (int k = 0; name[k] && j < (int)sizeof(buf) - 3; k++)
+                    {
+                        if (j > 0)
+                            buf[j++] = ' ';
+                        buf[j++] = name[k];
+                    }
+                    buf[j] = '\0';
+                }
+                else
+                {
+                    strncpy(buf, name, sizeof(buf) - 1);
+                    buf[sizeof(buf) - 1] = '\0';
+                }
             }
         }
         AUDIO_PlaySAMText(buf);
@@ -1000,6 +1057,10 @@ int MENU_GetLimits(uint8_t menu_id, int32_t *pMin, int32_t *pMax)
                 *pMax = 9;
                 break;
             case MENU_SAM_PITCH:
+                *pMin = 1;
+                *pMax = 9;
+                break;
+            case MENU_SAM_MOUTH:
                 *pMin = 1;
                 *pMax = 9;
                 break;
@@ -1672,6 +1733,11 @@ void MENU_AcceptSetting(void)
                 SAM_SetPitch(gSamPitchSetting);
                 SETTINGS_SaveAccessibilityMode();
                 break;
+            case MENU_SAM_MOUTH:
+                gSamMouthSetting = gSubMenuSelection;
+                SAM_SetMouthThroatParam(gSamMouthSetting);
+                SETTINGS_SaveAccessibilityMode();
+                break;
         #endif
 
         case MENU_SC_REV:
@@ -2246,6 +2312,9 @@ void MENU_ShowCurrentSetting(void)
             break;
         case MENU_SAM_PITCH:
             gSubMenuSelection = gSamPitchSetting;
+            break;
+        case MENU_SAM_MOUTH:
+            gSubMenuSelection = gSamMouthSetting;
             break;
 #endif
 

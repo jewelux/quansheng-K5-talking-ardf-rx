@@ -606,9 +606,9 @@ void AUDIO_PlaySAMText(const char *text)
 
 void AUDIO_SamSayFrequency(uint32_t frequency)
 {
-    char buf[24];
+    char buf[36];
     /* frequency is in 10 Hz units, e.g. 14500000 = 145.00000 MHz
-     * Format: "1 4 5 point 0 0 0" */
+     * Format: "1 4 5 point 0 0 0 0 0" — all 5 fractional digits */
     uint32_t mhz  = frequency / 100000;
     uint32_t frac = frequency % 100000;
     int pos = 0;
@@ -636,14 +636,18 @@ void AUDIO_SamSayFrequency(uint32_t frequency)
     buf[pos++] = 'p'; buf[pos++] = 'o'; buf[pos++] = 'i';
     buf[pos++] = 'n'; buf[pos++] = 't'; buf[pos++] = ' ';
 
-    /* Fractional part: first 3 digits of 5-digit fraction */
+    /* All 5 fractional digits for complete frequency readout */
     uint8_t d1 = frac / 10000; frac %= 10000;
     uint8_t d2 = frac / 1000;  frac %= 1000;
-    uint8_t d3 = frac / 100;
+    uint8_t d3 = frac / 100;   frac %= 100;
+    uint8_t d4 = frac / 10;
+    uint8_t d5 = frac % 10;
 
     buf[pos++] = '0' + d1; buf[pos++] = ' ';
     buf[pos++] = '0' + d2; buf[pos++] = ' ';
-    buf[pos++] = '0' + d3;
+    buf[pos++] = '0' + d3; buf[pos++] = ' ';
+    buf[pos++] = '0' + d4; buf[pos++] = ' ';
+    buf[pos++] = '0' + d5;
     buf[pos] = '\0';
 
     AUDIO_PlaySAMText(buf);

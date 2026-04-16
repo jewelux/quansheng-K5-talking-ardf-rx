@@ -480,8 +480,13 @@ gEeprom.FreqChannel[1]   = IS_FREQ_CHANNEL(Data16[5]) ? Data16[5] : (FREQ_CHANNE
             gSamPitchSetting = AccData[2];
         else
             gSamPitchSetting = 5;
+        if (AccData[3] != 0xFF && AccData[3] >= 1 && AccData[3] <= 9)
+            gSamMouthSetting = AccData[3];
+        else
+            gSamMouthSetting = 5;
         SAM_SetSpeed(gSamSpeedSetting);
         SAM_SetPitch(gSamPitchSetting);
+        SAM_SetMouthThroatParam(gSamMouthSetting);
 #endif
     }
 #endif
@@ -885,6 +890,7 @@ void SETTINGS_SaveAccessibilityMode(void)
 #ifdef ENABLE_SAM_TTS
     AccData[1] = gSamSpeedSetting;
     AccData[2] = gSamPitchSetting;
+    AccData[3] = gSamMouthSetting;
 #endif
     PY25Q16_WriteBuffer(0x00D000 + 0x0C, AccData, sizeof(AccData), true);
 }

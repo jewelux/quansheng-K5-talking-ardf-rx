@@ -23,13 +23,12 @@
  * ===================================================================== */
 
 /* Maximum number of render frames (limits utterance length).
- * Original SAM uses 256, but on this MCU with only 16 KB RAM we use 128
- * to keep the sam_mem union within 1280 bytes (dominated by the parse
- * side).  128 frames at standard speed (~72 samples/frame) still covers
- * several seconds of speech, which is sufficient for menu announcements.
- * The truncation bug was caused by rs.mem48-- (now removed), not by
- * MAX_FRAMES being too small. */
-#define MAX_FRAMES   128
+ * Original SAM uses 256, but on this MCU with only 16 KB RAM we keep
+ * the sam_mem union within 1280 bytes (dominated by the parse side).
+ * 160 frames fit exactly into 1280 bytes (160 × 8 arrays = 1280) and
+ * cover several seconds of speech for menu announcements.  Previous
+ * value was 128; raised to 160 after RAM savings elsewhere. */
+#define MAX_FRAMES   160
 
 /* Maximum phoneme buffer size for parser */
 #define MAX_PHON     128
@@ -654,9 +653,9 @@ static const unsigned char phoneme_flags2[] =
  *   [51]  AW  0xF→0x11
  *   [52]  OW  0xE→0x10
  *   [53]  UW  0xE→0x10
- *   [67]  P*b 2→4       longer plosive burst for crisper /p/
- *   [70]  T*b 2→4       longer plosive burst for crisper /t/
- *   [73]  K*b 1→3       longer plosive burst for crisper /k/
+ *   [67]  P*b 2 (original) – kept short to avoid sibilant artifact
+ *   [70]  T*b 2 (original) – kept short to avoid sibilant artifact
+ *   [73]  K*b 1 (original) – kept short to avoid sibilant artifact
  */
 static const unsigned char phonemeStressedLengthTable[] =
 {
@@ -668,8 +667,8 @@ static const unsigned char phonemeStressedLengthTable[] =
     8, 6, 6, 2, 9, 4, 2, 1,
     0x10, 0x11, 0x11, 0x11, 0x10, 0x10, 8, 2,
     2, 7, 2, 1, 7, 2, 2, 7,
-    2, 2, 8, 4, 2, 4, 4, 2,
-    7, 3, 4, 7, 1, 4, 5, 5
+    2, 2, 8, 2, 2, 4, 2, 2,
+    7, 1, 4, 7, 1, 4, 5, 5
 };
 
 /* Unstressed phoneme lengths – base durations.  Adjustments:
@@ -682,9 +681,9 @@ static const unsigned char phonemeStressedLengthTable[] =
  *   [51]  AW  0xC→0xE
  *   [52]  OW  0xE→0x10
  *   [53]  UW  9→0xB
- *   [67]  P*b 2→3       plosive burst
- *   [70]  T*b 2→3       plosive burst
- *   [73]  K*b 1→2       plosive burst
+ *   [67]  P*b 2 (original) – kept short to avoid sibilant artifact
+ *   [70]  T*b 2 (original) – kept short to avoid sibilant artifact
+ *   [73]  K*b 1 (original) – kept short to avoid sibilant artifact
  */
 static const unsigned char phonemeLengthTable[] =
 {
@@ -696,8 +695,8 @@ static const unsigned char phonemeLengthTable[] =
     7, 6, 6, 2, 8, 3, 1, 0x1E,
     0xF, 0xE, 0xE, 0xE, 0x10, 0xB, 6, 1,
     2, 5, 1, 1, 6, 1, 2, 6,
-    1, 2, 8, 3, 2, 4, 3, 2,
-    6, 2, 4, 6, 1, 4, 0xC7, 0xFF
+    1, 2, 8, 2, 2, 4, 2, 2,
+    6, 1, 4, 6, 1, 4, 0xC7, 0xFF
 };
 
 /* ===========================================================================
@@ -2732,12 +2731,20 @@ static int GenerateOneSample(void)
                 /* Unvoiced: read from sample table.
                  * Centre noise symmetrically around 128 (DAC midpoint)
                  * to eliminate DC offset and transition clicks.
-                 * Half-swing = low nibble of tab48426 × 4. */
+                 * Half-swing = low nibble of tab48426 × 4.
+                 *
+                 * Plosive bursts (P*b, T*b) have small tableOffset
+                 * values (≤0x40) while sibilants (S, SH, etc.) use
+                 * high values (≥0x78).  Reduce plosive burst amplitude
+                 * to a short crisp click rather than sibilant-like noise,
+                 * improving P/T/K vs S/SH differentiation. */
                 unsigned char yy = tableOffset ^ 255;
                 yy = (yy + rs.sc_phase) & 0xFF;
                 sampleByte = sampleTable[tableIdx * 256 + yy];
                 {
                     unsigned char amp = (tab48426[tableIdx] & 0x0f) << 2;
+                    if (tableOffset < 0x40)
+                        amp = amp >> 1;  /* halve plosive burst amplitude */
                     sample = ((sampleByte >> (7 - rs.sc_bit)) & 1) ?
                              128 + amp : 128 - amp;
                 }
@@ -2894,6 +2901,25 @@ void SAM_SetPitch(uint8_t pitch)
     };
     if (pitch > 9) pitch = 9;
     sam_pitch = pitch_map[pitch];
+}
+
+void SAM_SetMouthThroatParam(uint8_t level)
+{
+    /* Maps 1-9 to mouth/throat values.  Higher = brighter formants.
+     * 5 (default) gives the tuned-for-radio values of 145/135. */
+    static const unsigned char mouth_map[10] = {
+        145, 110, 118, 126, 135, 145, 155, 165, 175, 185
+    };
+    static const unsigned char throat_map[10] = {
+        135, 100, 108, 118, 126, 135, 145, 155, 165, 175
+    };
+    if (level > 9) level = 9;
+    sam_mouth  = mouth_map[level];
+    sam_throat = throat_map[level];
+    /* Re-apply to working frequency tables */
+    memcpy(freq1data_mut, freq1data_init, sizeof(freq1data_init));
+    memcpy(freq2data_mut, freq2data_init, sizeof(freq2data_init));
+    SetMouthThroat(sam_mouth, sam_throat);
 }
 
 uint16_t SAM_StartSpeaking(const char *text)

@@ -1177,6 +1177,66 @@ static void CheckKeys(void)
 #endif
 
 // -------------------- PTT ------------------------
+
+#ifdef ENABLE_ARDF
+    // ARDF accessibility: PTT short = snapshot, PTT hold = compass mode
+    // This completely replaces normal PTT TX behaviour when ARDF is active.
+    if (gSetting_ARDFEnable && !SerialConfigInProgress()
+        && gScreenToDisplay != DISPLAY_MENU)
+    {
+        if (gPttIsPressed)
+        {
+            if (!GPIO_IsPttPressed())
+            {   // PTT released
+                if (++gPttDebounceCounter >= 3)     // 30ms
+                {
+                    if (!gPttHoldEventSent)
+                        ARDF_PlaySnapshot();
+                    // hold+release: compass mode already finished
+
+                    gPttIsPressed     = false;
+                    gPttHeldCounter   = 0;
+                    gPttHoldEventSent = false;
+                    if (gKeyReading1 != KEY_INVALID)
+                        gPttWasReleased = true;
+                }
+            }
+            else
+            {
+                gPttDebounceCounter = 0;
+
+                if (!gPttHoldEventSent)
+                {
+                    if (gPttHeldCounter < key_repeat_delay_10ms)
+                        gPttHeldCounter++;
+
+                    if (gPttHeldCounter >= key_repeat_delay_10ms)
+                    {
+                        gPttHoldEventSent = true;
+                        // PTT held in ARDF mode: start compass mode
+                        // (blocks until PTT is released)
+                        ARDF_CompassMode();
+                    }
+                }
+            }
+        }
+        else if (GPIO_IsPttPressed())
+        {   // PTT pressed
+            if (++gPttDebounceCounter >= 3)     // 30ms
+            {
+                boot_counter_10ms   = 0;
+                gPttDebounceCounter = 0;
+                gPttIsPressed       = true;
+                gPttHeldCounter     = 0;
+                gPttHoldEventSent   = false;
+            }
+        }
+        else
+            gPttDebounceCounter = 0;
+    }
+    else
+#endif // ENABLE_ARDF
+
 #ifdef ENABLE_FEAT_F4HWN
     if (gSetting_set_ptt_session)
     {

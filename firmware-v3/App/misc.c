@@ -303,6 +303,10 @@ bool              gRxVfoIsActive;
 bool              gKeyBeingHeld;
 bool              gPttIsPressed;
 uint8_t           gPttDebounceCounter;
+#ifdef ENABLE_ARDF
+uint16_t          gPttHeldCounter;
+bool              gPttHoldEventSent;
+#endif
 uint8_t           gMenuListCount;
 uint8_t           gBackup_CROSS_BAND_RX_TX;
 uint8_t           gScanDelay_10ms;

@@ -569,9 +569,123 @@ void ARDF_SnapshotSpeedDecr(void)
 
 // --- Compass mode (PTT held → continuous RSSI-to-tone) ---
 
+#if defined(ENABLE_SAM_TTS)
+/* ---- V3 DAC-based compass mode (concurrent RX + tone) ----
+ *
+ * The V3 hardware has a dedicated 12-bit DAC with DMA that is separate
+ * from the BK4819 RF transceiver.  This means the BK4819 can stay in
+ * RX mode continuously while the MCU DAC outputs a tone through the
+ * voice ring-buffer infrastructure.
+ *
+ * Advantage over the BK4819 time-slice approach:
+ *   - No gaps in reception — RSSI is read every iteration
+ *   - Smoother tone output — 12-bit sine vs BK4819 square wave
+ *   - Lower latency between RSSI change and tone change
+ */
+
+#include "driver/voice.h"
+
+/* Pre-computed 12-bit sine table (one period, 32 entries) */
+static const uint16_t compass_sine_table[32] = {
+    2048, 2447, 2831, 3185, 3495, 3750, 3939, 4055,
+    4095, 4055, 3939, 3750, 3495, 3185, 2831, 2447,
+    2048, 1648, 1264,  910,  600,  345,  156,   40,
+       0,   40,  156,  345,  600,  910, 1264, 1648
+};
+
+/* Fill one voice buffer slot with a sine wave at the given frequency.
+ * phase is updated in place so consecutive calls produce a continuous wave. */
+static void ARDF_FillSineBuffer(uint16_t freq_hz, uint32_t *phase_acc)
+{
+    /* Fixed-point phase increment per sample.
+     * phase_acc uses 16.16 format, table has 32 entries.
+     * increment = freq_hz * 32 * 65536 / 8000 = freq_hz * 262144 / 8000
+     *           = freq_hz * 32768 / 1000 */
+    uint32_t phase_inc = ((uint32_t)freq_hz * 32768U) / 1000U;
+
+    for (uint16_t i = 0; i < VOICE_BUF_LEN; i++)
+    {
+        uint8_t idx = (*phase_acc >> 16) & 31;
+        gVoiceBuf[gVoiceBufWriteIndex][i] = compass_sine_table[idx];
+        *phase_acc += phase_inc;
+    }
+    VOICE_BUF_ForwardWriteIndex();
+    gVoiceBufLen++;
+}
+
 void ARDF_CompassMode(void)
 {
-    // Continuous RSSI-to-tone compass mode.
+    // Continuous RSSI-to-tone compass mode using V3 DAC.
+    // BK4819 stays in RX mode; tone is output through DAC/DMA.
+    // Runs while PTT is held; returns when PTT is released.
+
+    #define COMPASS_FREQ_MIN_HZ   300
+    #define COMPASS_FREQ_MAX_HZ   2400
+    #define COMPASS_RSSI_MIN_DBM  (-130)
+    #define COMPASS_RSSI_MAX_DBM  (-50)
+    #define COMPASS_FREQ_SPAN     (COMPASS_FREQ_MAX_HZ - COMPASS_FREQ_MIN_HZ)
+    #define COMPASS_RSSI_SPAN     (COMPASS_RSSI_MAX_DBM - COMPASS_RSSI_MIN_DBM)
+
+    uint32_t phase = 0;
+
+    /* Mute the BK4819 AF output so only the DAC tone is heard */
+    BK4819_SetAF(BK4819_AF_MUTE);
+    AUDIO_AudioPathOn();
+
+    /* Pre-fill the voice ring buffer with initial tone */
+    uint16_t rssi_raw = BK4819_GetRSSI();
+    int16_t  rssi_dBm = (rssi_raw / 2) - 160;
+    int16_t  freq = COMPASS_FREQ_MIN_HZ +
+                    ((rssi_dBm - COMPASS_RSSI_MIN_DBM) * COMPASS_FREQ_SPAN / COMPASS_RSSI_SPAN);
+    if (freq < COMPASS_FREQ_MIN_HZ)  freq = COMPASS_FREQ_MIN_HZ;
+    if (freq > COMPASS_FREQ_MAX_HZ)  freq = COMPASS_FREQ_MAX_HZ;
+
+    gVoiceBufLen = 0;
+    gVoiceBufReadIndex = 0;
+    gVoiceBufWriteIndex = 0;
+
+    while (gVoiceBufLen < VOICE_BUF_CAP)
+        ARDF_FillSineBuffer((uint16_t)freq, &phase);
+
+    VOICE_Start();
+
+    while (GPIO_IsPttPressed())
+    {
+        /* Read RSSI while BK4819 stays in RX mode — no time-slicing */
+        rssi_raw = BK4819_GetRSSI();
+        rssi_dBm = (rssi_raw / 2) - 160;
+
+        freq = COMPASS_FREQ_MIN_HZ +
+               ((rssi_dBm - COMPASS_RSSI_MIN_DBM) * COMPASS_FREQ_SPAN / COMPASS_RSSI_SPAN);
+        if (freq < COMPASS_FREQ_MIN_HZ)  freq = COMPASS_FREQ_MIN_HZ;
+        if (freq > COMPASS_FREQ_MAX_HZ)  freq = COMPASS_FREQ_MAX_HZ;
+
+        /* Refill consumed voice buffer slots with updated frequency */
+        if (gVoiceBufLen < VOICE_BUF_CAP)
+            ARDF_FillSineBuffer((uint16_t)freq, &phase);
+        else
+            SYSTEM_DelayMs(5);
+    }
+
+    /* Teardown: stop DAC playback, restore audio */
+    VOICE_Stop();
+    gVoiceBufLen = 0;
+
+    RADIO_SetModulation(gRxVfo->Modulation);
+    AUDIO_AudioPathOn();
+    gEnableSpeaker = true;
+    SYSTEM_DelayMs(10);
+    APP_StartListening(gMonitor ? FUNCTION_MONITOR : FUNCTION_RECEIVE);
+    ARDF_ActivateGainIndex();
+    gARDFRssiMax = BK4819_GetRSSI();
+}
+
+#else /* !ENABLE_SAM_TTS — BK4819 time-slice fallback (same as V1) */
+
+void ARDF_CompassMode(void)
+{
+    // Continuous RSSI-to-tone compass mode using BK4819 tone generator.
+    // Uses time-slicing: alternates between RX and tone output.
     // Runs while PTT is held; returns when PTT is released.
 
     #define COMPASS_FREQ_MIN_HZ   300
@@ -641,6 +755,8 @@ void ARDF_CompassMode(void)
     ARDF_ActivateGainIndex();
     gARDFRssiMax = BK4819_GetRSSI();
 }
+
+#endif /* ENABLE_SAM_TTS */
 
 
 

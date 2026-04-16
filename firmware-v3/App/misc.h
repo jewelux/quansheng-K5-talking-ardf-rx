@@ -442,6 +442,10 @@ extern uint16_t              gAlarmRunningCounter;
 extern bool                  gKeyBeingHeld;
 extern bool                  gPttIsPressed;
 extern uint8_t               gPttDebounceCounter;
+#ifdef ENABLE_ARDF
+extern uint16_t              gPttHeldCounter;
+extern bool                  gPttHoldEventSent;
+#endif
 extern uint8_t               gMenuListCount;
 extern uint8_t               gBackup_CROSS_BAND_RX_TX;
 extern uint8_t               gScanDelay_10ms;

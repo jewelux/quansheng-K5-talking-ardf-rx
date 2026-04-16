@@ -52,7 +52,7 @@
 #endif
 
 #if defined(ENABLE_ARDF) && defined(ENABLE_SAM_TTS)
-#include <stdio.h>
+#include "external/printf/printf.h"
 /* Announce current gain setting via SAM TTS.
  * Negative gain levels are spoken as "N 1" .. "N 9".
  * Normal gain is spoken as the dB value, e.g. "minus 25". */

@@ -685,8 +685,11 @@ void MENU_PlayMorseForCurrentItem(void)
         for (;;)
         {
             /* Force display update BEFORE speaking so screen and voice
-             * are always in sync. */
-            MENU_ShowCurrentSetting();
+             * are always in sync.  Only reload the setting from EEPROM
+             * when browsing menu titles; inside a submenu the value
+             * has already been updated by MENU_ClampSelection(). */
+            if (!gIsInSubMenu)
+                MENU_ShowCurrentSetting();
             gScreenToDisplay = DISPLAY_MENU;
             UI_DisplayMenu();
 

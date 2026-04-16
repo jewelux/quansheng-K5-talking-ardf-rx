@@ -191,7 +191,7 @@
                 "ENABLE_FEAT_F4HWN_RESCUE_OPS": true,
                 "ENABLE_SWD": true,
                 "ENABLE_ARDF": true,
-                "ENABLE_PREVENT_TX": true,
+                "ENABLE_PREVENT_TX": false,
                 "ENABLE_UART_RW_BK_REGS": true,
                 "EDITION_STRING": "ARDF",
                 "TARGET": "f4hwn.ARDF_K5v3_K1",

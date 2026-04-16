@@ -578,6 +578,23 @@ bool AUDIO_PlaySAMText(const char *text)
 
     bool interrupted = false;
 
+    /* Wait for the triggering key to be released first, so the
+     * abort-poll below doesn't immediately catch the key that
+     * started the speech.  Keep filling the buffer while waiting. */
+    {
+        uint16_t wait = 500U;   /* max ~500 ms */
+        while (wait > 0U && SAM_IsSpeaking())
+        {
+            if (KEYBOARD_Poll() == KEY_INVALID)
+                break;
+            if (gVoiceBufLen < VOICE_BUF_CAP)
+                SAM_FillVoiceBuffer();
+            else
+                SYSTEM_DelayMs(5);
+            wait -= 5U;
+        }
+    }
+
     /* Continue filling the buffer while the DMA ISR drains it.
      * Poll the keyboard so we can abort immediately if a new
      * key is pressed (interrupt-and-restart behaviour). */

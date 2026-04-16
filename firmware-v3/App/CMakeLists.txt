@@ -213,7 +213,6 @@ enable_feature(ENABLE_ARDF
     app/ardf.c
     ui/ardf.c
 )
-enable_feature(ENABLE_PREVENT_TX)
 
 # ---- ACCESSIBILITY ----
 enable_feature(ENABLE_MORSE)

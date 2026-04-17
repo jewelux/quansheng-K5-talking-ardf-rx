@@ -2935,10 +2935,13 @@ static int16_t sam_filter(int16_t sample)
     if (acc >  32767) acc =  32767;
     if (acc < -32768) acc = -32768;
     out = (int16_t)acc;
+    /* Update stage 1 delay line (old values already consumed above) */
     filt_s1_x2 = filt_s1_x1;  filt_s1_x1 = sample;
     filt_s1_y2 = filt_s1_y1;  filt_s1_y1 = out;
 
-    /* Stage 2: High shelf – HF compensation at 3000 Hz */
+    /* Stage 2: High shelf – HF compensation at 3000 Hz
+     * 'out' still holds current stage 1 result; s2 delay line holds
+     * previous values — both are consumed before being overwritten. */
     acc  = (int32_t)FILT_S2_B0 * out;
     acc += (int32_t)FILT_S2_B1 * filt_s2_x1;
     acc += (int32_t)FILT_S2_B2 * filt_s2_x2;
@@ -2948,6 +2951,7 @@ static int16_t sam_filter(int16_t sample)
     if (acc >  32767) acc =  32767;
     if (acc < -32768) acc = -32768;
     out = (int16_t)acc;
+    /* filt_s1_y1 == current stage 1 output, becomes s2's "previous input" */
     filt_s2_x2 = filt_s2_x1;  filt_s2_x1 = filt_s1_y1;
     filt_s2_y2 = filt_s2_y1;  filt_s2_y1 = out;
 

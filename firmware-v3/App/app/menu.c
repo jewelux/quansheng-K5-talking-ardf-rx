@@ -728,6 +728,22 @@ void MENU_PlayMorseForCurrentItem(void)
                     strncpy(buf, tmp, sizeof(buf) - 1);
                     buf[sizeof(buf) - 1] = '\0';
                 }
+
+#ifdef ENABLE_ARDF
+                /* Replace "ARDF" at start of submenu value text with
+                 * phonetic spelling so SAM speaks individual letters.
+                 * Handles both the ARDF mode selector ("ARDF") and
+                 * side-function names ("ARDF\noff/on", etc.). */
+                if (buf[0] == 'A' && buf[1] == 'R' && buf[2] == 'D' && buf[3] == 'F')
+                {
+                    const char *rest = buf + 4;  /* text after "ARDF" */
+                    char tmp[48];
+                    snprintf(tmp, sizeof(tmp), "AY AHR DEE EHF%s%s",
+                             (*rest && *rest != ' ') ? " " : "", rest);
+                    strncpy(buf, tmp, sizeof(buf) - 1);
+                    buf[sizeof(buf) - 1] = '\0';
+                }
+#endif
             }
             else
             {
@@ -748,6 +764,16 @@ void MENU_PlayMorseForCurrentItem(void)
                     case MENU_SAM_SPEED: sam_text = "SAM S P D"; break;
                     case MENU_SAM_PITCH: sam_text = "SAM P T C"; break;
                     case MENU_SAM_MOUTH: sam_text = "SAM M T H"; break;
+#ifdef ENABLE_ARDF
+                    case MENU_ARDF:              sam_text = "AY AHR DEE EHF"; break;
+                    case MENU_ARDF_NUMFOXES:     sam_text = "NUM FOKS";       break;
+                    case MENU_ARDF_FOXDURATION:  sam_text = "FOKS DURAYSHUN"; break;
+                    case MENU_ARDF_SETFOX:       sam_text = "AKTIV FOKS";     break;
+                    case MENU_ARDF_TIME_RESET:   sam_text = "TAYM REESET";    break;
+                    case MENU_ARDF_GAIN_REMEMBER: sam_text = "GAYN REEMEMBER"; break;
+                    case MENU_ARDF_CYCLE_END_BEEP: sam_text = "EHND SIGNAL";  break;
+                    case MENU_ARDF_CLOCK_CORR:   sam_text = "KLOK KOREKSHUN"; break;
+#endif
                     default: break;
                 }
 

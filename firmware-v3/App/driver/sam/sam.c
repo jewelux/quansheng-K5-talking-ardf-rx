@@ -781,7 +781,7 @@ static const unsigned char sampledConsonantFlags[] =
     0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0x1B, 0, 0, 0x19, 0,
-    0, 0, 0, 0, 0, 0, 0, 0
+    0, 0x1A, 0x32, 0, 0x1A, 0x32, 0, 0   /* [73] K*b: burst; [74] K**: aspiration; [76] KX*b: burst; [77] KX**: aspiration */
 };
 
 /* freq1data and freq2data – mutable copies, modified by SetMouthThroat()
@@ -805,13 +805,13 @@ static const unsigned char freq2data_init[] =
     0x00, 0x43, 0x43, 0x43, 0x43, 0x54, 0x48, 0x42,
     0x3E, 0x28, 0x2C, 0x1E, 0x24, 0x2C, 0x48, 0x30,
     0x24, 0x1E, 0x32, 0x24, 0x1C, 0x44, 0x18, 0x32,
-    0x1E, 0x18, 0x52, 0x2E, 0x36, 0x56, 0x36, 0x3F,  /* [31] D: 0x43→0x3F darker */
-    0x49, 0x4F, 0x1A, 0x42, 0x50, 0x25, 0x33, 0x42,  /* [36] T: 0x49→0x50 brighter */
-    0x28, 0x2F, 0x45, 0x4F, 0x42, 0x4F, 0x6E, 0x00,  /* [42] D: 0x4F→0x45 darker */
+    0x1E, 0x18, 0x52, 0x2E, 0x36, 0x56, 0x4A, 0x3F,  /* [30] DX: 0x36→0x4A alveolar F2 ~1593Hz */
+    0x49, 0x4F, 0x1A, 0x42, 0x50, 0x25, 0x33, 0x42,
+    0x28, 0x2F, 0x45, 0x4F, 0x42, 0x4F, 0x6E, 0x00,
     0x48, 0x26, 0x1E, 0x2A, 0x1E, 0x22, 0x1A, 0x12,  /* [55] B: 0x1A→0x12 darker */
-    0x1A, 0x42, 0x3E, 0x42, 0x6E, 0x6E, 0x6E, 0x54,  /* [58] D: 0x42→0x3E darker */
-    0x54, 0x54, 0x1A, 0x24, 0x1A, 0x42, 0x4E, 0x42,  /* [67] P: 0x1A→0x24 brighter; [70] T: 0x42→0x4E brighter */
-    0x6D, 0x56, 0x6D, 0x54, 0x54, 0x54, 0x7F, 0x7F
+    0x1A, 0x54, 0x50, 0x54, 0x38, 0x38, 0x38, 0x38,  /* [57] D: →0x54 alveolar ~1809Hz; [60] G: →0x38 velar ~1206Hz */
+    0x38, 0x38, 0x1A, 0x24, 0x1A, 0x54, 0x56, 0x54,  /* [64] GX: →0x38 velar; [69] T: →0x54 alveolar; [70] T*b: →0x56 */
+    0x38, 0x38, 0x38, 0x38, 0x38, 0x38, 0x7F, 0x7F   /* [72] K/KX: →0x38 velar ~1206Hz */
 };
 
 /* Mutable working copies (in RAM) */
@@ -827,9 +827,9 @@ static const unsigned char freq3data[] =
     0x63, 0x6A, 0x51, 0x79, 0x5D, 0x52, 0x5D, 0x67,
     0x4C, 0x5D, 0x65, 0x65, 0x79, 0x65, 0x79, 0x00,
     0x5A, 0x58, 0x58, 0x58, 0x58, 0x52, 0x51, 0x51,
-    0x51, 0x79, 0x79, 0x79, 0x70, 0x6E, 0x6E, 0x5E,
-    0x5E, 0x5E, 0x51, 0x51, 0x51, 0x79, 0x79, 0x79,
-    0x65, 0x65, 0x70, 0x5E, 0x5E, 0x5E, 0x08, 0x01
+    0x51, 0x79, 0x79, 0x79, 0x60, 0x60, 0x60, 0x58,  /* [60] G: F3 lowered for velar character */
+    0x58, 0x58, 0x51, 0x51, 0x51, 0x79, 0x79, 0x79,  /* [64] GX: F3 lowered to match G */
+    0x60, 0x60, 0x70, 0x5E, 0x5E, 0x5E, 0x08, 0x01   /* [72] K: F3 slightly lowered for velar */
 };
 
 static const unsigned char ampl1data[] =
@@ -2872,6 +2872,96 @@ advance_pitch:
 
 
 /* ===========================================================================
+ *  POST-PROCESSING FILTER – Two-stage IIR biquad (Direct Form I)
+ *
+ *  Stage 1: Peaking EQ at 2500 Hz, +6 dB, Q=1.2
+ *           Enhances fricatives/plosive bursts for consonant clarity.
+ *  Stage 2: High shelf at 3000 Hz, +4 dB
+ *           Compensates for small speaker HF rolloff.
+ *
+ *  Fixed-point Q2.13 arithmetic (scale factor 8192).
+ *  Sample rate: 8000 Hz.  Total filter state: 16 bytes RAM.
+ * =========================================================================== */
+
+/* Filter state – 4 × int16_t per stage = 16 bytes total (≤20 byte budget) */
+static int16_t filt_s1_x1, filt_s1_x2, filt_s1_y1, filt_s1_y2;
+static int16_t filt_s2_x1, filt_s2_x2, filt_s2_y1, filt_s2_y2;
+
+/* Biquad coefficients in Q2.13 (multiply float by 8192, round).
+ *
+ * Stage 1 – Peaking EQ: f0=2500Hz, gain=+6dB, Q=1.2, Fs=8000Hz
+ *   w0 = 2π×2500/8000 = 5π/8
+ *   A  = 10^(6/40)    = 1.41254
+ *   α  = sin(w0)/(2Q) = 0.92388/2.4 = 0.38495
+ *   b0 = 1+α·A  = 1.54373   b1 = -2cos(w0) = 0.76536   b2 = 1-α·A  = 0.45627
+ *   a0 = 1+α/A  = 1.27252   a1 = -2cos(w0) = 0.76536   a2 = 1-α/A  = 0.72748
+ *   Normalized: b0n=1.21311  b1n=0.60147  b2n=0.35854
+ *               a1n=0.60147  a2n=0.57170
+ *
+ * Stage 2 – High shelf: f0=3000Hz, gain=+4dB, S=1, Fs=8000Hz
+ *   w0 = 2π×3000/8000 = 3π/4
+ *   A  = 10^(4/40)    = 1.25893
+ *   α  = sin(w0)/2·√2 = 0.50000
+ *   b0n=1.12951  b1n=0.94530  b2n=0.33685
+ *   a1n=1.04159  a2n=0.37038
+ */
+#define FILT_S1_B0  9938   /* 1.21311 × 8192 */
+#define FILT_S1_B1  4927   /* 0.60147 × 8192 */
+#define FILT_S1_B2  2938   /* 0.35854 × 8192 */
+#define FILT_S1_A1  4927   /* 0.60147 × 8192 */
+#define FILT_S1_A2  4683   /* 0.57170 × 8192 */
+
+#define FILT_S2_B0  9253   /* 1.12951 × 8192 */
+#define FILT_S2_B1  7744   /* 0.94530 × 8192 */
+#define FILT_S2_B2  2759   /* 0.33685 × 8192 */
+#define FILT_S2_A1  8533   /* 1.04159 × 8192 */
+#define FILT_S2_A2  3034   /* 0.37038 × 8192 */
+
+/* Apply two-stage IIR biquad filter to one signed audio sample.
+ * Input/output: signed 12-bit PCM centred at 0 (range approx ±2048).
+ * Runs in ~80 cycles on Cortex-M0+ at 72 MHz (< 100 cycle budget). */
+static int16_t sam_filter(int16_t sample)
+{
+    int32_t acc;
+    int16_t out;
+
+    /* Stage 1: Peaking EQ – presence boost at 2500 Hz */
+    acc  = (int32_t)FILT_S1_B0 * sample;
+    acc += (int32_t)FILT_S1_B1 * filt_s1_x1;
+    acc += (int32_t)FILT_S1_B2 * filt_s1_x2;
+    acc -= (int32_t)FILT_S1_A1 * filt_s1_y1;
+    acc -= (int32_t)FILT_S1_A2 * filt_s1_y2;
+    acc >>= 13;  /* Q2.13 de-scale */
+    if (acc >  32767) acc =  32767;
+    if (acc < -32768) acc = -32768;
+    out = (int16_t)acc;
+    filt_s1_x2 = filt_s1_x1;  filt_s1_x1 = sample;
+    filt_s1_y2 = filt_s1_y1;  filt_s1_y1 = out;
+
+    /* Stage 2: High shelf – HF compensation at 3000 Hz */
+    acc  = (int32_t)FILT_S2_B0 * out;
+    acc += (int32_t)FILT_S2_B1 * filt_s2_x1;
+    acc += (int32_t)FILT_S2_B2 * filt_s2_x2;
+    acc -= (int32_t)FILT_S2_A1 * filt_s2_y1;
+    acc -= (int32_t)FILT_S2_A2 * filt_s2_y2;
+    acc >>= 13;
+    if (acc >  32767) acc =  32767;
+    if (acc < -32768) acc = -32768;
+    out = (int16_t)acc;
+    filt_s2_x2 = filt_s2_x1;  filt_s2_x1 = filt_s1_y1;
+    filt_s2_y2 = filt_s2_y1;  filt_s2_y1 = out;
+
+    return out;
+}
+
+static void sam_filter_reset(void)
+{
+    filt_s1_x1 = filt_s1_x2 = filt_s1_y1 = filt_s1_y2 = 0;
+    filt_s2_x1 = filt_s2_x2 = filt_s2_y1 = filt_s2_y2 = 0;
+}
+
+
+/* ===========================================================================
  *  PUBLIC API  –  Quansheng K5 interface
  * =========================================================================== */
 
@@ -2883,6 +2973,7 @@ void SAM_Init(void)
     sam_speaking = false;
     memset(&rs, 0, sizeof(rs));
     rs.state = 4;
+    sam_filter_reset();
 }
 
 void SAM_SetSpeed(uint8_t speed)
@@ -2947,6 +3038,7 @@ uint16_t SAM_StartSpeaking(const char *text)
         return 0;
 
     sam_speaking = true;
+    sam_filter_reset();  /* clear filter state to prevent inter-utterance transients */
 
     /* Estimate duration in 10ms units */
     {
@@ -3003,8 +3095,17 @@ bool SAM_FillVoiceBuffer(void)
         /* Rounded average of accumulated samples (count is 1-3) */
         rs.last_sample = (uint8_t)((sum + count / 2) / count);
 
-        /* Convert 8-bit [0,255] -> 12-bit [0,4080] */
-        dst[i] = (uint16_t)rs.last_sample << 4;
+        /* Convert 8-bit [0,255] to signed 12-bit, apply IIR biquad
+         * filter chain (presence boost + HF shelf), then convert back
+         * to unsigned 12-bit DAC range [0,4095]. */
+        {
+            int16_t s = ((int16_t)rs.last_sample - 128) << 4;
+            s = sam_filter(s);
+            int32_t dac_val = (int32_t)s + 2048;
+            if (dac_val < 0) dac_val = 0;
+            if (dac_val > 4095) dac_val = 4095;
+            dst[i] = (uint16_t)dac_val;
+        }
     }
 
 done:

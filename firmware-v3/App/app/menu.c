@@ -757,8 +757,8 @@ void MENU_PlayMorseForCurrentItem(void)
                 {
                     case MENU_TXP:      sam_text = "POW ER";   break;
                     case MENU_STEP:     sam_text = "STEHP";    break;
-                    case MENU_R_CTCS:   sam_text = "R EX C T C S S"; break;
-                    case MENU_T_CTCS:   sam_text = "T EX C T C S S"; break;
+                    case MENU_R_CTCS:   sam_text = "R EX. C T C S S"; break;
+                    case MENU_T_CTCS:   sam_text = "T EX. C T C S S"; break;
                     case MENU_R_DCS:    sam_text = "R EX D C S"; break;
                     case MENU_T_DCS:    sam_text = "T EX D C S"; break;
                     case MENU_SAM_SPEED: sam_text = "SAM S P D"; break;

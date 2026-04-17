@@ -645,9 +645,8 @@ static const unsigned char phoneme_flags2[] =
 /* Stressed phoneme lengths – durations used when the phoneme carries
  * stress.  Adjustments vs. original SAM:
  *   [18]  RX  0xC→0xE   longer word-final R for clearer rhotic quality
- *   [32]  S*  2 (original) – kept short; longer values cause overly long
- *             sibilant hiss in clusters like KS (X phoneme)
- *   [33]  SH  2 (original) – matching S*
+ *   [32]  S*  2→1 – shortened further to reduce sibilant hiss in KS (X phoneme)
+ *   [33]  SH  2→1 – matching S*
  *   [48]  EY  0xE→0x10  diphthongs need time for formant glide
  *   [49]  AY  0xF→0x11
  *   [50]  OY  0xF→0x11
@@ -664,7 +663,7 @@ static const unsigned char phonemeStressedLengthTable[] =
     0xE, 0xF, 0xB, 0x10, 0xC, 6, 6, 0xE,
     0xC, 0xE, 0xE, 0xB, 8, 8, 0xB, 0xA,
     9, 8, 8, 8, 8, 8, 3, 5,
-    2, 2, 2, 2, 2, 2, 6, 6,
+    1, 1, 2, 2, 2, 2, 6, 6,
     8, 6, 6, 2, 9, 4, 2, 1,
     0x10, 0x11, 0x11, 0x11, 0x10, 0x10, 8, 2,
     2, 7, 2, 1, 7, 2, 2, 7,
@@ -674,9 +673,8 @@ static const unsigned char phonemeStressedLengthTable[] =
 
 /* Unstressed phoneme lengths – base durations.  Adjustments:
  *   [18]  RX  0xA→0xB   slightly longer R
- *   [32]  S*  2 (original) – kept short; longer values cause overly long
- *             sibilant hiss in clusters like KS (X phoneme)
- *   [33]  SH  2 (original) – matching S*
+ *   [32]  S*  2→1 – shortened further to reduce sibilant hiss in KS (X phoneme)
+ *   [33]  SH  2→1 – matching S*
  *   [48]  EY  0xD→0xF   diphthong glide time
  *   [49]  AY  0xC→0xE
  *   [50]  OY  0xC→0xE
@@ -693,7 +691,7 @@ static const unsigned char phonemeLengthTable[] =
     8, 0xB, 6, 0xC, 0xA, 5, 5, 0xB,
     0xA, 0xA, 0xB, 9, 8, 7, 9, 7,
     6, 8, 6, 7, 7, 7, 2, 5,
-    2, 2, 2, 2, 2, 2, 6, 6,
+    1, 1, 2, 2, 2, 2, 6, 6,
     7, 6, 6, 2, 8, 3, 1, 0x1E,
     0xF, 0xE, 0xE, 0xE, 0x10, 0xB, 6, 1,
     2, 5, 1, 1, 6, 1, 2, 6,

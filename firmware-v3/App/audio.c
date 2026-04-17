@@ -578,7 +578,8 @@ bool AUDIO_PlaySAMText(const char *text)
 
     /* Disable the BK4819 AF DAC output to prevent FM/AM noise from the
      * BK4819 analog path interfering with the MCU DAC SAM audio on the
-     * shared audio amplifier line.  RSSI and RX DSP remain active. */
+     * shared audio amplifier line.  RSSI and RX DSP remain active.
+     * Restored after playback finishes — see BK4819_WriteRegister below. */
     uint16_t saved_reg30 = BK4819_ReadRegister(BK4819_REG_30);
     BK4819_WriteRegister(BK4819_REG_30,
         saved_reg30 & ~BK4819_REG_30_MASK_ENABLE_AF_DAC);

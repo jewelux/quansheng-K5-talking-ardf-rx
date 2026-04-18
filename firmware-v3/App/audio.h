@@ -228,6 +228,10 @@ void AUDIO_PlayBeep(BEEP_Type_t Beep);
     bool    AUDIO_PlaySAMText(const char *text);
     void    AUDIO_SamSayFrequency(uint32_t frequency);
     void    AUDIO_SamSayDigit(uint8_t digit);
+    /* Announce "receive" or "transmit" when an offset is active so the
+     * user knows which frequency is being changed.
+     * Says nothing when TX_OFFSET_FREQUENCY_DIRECTION is OFF. */
+    void    AUDIO_SamSayRxTxContext(void);
     /* Set by AUDIO_PlaySAMText when interrupted; consumed by menu loop. */
     extern KEY_Code_t gSamAbortKey;
 #endif

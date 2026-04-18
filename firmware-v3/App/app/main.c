@@ -350,8 +350,10 @@ static void processFKeyFunction(const KEY_Code_t Key, const bool beep)
                         BK4819_SetFrequency(frequency);
                         gRequestSaveChannel = 1;
 #ifdef ENABLE_SAM_TTS
-                        if (gAccessibilityMode == ACCESS_MODE_SAM)
+                        if (gAccessibilityMode == ACCESS_MODE_SAM) {
+                            AUDIO_SamSayRxTxContext();
                             AUDIO_SamSayFrequency(frequency);
+                        }
 #endif
                         return;
                     }
@@ -647,8 +649,11 @@ static void MAIN_Key_DIGITS(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
             gAnotherVoiceID = (VOICE_ID_t)Key;
 #endif
 #ifdef ENABLE_SAM_TTS
-            if (gAccessibilityMode == ACCESS_MODE_SAM)
+            if (gAccessibilityMode == ACCESS_MODE_SAM) {
+                if (gInputBoxIndex == 1)
+                    AUDIO_SamSayRxTxContext();
                 AUDIO_SamSayDigit(Key);
+            }
 #endif
             uint8_t totalDigits = 6; // by default frequency is lower than 1 GHz
             if (gTxVfo->pRX->Frequency >= _1GHz_in_KHz) {
@@ -1177,8 +1182,10 @@ static void MAIN_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
                 BK4819_RX_TurnOn();
                 gRequestSaveChannel = 1;
 #ifdef ENABLE_SAM_TTS
-                if (gAccessibilityMode == ACCESS_MODE_SAM)
+                if (gAccessibilityMode == ACCESS_MODE_SAM) {
+                    AUDIO_SamSayRxTxContext();
                     AUDIO_SamSayFrequency(frequency);
+                }
 #endif
                 return;
             }

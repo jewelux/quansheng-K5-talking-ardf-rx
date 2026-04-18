@@ -208,22 +208,29 @@ flash_v1() {
     info "Suche serielle Ports..."
 
     local port_list=()
+    local port_devices=()
 
     if [[ -n "${MSYSTEM:-}" ]]; then
         # Windows/MSYS2: check COMx ports via Python pyserial
-        while IFS= read -r line; do
-            [[ -n "$line" ]] && port_list+=("$line")
+        while IFS=$'\t' read -r dev desc; do
+            if [[ -n "$dev" ]]; then
+                port_devices+=("$dev")
+                port_list+=("$dev — $desc")
+            fi
         done < <("$PY" -c "
 import serial.tools.list_ports
 for p in serial.tools.list_ports.comports():
-    print(p.device + ' — ' + p.description)
+    print(p.device + '\t' + p.description)
 " 2>/dev/null || true)
     fi
 
     # Fallback: Linux-style serial devices
     if [[ ${#port_list[@]} -eq 0 ]]; then
         while IFS= read -r dev; do
-            [[ -n "$dev" ]] && port_list+=("$dev")
+            if [[ -n "$dev" ]]; then
+                port_devices+=("$dev")
+                port_list+=("$dev")
+            fi
         done < <(ls /dev/ttyUSB* /dev/ttyACM* 2>/dev/null || true)
     fi
 
@@ -235,7 +242,7 @@ for p in serial.tools.list_ports.comports():
         echo ""
         local idx=0
         for entry in "${port_list[@]}"; do
-            ((idx++)) || true
+            idx=$((idx + 1))
             printf "  ${BOLD}%d${RESET}) %s\n" "$idx" "$entry"
         done
         echo ""
@@ -244,10 +251,7 @@ for p in serial.tools.list_ports.comports():
         while true; do
             read -rp "${BOLD}Port waehlen [1-$idx] oder manuell eingeben (z.B. COM3): ${RESET}" port_choice
             if [[ "$port_choice" =~ ^[0-9]+$ ]] && (( port_choice >= 1 && port_choice <= idx )); then
-                # Extract device name (part before " — " if present)
-                selected_port="${port_list[$((port_choice-1))]}"
-                selected_port="${selected_port%% —*}"
-                selected_port="${selected_port%% *}"
+                selected_port="${port_devices[$((port_choice-1))]}"
                 break
             elif [[ -n "$port_choice" ]]; then
                 selected_port="$port_choice"

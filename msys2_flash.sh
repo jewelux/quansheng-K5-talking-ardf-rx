@@ -57,7 +57,8 @@ ask_yes_no() {
 # ---------------------------------------------------------------------------
 list_firmware_files() {
     local pattern="$1"
-    local search_dirs=("$REPO_ROOT/build-output" "$REPO_ROOT/firmware-v1" "$REPO_ROOT/firmware-v3")
+    shift
+    local search_dirs=("$@")
     local found=()
 
     for dir in "${search_dirs[@]}"; do
@@ -68,17 +69,21 @@ list_firmware_files() {
         fi
     done
 
-    printf '%s\n' "${found[@]}" | sort -t/ -k1 | head -20
+    if [[ ${#found[@]} -gt 0 ]]; then
+        printf '%s\n' "${found[@]}" | sort -t/ -k1 | head -20
+    fi
 }
 
 select_firmware_file() {
     local pattern="$1"
     local label="$2"
+    shift 2
+    local search_dirs=("$@")
 
     info "Suche nach $label Firmware-Dateien..."
 
     local files
-    files=$(list_firmware_files "$pattern")
+    files=$(list_firmware_files "$pattern" "${search_dirs[@]}")
 
     if [[ -z "$files" ]]; then
         fail "Keine $label Firmware-Dateien gefunden."
@@ -178,7 +183,7 @@ flash_v1() {
         exit 1
     fi
 
-    select_firmware_file "*.packed.bin" "V1"
+    select_firmware_file "*.packed.bin" "V1" "$REPO_ROOT/build-output" "$REPO_ROOT/firmware-v1"
 
     echo ""
     echo "${YELLOW}============================================${RESET}"
@@ -201,29 +206,71 @@ flash_v1() {
     # Detect COM port
     echo ""
     info "Suche serielle Ports..."
-    local ports
-    ports=$(ls /dev/ttyS* /dev/ttyUSB* /dev/ttyACM* 2>/dev/null | head -10 || true)
+
+    local port_list=()
 
     if [[ -n "${MSYSTEM:-}" ]]; then
-        # Windows: check COMx ports
-        for i in $(seq 1 20); do
-            if [[ -e "/dev/ttyS$((i-1))" ]] 2>/dev/null; then
-                ports+=$'\n'"/dev/ttyS$((i-1)) (COM$i)"
-            fi
-        done
+        # Windows/MSYS2: check COMx ports via Python pyserial
+        while IFS= read -r line; do
+            [[ -n "$line" ]] && port_list+=("$line")
+        done < <("$PY" -c "
+import serial.tools.list_ports
+for p in serial.tools.list_ports.comports():
+    print(p.device + ' — ' + p.description)
+" 2>/dev/null || true)
     fi
 
-    if [[ -z "$ports" ]]; then
-        warn "Keine seriellen Ports gefunden."
-        read -rp "${BOLD}COM-Port manuell eingeben (z.B. COM3): ${RESET}" manual_port
-        ports="$manual_port"
+    # Fallback: Linux-style serial devices
+    if [[ ${#port_list[@]} -eq 0 ]]; then
+        while IFS= read -r dev; do
+            [[ -n "$dev" ]] && port_list+=("$dev")
+        done < <(ls /dev/ttyUSB* /dev/ttyACM* 2>/dev/null || true)
     fi
+
+    local selected_port=""
+
+    if [[ ${#port_list[@]} -gt 0 ]]; then
+        echo ""
+        info "Gefundene serielle Ports:"
+        echo ""
+        local idx=0
+        for entry in "${port_list[@]}"; do
+            ((idx++)) || true
+            printf "  ${BOLD}%d${RESET}) %s\n" "$idx" "$entry"
+        done
+        echo ""
+
+        local port_choice
+        while true; do
+            read -rp "${BOLD}Port waehlen [1-$idx] oder manuell eingeben (z.B. COM3): ${RESET}" port_choice
+            if [[ "$port_choice" =~ ^[0-9]+$ ]] && (( port_choice >= 1 && port_choice <= idx )); then
+                # Extract device name (part before " — " if present)
+                selected_port="${port_list[$((port_choice-1))]}"
+                selected_port="${selected_port%% —*}"
+                selected_port="${selected_port%% *}"
+                break
+            elif [[ -n "$port_choice" ]]; then
+                selected_port="$port_choice"
+                break
+            fi
+            echo "Bitte eine gueltige Auswahl treffen."
+        done
+    else
+        warn "Keine seriellen Ports gefunden."
+        read -rp "${BOLD}COM-Port manuell eingeben (z.B. COM3 oder /dev/ttyUSB0): ${RESET}" selected_port
+        if [[ -z "$selected_port" ]]; then
+            fail "Kein Port angegeben. Abbruch."
+            exit 1
+        fi
+    fi
+
+    ok "Gewaehlter Port: $selected_port"
 
     echo ""
     info "Starte Flash-Vorgang..."
     echo ""
 
-    "$PY" "$k5flash" "$SELECTED_FW" || {
+    "$PY" "$k5flash" "$selected_port" "$SELECTED_FW" || {
         fail "Flash fehlgeschlagen!"
         echo ""
         echo "Tipps:"
@@ -574,7 +621,7 @@ flash_v3_python() {
         fi
     fi
 
-    select_firmware_file "*.bin" "V3"
+    select_firmware_file "*.bin" "V3" "$REPO_ROOT/build-output" "$REPO_ROOT/firmware-v3"
 
     echo ""
     info "Starte k5flash_v3.py..."
@@ -650,7 +697,7 @@ flash_v3_k5tool() {
         fi
     fi
 
-    select_firmware_file "*.bin" "V3"
+    select_firmware_file "*.bin" "V3" "$REPO_ROOT/build-output" "$REPO_ROOT/firmware-v3"
 
     echo ""
     echo "${YELLOW}============================================${RESET}"
@@ -725,7 +772,7 @@ flash_v3_swd() {
         fi
     fi
 
-    select_firmware_file "*.bin" "V3"
+    select_firmware_file "*.bin" "V3" "$REPO_ROOT/build-output" "$REPO_ROOT/firmware-v3"
 
     echo ""
     echo "${YELLOW}============================================${RESET}"

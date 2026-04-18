@@ -748,9 +748,9 @@ void AUDIO_SamSayRxTxContext(void)
     if (gTxVfo->TX_OFFSET_FREQUENCY_DIRECTION == TX_OFFSET_FREQUENCY_DIRECTION_OFF)
         return;
 
-    /* freq_config_RX is always the value the user edits.
-     * In normal mode  pRX → freq_config_RX  → user changes receive freq.
-     * In reverse mode pTX → freq_config_RX  → user changes transmit freq. */
+    /* The user always edits the underlying freq_config_RX field.
+     * Normal mode:  the radio receives on that frequency  → "receive".
+     * Reverse mode: the radio transmits on that frequency → "transmit". */
     if (gTxVfo->FrequencyReverse)
         AUDIO_PlaySAMText("transmit");
     else

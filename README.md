@@ -39,7 +39,7 @@ This repository is for a blind-friendly "talking peiler" direction finder:
 │   └── ...
 └── firmware-v3/                      # V3 firmware (CMake-based)
     ├── CMakeLists.txt
-    ├── CMakePresets.json              # Includes ARDF-Talking preset
+    ├── CMakePresets.json              # Includes ARDF, ARDF-Morse, ARDF-Voice, ARDF-SAM presets
     ├── App/app/ardf.c                # ARDF with ported accessibility features
     ├── App/app/menu.c                # Ported Morse code menu system
     └── ...
@@ -68,8 +68,8 @@ make -j$(nproc)
 
 ```bash
 cd firmware-v3
-cmake --preset ARDF-Talking
-cmake --build --preset ARDF-Talking
+cmake --preset ARDF-Voice
+cmake --build --preset ARDF-Voice
 ```
 
 ### Toolchain Requirements
@@ -111,6 +111,14 @@ cmake --build --preset ARDF-Talking
 | Browser flasher | [UV-Tools 2](https://armel.github.io/uvtools2/) | Browser-based, easiest for V3 |
 
 ⚠️ **Always verify your hardware version before flashing!** Check the label under the battery compartment.
+
+## Credits and Project History
+
+This project was started by Jean, LX1WJ (JeWeLux), as a blind-accessible ARDF receiver modification for Quansheng radios and is hosted in this GitHub account.
+
+The current firmware implementation, tuning, accessibility improvements, and ongoing technical development have been largely completed and refined by Richard, DO9RE.
+
+This project also builds on several open-source Quansheng firmware projects listed in the Third-Party Notices below. Their work, copyright notices, and licenses remain acknowledged and respected.
 
 ## Third-Party Notices
 

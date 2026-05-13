@@ -37,6 +37,7 @@ ggf. weiteren KI-Agenten. Jede Sitzung muss diese Datei lesen und aktualisieren.
 
 | Datum (UTC)  | Agent / Sitzung         | Aenderung                                              |
 | ------------ | ----------------------- | ------------------------------------------------------ |
+| 2026-05-13   | Codex Desktop           | V3 ARDF-Presets TX-gesperrt, GitHub Workflow auf `firmware-v1` umgestellt, alten `firmware-source/` Zwischenordner entfernt |
 | 2026-04-12   | Copilot Cloud Agent     | ARDF: Kompass alle Modi, ARDF-Morse OFF/ARDF/DF, AM/FM alle Mods, Display-vor-Morse, kein Titel-Morse bei Submenu-Eintritt |
 | 2026-04-12   | Copilot Cloud Agent     | Build/Flash-Scripts: `make clean` statt manuelle Suche, k5flash.py nur build-output/, Quellverzeichnis-Aufraeumung |
 | 2026-04-12   | Copilot Cloud Agent     | Morse-Bugs behoben, Voice/Morse getrennt, Kompass-Modus, Batterie-Morse, Makefile-Flags |
@@ -132,6 +133,21 @@ ggf. weiteren KI-Agenten. Jede Sitzung muss diese Datei lesen und aktualisieren.
 ## Sitzungs-Protokoll
 
 <!-- Kurzes Protokoll jeder Agenten-Sitzung — chronologisch, neueste oben -->
+
+### 2026-05-13 — Codex Desktop
+
+**Auftrag:** V3-Build wirklich sendegesperrt machen und ueberfluessige GitHub-/Zwischendateien fuer den definitiven Repo-Stand entfernen.
+
+**Durchgefuehrt:**
+- `firmware-v3/CMakePresets.json`: `ENABLE_PREVENT_TX` im ARDF-Basis-Preset auf `true` gesetzt. Gilt dadurch auch fuer `ARDF-Morse`, `ARDF-Voice` und `ARDF-SAM`.
+- `.github/workflows/main.yml`: veraltete `firmware-source` Referenzen auf `firmware-v1` umgestellt.
+- `README.md`: veralteten V3-Preset-Namen `ARDF-Talking` durch `ARDF-Voice` ersetzt.
+- `firmware-source/`: alter Zwischenordner mit Build-Artefakten (`.o`, `.d`, leerer `firmware_uvk5_v1`) entfernt.
+
+**Ergebnis:**
+- V3-ARDF-Presets sind fuer RX-only vorbereitet.
+- GitHub Actions bauen wieder aus dem aktuellen V1-Quellordner.
+- Der finale Repo-Root enthaelt keinen alten `firmware-source` Build-/Importrest mehr.
 
 ### 2026-04-12 (13. Sitzung) — Copilot Cloud Agent
 

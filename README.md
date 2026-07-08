@@ -31,6 +31,10 @@ This repository is for a blind-friendly "talking peiler" direction finder:
 ├── V3_VOICE_PROMPT_CAPABILITIES.md   # V3 audio capabilities analysis
 ├── msys2_build.sh                    # Unified build script (V1 + V3)
 ├── msys2_flash.sh                    # Unified flash script (V1 + V3)
+├── Ready_To_Flash_Firmware
+│   ├── README-FIRST.txt
+│   ├── Quansheng-ARDF-V1-DP32G030.packed.bin
+│   ├── Quansheng-ARDF-V3-PY32F071.bin
 ├── firmware-v1/                      # V1 firmware (Makefile-based)
 │   ├── Makefile
 │   ├── app/ardf.c                    # ARDF with accessibility features

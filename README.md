@@ -45,6 +45,18 @@ This repository is for a blind-friendly "talking peiler" direction finder:
     └── ...
 ```
 
+## Ready-to-Flash Firmware
+
+Prebuilt firmware files for both supported hardware generations are available in the [`Ready_To_Flash_Firmware`](Ready_To_Flash_Firmware/) folder:
+
+- `Richard-ARDF-V1-DP32G030.packed.bin` — for V1 radios with the DP32G030 MCU
+- `Richard-ARDF-V3-PY32F071.bin` — for V3/K1 radios with the PY32F071 MCU
+
+Please read [`README-FIRST.txt`](Ready_To_Flash_Firmware/README-FIRST.txt) carefully before flashing. It contains hardware identification, step-by-step flashing instructions, troubleshooting information, and SHA-256 checksums.
+
+> [!WARNING]
+> Never flash the V1 firmware onto V3 hardware or the V3 firmware onto V1 hardware. Always verify the MCU and hardware generation first.
+
 ## Building
 
 ### Quick Start (both V1 and V3)

@@ -30,10 +30,42 @@
 #include "ui/menu.h"
 #include "ui/ui.h"
 
+#ifdef ENABLE_ADMIN_USER_MODE
+#ifndef ENABLE_PREVENT_TX
+#error "Startup-mode development requires the existing TX lockout"
+#endif
+static bool gBootIsAdmin = false;
+
+bool BOOT_IsAdmin(void)
+{
+    return gBootIsAdmin;
+}
+#endif
+
 BOOT_Mode_t BOOT_GetMode(void)
 {
     unsigned int i;
     KEY_Code_t   Keys[2];
+
+#ifdef ENABLE_ADMIN_USER_MODE
+    // Do not restore this role from EEPROM. Require MENU alone to be stable
+    // across three samples; PTT is not part of the Admin startup gesture.
+    gBootIsAdmin = false;
+    bool menuHeld = true;
+    for (i = 0; i < 3; ++i)
+    {
+        if (KEYBOARD_Poll() != KEY_MENU || GPIO_IsPttPressed())
+            menuHeld = false;
+        SYSTEM_DelayMs(20);
+    }
+    if (menuHeld)
+    {
+        gBootIsAdmin = true;
+        // A distinct boot mode also forces the existing release-all-keys
+        // barrier even if MENU is released immediately after these samples.
+        return BOOT_MODE_ADMIN;
+    }
+#endif
 
     for (i = 0; i < 2; i++)
     {

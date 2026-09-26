@@ -15,6 +15,7 @@
  */
 
 #include <string.h>
+#include <stdlib.h>
 
 #if !defined(ENABLE_OVERLAY)
     #include "py32f0xx.h"

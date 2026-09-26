@@ -215,11 +215,16 @@ void Main(void)
     }
     else
     {
+#ifdef ENABLE_ADMIN_USER_MODE
+        boot_counter_10ms = 150; // give the role indicator a full 1.5 seconds
+#endif
         UI_DisplayWelcome();
 
         BACKLIGHT_TurnOn();
 
-#ifdef ENABLE_FEAT_F4HWN
+#ifdef ENABLE_ADMIN_USER_MODE
+        if (true)
+#elif defined(ENABLE_FEAT_F4HWN)
         if (gEeprom.POWER_ON_DISPLAY_MODE != POWER_ON_DISPLAY_MODE_NONE && gEeprom.POWER_ON_DISPLAY_MODE != POWER_ON_DISPLAY_MODE_SOUND)
 #else
         if (gEeprom.POWER_ON_DISPLAY_MODE != POWER_ON_DISPLAY_MODE_NONE)
@@ -261,6 +266,10 @@ void Main(void)
 #endif
 
         BOOT_ProcessMode(BootMode);
+
+#if defined(ENABLE_ADMIN_USER_MODE) && defined(ENABLE_SAM_TTS)
+        AUDIO_PlaySAMText(BOOT_IsAdmin() ? "ADMIN MODE" : "USER MODE");
+#endif
 
         // GPIO_ClearBit(&GPIOA->DATA, GPIOA_PIN_VOICE_0);
 

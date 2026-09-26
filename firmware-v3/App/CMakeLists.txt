@@ -214,6 +214,7 @@ enable_feature(ENABLE_ARDF
     ui/ardf.c
 )
 enable_feature(ENABLE_PREVENT_TX)
+enable_feature(ENABLE_ADMIN_USER_MODE)
 
 # ---- ACCESSIBILITY ----
 enable_feature(ENABLE_MORSE)

@@ -18,12 +18,16 @@
 #define HELPER_BOOT_H
 
 #include <stdint.h>
+#include <stdbool.h>
 #include "driver/keyboard.h"
 
 enum BOOT_Mode_t
 {
     BOOT_MODE_NORMAL = 0,
     BOOT_MODE_F_LOCK,
+#ifdef ENABLE_ADMIN_USER_MODE
+    BOOT_MODE_ADMIN,
+#endif
     #ifdef ENABLE_FEAT_F4HWN_RESCUE_OPS
         BOOT_MODE_RESCUE_OPS,
     #endif
@@ -36,6 +40,12 @@ typedef enum BOOT_Mode_t BOOT_Mode_t;
 
 BOOT_Mode_t BOOT_GetMode(void);
 void BOOT_ProcessMode(BOOT_Mode_t Mode);
+
+#ifdef ENABLE_ADMIN_USER_MODE
+// Runtime-only startup selection. User remains the default after every reset.
+// Step 1 selects the role; it does not yet restrict User controls.
+bool BOOT_IsAdmin(void);
+#endif
 
 #endif
 

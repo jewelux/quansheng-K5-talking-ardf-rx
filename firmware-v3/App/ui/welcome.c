@@ -21,6 +21,7 @@
 #include "driver/st7565.h"
 #include "external/printf/printf.h"
 #include "helper/battery.h"
+#include "helper/boot.h"
 #include "settings.h"
 #include "misc.h"
 #include "ui/helper.h"
@@ -107,6 +108,21 @@ void UI_DisplayReleaseKeys(void)
 
 void UI_DisplayWelcome(void)
 {
+#ifdef ENABLE_ADMIN_USER_MODE
+    // Always show the selected role in this development build, including
+    // when the saved welcome-screen preference is None or Sound.
+    memset(gStatusLine, 0, sizeof(gStatusLine));
+#if defined(ENABLE_FEAT_F4HWN_CTR) || defined(ENABLE_FEAT_F4HWN_INV)
+    ST7565_ContrastAndInv();
+#endif
+    UI_DisplayClear();
+    UI_PrintString(BOOT_IsAdmin() ? "ADMIN MODE" : "USER MODE", 0, 127, 1, 10);
+    UI_PrintStringSmallNormal("STARTUP TEST ONLY", 0, 127, 3);
+    UI_PrintStringSmallNormal("TX DISABLED", 0, 127, 5);
+    ST7565_BlitStatusLine();
+    ST7565_BlitFullScreen();
+    return;
+#endif
     char WelcomeString0[16];
     char WelcomeString1[16];
     char WelcomeString2[16];

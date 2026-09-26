@@ -2,6 +2,16 @@
     "version": 3,
     "configurePresets": [
         {
+            "name": "ARDF-AdminUser-Dev",
+            "inherits": "ARDF-SAM-Access",
+            "cacheVariables": {
+                "ENABLE_ADMIN_USER_MODE": true,
+                "ENABLE_PREVENT_TX": true,
+                "EDITION_STRING": "AdminUser-Dev",
+                "TARGET": "ardf.AdminUser_Dev_K5v3_K1"
+            }
+        },
+        {
             "name": "default",
             "hidden": true,
             "generator": "Ninja",
@@ -277,6 +287,10 @@
         }
     ],
     "buildPresets": [
+        {
+            "name": "ARDF-AdminUser-Dev",
+            "configurePreset": "ARDF-AdminUser-Dev"
+        },
         {
             "name": "Custom",
             "configurePreset": "Custom"
